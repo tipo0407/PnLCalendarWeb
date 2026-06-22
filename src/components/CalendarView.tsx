@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
@@ -230,6 +230,19 @@ export default function CalendarView({
                     className={`cal-cell ${tone}${day ? ' clickable' : ''}${date === todayIso ? ' today' : ''}`}
                     style={day ? ({ ['--tone-a' as string]: 0.18 + intensity * 0.32 }) : undefined}
                     onClick={() => day && onSelectDay(date)}
+                    {...(day
+                      ? {
+                          role: 'button',
+                          tabIndex: 0,
+                          'aria-label': `${MONTH_NAMES[month]} ${d}, ${formatMoneySigned(day.pnl)}, ${day.tradeCount} trades`,
+                          onKeyDown: (e: ReactKeyboardEvent) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onSelectDay(date);
+                            }
+                          },
+                        }
+                      : {})}
                   >
                     <div className="cell-top">
                       <span className="cell-day">{d}</span>
