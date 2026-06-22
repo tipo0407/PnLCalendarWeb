@@ -144,7 +144,6 @@ export default function App() {
                   summary={summary}
                   onNavigate={setViewMonth}
                   onSelectDay={setSelectedDay}
-                  onOpenAtlas={() => setView('atlas')}
                   heatmap={
                     <Heatmap
                       dailyMap={dailyMap}
@@ -168,7 +167,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TradeAtlas trades={trades} summary={summary} onClose={() => setView('calendar')} />
+              <TradeAtlas trades={trades} summary={summary} />
             </motion.div>
           )}
         </AnimatePresence>

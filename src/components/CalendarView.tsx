@@ -1,5 +1,5 @@
 import { useMemo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
@@ -15,7 +15,6 @@ interface Props {
   heatmap: ReactNode;
   onNavigate: (m: { year: number; month: number }) => void;
   onSelectDay: (date: string) => void;
-  onOpenAtlas: () => void;
 }
 
 const MONTH_NAMES = [
@@ -36,7 +35,6 @@ export default function CalendarView({
   heatmap,
   onNavigate,
   onSelectDay,
-  onOpenAtlas,
 }: Props) {
   const { weeks, stats } = useMemo(() => {
     const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -158,14 +156,6 @@ export default function CalendarView({
                 {stats.streak} winning day{stats.streak === 1 ? '' : 's'}
               </span>
             </div>
-          </div>
-          <div className="hero-actions">
-            <button className="hero-btn" onClick={() => onNavigate({ year: today.getFullYear(), month: today.getMonth() })}>
-              <CalendarDays size={15} /> Today
-            </button>
-            <button className="hero-btn ghost" onClick={onOpenAtlas}>
-              <Sparkles size={15} /> Trade Atlas <ArrowRight size={15} />
-            </button>
           </div>
         </div>
 

@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { X } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -24,7 +23,6 @@ import {
 interface Props {
   trades: TradeRecord[];
   summary: Summary;
-  onClose: () => void;
 }
 
 const AXIS = { stroke: '#9aa6ba', fontSize: 11, tickLine: false, axisLine: false };
@@ -38,7 +36,7 @@ const TOOLTIP = {
   cursor: { fill: 'rgba(91,141,224,0.08)' },
 };
 
-export default function TradeAtlas({ trades, summary, onClose }: Props) {
+export default function TradeAtlas({ trades, summary }: Props) {
   const equity = useMemo(() => dailyEquityCurve(trades), [trades]);
   const dailyBars = useMemo(
     () =>
@@ -72,21 +70,19 @@ export default function TradeAtlas({ trades, summary, onClose }: Props) {
   return (
     <div className="atlas">
       <div className="atlas-hero">
-        <div>
+        <div className="atlas-hero-head">
           <span className="atlas-eyebrow">ANALYTICS · {range}</span>
           <h2>Trade Atlas</h2>
           <p className="atlas-sub">Performance, behavior, and trend review</p>
         </div>
-        <button className="atlas-close" onClick={onClose}><X size={15} /> Close</button>
-      </div>
-
-      <div className="kpi-row">
-        <Kpi dot={NEG} label="Net P&L" value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
-        <Kpi dot="#3b6fe0" label="Trades" value={String(summary.tradeCount)} />
-        <Kpi dot={POS} label="Win Rate" value={`${(summary.winRateTrades * 100).toFixed(1)}%`} />
-        <Kpi dot={summary.expectancy >= 0 ? POS : NEG} label="Avg Trade" value={formatMoneySigned(summary.tradeCount ? summary.totalPnl / summary.tradeCount : 0)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
-        <Kpi dot="#3b6fe0" label="Profit Factor" value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} />
-        <Kpi dot={NEG} label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
+        <div className="kpi-row">
+          <Kpi dot={NEG} label="Net P&L" value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
+          <Kpi dot="#3b6fe0" label="Trades" value={String(summary.tradeCount)} />
+          <Kpi dot={POS} label="Win Rate" value={`${(summary.winRateTrades * 100).toFixed(1)}%`} />
+          <Kpi dot={summary.expectancy >= 0 ? POS : NEG} label="Avg Trade" value={formatMoneySigned(summary.tradeCount ? summary.totalPnl / summary.tradeCount : 0)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
+          <Kpi dot="#3b6fe0" label="Profit Factor" value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} />
+          <Kpi dot={NEG} label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
+        </div>
       </div>
 
       <div className="atlas-grid">
@@ -109,7 +105,7 @@ export default function TradeAtlas({ trades, summary, onClose }: Props) {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Daily P&L" subtitle="Net result by trading day" wide>
+        <Panel title="Daily P&L" subtitle="Net result by trading day">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dailyBars}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -182,8 +178,8 @@ export default function TradeAtlas({ trades, summary, onClose }: Props) {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Trade-by-Trade P&L" subtitle="Result of each individual trade" wide>
-          <ResponsiveContainer width="100%" height={180}>
+        <Panel title="Trade-by-Trade P&L" subtitle="Result of each individual trade">
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart data={tradePnls}>
               <XAxis dataKey="i" {...AXIS} minTickGap={30} />
               <YAxis {...AXIS} />
@@ -210,7 +206,7 @@ export default function TradeAtlas({ trades, summary, onClose }: Props) {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Best / Worst Day" subtitle="Extremes of daily performance">
+        <Panel title="Best / Worst Day" subtitle="Extremes of daily performance" wide>
           <div className="bw-grid">
             <div className="bw-big win">
               <span className="bwb-label">▲ Best</span>

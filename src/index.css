@@ -36,7 +36,7 @@
   --ring: 0 0 0 3px var(--accent-soft);
   --radius: 18px;
   --radius-sm: 12px;
-  --maxw: 1360px;
+  --maxw: 1560px;
 }
 
 :root[data-theme='dark'] {
