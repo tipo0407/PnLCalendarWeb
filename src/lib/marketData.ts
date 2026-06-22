@@ -16,6 +16,10 @@ export interface IntradayResult {
 
 const FUTURES_ROOTS = new Set(['MES', 'MGC', 'MNQ', 'M2K', 'MYM', 'ES', 'NQ', 'GC', 'YM', 'RTY', 'CL']);
 
+// Regular Trading Hours (US cash session), in exchange-local seconds-of-day: 09:30–16:00.
+const RTH_START = 9 * 3600 + 30 * 60;
+const RTH_END = 16 * 3600;
+
 /** Map a trade symbol to its Yahoo Finance ticker (append =F for futures roots). */
 export function toYahooSymbol(symbol: string | undefined): string {
   const s = (symbol ?? '').trim().toUpperCase();
@@ -81,7 +85,7 @@ export async function fetchIntraday(
 
   const url =
     `/yahoo/v8/finance/chart/${encodeURIComponent(ysym)}` +
-    `?period1=${p1}&period2=${p2}&interval=${interval}&includePrePost=true`;
+    `?period1=${p1}&period2=${p2}&interval=${interval}&includePrePost=false`;
 
   const resp = await fetch(url);
   if (!resp.ok) {
@@ -105,8 +109,11 @@ export async function fetchIntraday(
     const c = q.close?.[i];
     if (o == null || h == null || l == null || c == null) continue;
     const localTime = ts[i] + gmtOffset;
-    // Keep only bars whose exchange-local calendar date matches the trade date.
+    // Keep only bars whose exchange-local calendar date matches the trade date…
     if (Math.floor(localTime / 86400) !== Math.floor(dayStart / 86400)) continue;
+    // …and that fall within Regular Trading Hours (09:30–16:00 local).
+    const secondsOfDay = localTime - Math.floor(localTime / 86400) * 86400;
+    if (secondsOfDay < RTH_START || secondsOfDay >= RTH_END) continue;
     candles.push({
       time: localTime,
       open: o,
