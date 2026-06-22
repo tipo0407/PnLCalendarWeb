@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import type { DailyPnl } from '../types';
 import { formatMoney, formatMoneySigned, formatSeconds, longDate } from '../lib/metrics';
 
@@ -31,13 +32,24 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
   }, [onClose]);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
+    <motion.div
+      className="modal-overlay"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+    >
+      <motion.div
         className="modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.94, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 10 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
       >
         <div className="modal-head">
           <div className="modal-title">
@@ -106,7 +118,7 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

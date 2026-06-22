@@ -3,6 +3,7 @@ import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
+import MoneyCountUp from './CountUp';
 
 interface Props {
   dailyMap: Map<string, DailyPnl>;
@@ -170,7 +171,7 @@ export default function CalendarView({
         <div className="hero-total">
           <span className="ht-label">MONTH TOTAL</span>
           <span className={`ht-value ${stats.total >= 0 ? 'pos-strong' : 'neg-strong'}`}>
-            {formatMoneySigned(stats.total)}
+            <MoneyCountUp value={stats.total} />
           </span>
           <span className="ht-sub">{stats.trades} trades</span>
           <div className="ht-bw">

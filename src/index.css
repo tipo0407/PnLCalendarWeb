@@ -1,5 +1,6 @@
 :root {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter Variable', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   color-scheme: light;
 
   --bg: #eef1f6;
@@ -9,11 +10,11 @@
   --border: #e6eaf1;
   --border-strong: #d7deea;
 
-  --text: #1b2436;
+  --text: #141b2b;
   --text-2: #5b6678;
-  --muted: #97a1b3;
+  --muted: #8a94a8;
 
-  --pos: #16a34a;
+  --pos: #15a34a;
   --pos-soft: #e7f6ec;
   --pos-bg: #d9f2e1;
   --neg: #e1483b;
@@ -27,9 +28,10 @@
   --gold-bg: #fdf3d8;
   --gold-fg: #a87f1e;
 
-  --shadow-sm: 0 1px 2px rgba(27, 36, 54, 0.04), 0 1px 3px rgba(27, 36, 54, 0.06);
-  --shadow-md: 0 4px 16px rgba(27, 36, 54, 0.07);
-  --shadow-lg: 0 12px 40px rgba(27, 36, 54, 0.14);
+  --shadow-sm: 0 1px 2px rgba(27, 36, 54, 0.05), 0 1px 3px rgba(27, 36, 54, 0.05);
+  --shadow-md: 0 6px 24px -6px rgba(27, 36, 54, 0.12), 0 2px 8px -2px rgba(27, 36, 54, 0.06);
+  --shadow-lg: 0 24px 64px -12px rgba(27, 36, 54, 0.22), 0 8px 24px -8px rgba(27, 36, 54, 0.1);
+  --ring: 0 0 0 3px var(--accent-soft);
   --radius: 18px;
   --radius-sm: 12px;
   --maxw: 1360px;
@@ -92,6 +94,22 @@ body {
 
 button { font-family: inherit; cursor: pointer; }
 
+/* Tabular, lining numerals for all financial figures so digits align. */
+.cell-pnl, .wt-val, .ht-value, .tc-value, .hp-value, .month-val, .sc-value,
+.insight-value, .kpi-value, .ms-value, .bwb-value, .dc-value, .winrate-pct,
+.lens-year, .hm-year, .ht-bw-val, .tc-meta, .tc-since, .cell-day, .cell-trades,
+.trade-table td {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum', 'lnum';
+}
+
+/* Consistent, accessible keyboard focus across all interactive elements. */
+:where(button, a, input, [role='button'], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
 code {
   background: var(--accent-soft);
   color: var(--accent);
@@ -103,6 +121,12 @@ code {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #cfd6e2; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: #b9c2d4; background-clip: content-box; }
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb { background: #313c54; background-clip: content-box; }
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb:hover { background: #3d4a66; background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
 
 .pos { color: var(--pos); }
 .neg { color: var(--neg); }

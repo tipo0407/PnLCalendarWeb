@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
@@ -66,18 +67,22 @@ export default function App() {
 
           {trades.length > 0 && (
             <nav className="view-tabs">
-              <button
-                className={view === 'calendar' ? 'active' : ''}
-                onClick={() => setView('calendar')}
-              >
-                Calendar
-              </button>
-              <button
-                className={view === 'atlas' ? 'active' : ''}
-                onClick={() => setView('atlas')}
-              >
-                Trade Atlas
-              </button>
+              {(['calendar', 'atlas'] as const).map((v) => (
+                <button
+                  key={v}
+                  className={`tab-btn ${view === v ? 'active' : ''}`}
+                  onClick={() => setView(v)}
+                >
+                  {view === v && (
+                    <motion.span
+                      layoutId="tabPill"
+                      className="tab-pill"
+                      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    />
+                  )}
+                  <span className="tab-label">{v === 'calendar' ? 'Calendar' : 'Trade Atlas'}</span>
+                </button>
+              ))}
             </nav>
           )}
 
@@ -98,7 +103,12 @@ export default function App() {
 
       {trades.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-card">
+          <motion.div
+            className="empty-card"
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
             <span className="empty-mark">📊</span>
             <h2>No data yet</h2>
             <p>
@@ -109,46 +119,67 @@ export default function App() {
               Data is read from the <strong>3rd worksheet</strong>, with the same column
               names as the desktop app.
             </p>
-          </div>
+          </motion.div>
         </div>
-      ) : view === 'calendar' ? (
-        <main className="layout">
-          <section className="main-col">
-            <CalendarView
-              dailyMap={dailyMap}
-              holidays={holidays}
-              year={viewMonth.year}
-              month={viewMonth.month}
-              summary={summary}
-              onNavigate={setViewMonth}
-              onSelectDay={setSelectedDay}
-              onOpenAtlas={() => setView('atlas')}
-              heatmap={
-                <Heatmap
-                  dailyMap={dailyMap}
-                  year={viewMonth.year}
-                  onSelectMonth={(year, month) => setViewMonth({ year, month })}
-                />
-              }
-            />
-          </section>
-          <Sidebar
-            trades={trades}
-            summary={summary}
-            onJumpMonth={(year, month) => setViewMonth({ year, month })}
-          />
-        </main>
       ) : (
-        <TradeAtlas trades={trades} summary={summary} onClose={() => setView('calendar')} />
+        <AnimatePresence mode="wait">
+          {view === 'calendar' ? (
+            <motion.main
+              key="calendar"
+              className="layout"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <section className="main-col">
+                <CalendarView
+                  dailyMap={dailyMap}
+                  holidays={holidays}
+                  year={viewMonth.year}
+                  month={viewMonth.month}
+                  summary={summary}
+                  onNavigate={setViewMonth}
+                  onSelectDay={setSelectedDay}
+                  onOpenAtlas={() => setView('atlas')}
+                  heatmap={
+                    <Heatmap
+                      dailyMap={dailyMap}
+                      year={viewMonth.year}
+                      onSelectMonth={(year, month) => setViewMonth({ year, month })}
+                    />
+                  }
+                />
+              </section>
+              <Sidebar
+                trades={trades}
+                summary={summary}
+                onJumpMonth={(year, month) => setViewMonth({ year, month })}
+              />
+            </motion.main>
+          ) : (
+            <motion.div
+              key="atlas"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <TradeAtlas trades={trades} summary={summary} onClose={() => setView('calendar')} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
-      {selectedDaily && (
-        <DayDetailModal
-          daily={selectedDaily}
-          holidayName={holidays[selectedDaily.date]}
-          onClose={() => setSelectedDay(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selectedDaily && (
+          <DayDetailModal
+            daily={selectedDaily}
+            holidayName={holidays[selectedDaily.date]}
+            onClose={() => setSelectedDay(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

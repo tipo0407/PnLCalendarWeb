@@ -10,6 +10,7 @@ import {
   formatMoneySigned,
   shortDate,
 } from '../lib/metrics';
+import MoneyCountUp from './CountUp';
 
 interface Props {
   trades: TradeRecord[];
@@ -79,7 +80,7 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
 
       <div className={`total-card ${positive ? 'pos' : 'neg'}`}>
         <span className="tc-label">TOTAL P&amp;L</span>
-        <span className="tc-value">{formatMoneySigned(summary.totalPnl)}</span>
+        <span className="tc-value"><MoneyCountUp value={summary.totalPnl} /></span>
         <div className="tc-meta">
           <span>{summary.tradingDays} traded days</span>
           <span>{summary.tradeCount} trades total</span>
