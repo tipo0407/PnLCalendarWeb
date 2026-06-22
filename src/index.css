@@ -105,25 +105,41 @@ body {
 
 h1, h2, h3, h4 { font-weight: 600; }
 
-/* Ambient aurora background — subtle, slowly drifting gradient blobs. */
+/* Ambient aurora background — slowly drifting, layered gradient blobs. */
 body::before {
   content: '';
   position: fixed;
-  inset: -10%;
-  z-index: -1;
+  inset: -15%;
+  z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(38% 36% at 10% 6%, rgba(91, 141, 239, 0.16), transparent 62%),
-    radial-gradient(34% 38% at 92% 2%, rgba(139, 92, 246, 0.12), transparent 60%),
-    radial-gradient(40% 44% at 84% 96%, rgba(34, 197, 94, 0.10), transparent 62%);
-  filter: blur(8px);
-  animation: aurora 26s ease-in-out infinite alternate;
+    radial-gradient(42% 40% at 8% 4%, rgba(91, 141, 239, 0.22), transparent 60%),
+    radial-gradient(38% 42% at 94% 0%, rgba(139, 92, 246, 0.18), transparent 58%),
+    radial-gradient(46% 48% at 88% 96%, rgba(34, 197, 94, 0.14), transparent 60%),
+    radial-gradient(40% 40% at 50% 110%, rgba(91, 141, 239, 0.10), transparent 62%);
+  filter: blur(10px);
+  animation: aurora 28s ease-in-out infinite alternate;
+}
+/* Faint dot grid for depth. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(120, 140, 170, 0.10) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(120% 90% at 50% 0%, #000 35%, transparent 78%);
 }
 :root[data-theme='dark'] body::before {
   background:
-    radial-gradient(40% 38% at 8% 4%, rgba(91, 141, 239, 0.22), transparent 60%),
-    radial-gradient(36% 40% at 94% 0%, rgba(139, 92, 246, 0.18), transparent 58%),
-    radial-gradient(42% 46% at 86% 98%, rgba(34, 197, 94, 0.12), transparent 60%);
+    radial-gradient(44% 42% at 6% 2%, rgba(96, 144, 242, 0.30), transparent 58%),
+    radial-gradient(40% 44% at 96% 0%, rgba(139, 92, 246, 0.24), transparent 56%),
+    radial-gradient(48% 50% at 90% 98%, rgba(52, 211, 153, 0.16), transparent 58%),
+    radial-gradient(42% 42% at 48% 112%, rgba(96, 144, 242, 0.14), transparent 60%);
+}
+:root[data-theme='dark'] body::after {
+  background-image: radial-gradient(circle, rgba(160, 180, 220, 0.08) 1px, transparent 1px);
 }
 @keyframes aurora {
   from { transform: translate3d(0, 0, 0) scale(1); }
