@@ -28,6 +28,10 @@
   --gold-bg: #fdf3d8;
   --gold-fg: #a87f1e;
 
+  --badge-bg: rgba(20, 27, 43, 0.05);
+  --badge-border: rgba(20, 27, 43, 0.09);
+  --badge-fg: #5b6678;
+
   --hairline: rgba(255, 255, 255, 0.7);
 
   --shadow-sm: 0 1px 2px rgba(27, 36, 54, 0.05), 0 1px 3px rgba(27, 36, 54, 0.05);
@@ -66,6 +70,10 @@
 
   --gold-bg: rgba(245, 196, 81, 0.16);
   --gold-fg: #f0cd6b;
+
+  --badge-bg: rgba(255, 255, 255, 0.08);
+  --badge-border: rgba(255, 255, 255, 0.12);
+  --badge-fg: #aeb9cd;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.36);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
