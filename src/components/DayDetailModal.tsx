@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { DailyPnl } from '../types';
 import { formatMoney, formatMoneySigned, formatSeconds, longDate } from '../lib/metrics';
 
@@ -8,15 +9,42 @@ interface Props {
 }
 
 export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = `day-detail-${daily.date}`;
+
+  useEffect(() => {
+    // Close on Escape and lock background scroll while open.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // Move focus into the dialog; restore it to the previously focused element on close.
+    const prevFocused = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      prevFocused?.focus?.();
+    };
+  }, [onClose]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-head">
           <div className="modal-title">
-            <h2>{longDate(daily.date)}</h2>
+            <h2 id={titleId}>{longDate(daily.date)}</h2>
             {holidayName && <span className="badge-holiday">🎌 {holidayName}</span>}
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close">×</button>
         </div>
 
         <div className="modal-stats">
