@@ -28,6 +28,8 @@
   --gold-bg: #fdf3d8;
   --gold-fg: #a87f1e;
 
+  --hairline: rgba(255, 255, 255, 0.7);
+
   --shadow-sm: 0 1px 2px rgba(27, 36, 54, 0.05), 0 1px 3px rgba(27, 36, 54, 0.05);
   --shadow-md: 0 6px 24px -6px rgba(27, 36, 54, 0.12), 0 2px 8px -2px rgba(27, 36, 54, 0.06);
   --shadow-lg: 0 24px 64px -12px rgba(27, 36, 54, 0.22), 0 8px 24px -8px rgba(27, 36, 54, 0.1);
@@ -68,6 +70,7 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.36);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --hairline: rgba(255, 255, 255, 0.06);
 }
 
 * { box-sizing: border-box; }
@@ -78,18 +81,36 @@ html, body, #root {
 }
 
 body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, #f3f6fc 0%, transparent 60%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-:root[data-theme='dark'] body {
+/* Ambient aurora background — subtle, slowly drifting gradient blobs. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(1100px 560px at 82% -12%, #1a2336 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(38% 36% at 10% 6%, rgba(91, 141, 239, 0.16), transparent 62%),
+    radial-gradient(34% 38% at 92% 2%, rgba(139, 92, 246, 0.12), transparent 60%),
+    radial-gradient(40% 44% at 84% 96%, rgba(34, 197, 94, 0.10), transparent 62%);
+  filter: blur(8px);
+  animation: aurora 26s ease-in-out infinite alternate;
+}
+:root[data-theme='dark'] body::before {
+  background:
+    radial-gradient(40% 38% at 8% 4%, rgba(91, 141, 239, 0.22), transparent 60%),
+    radial-gradient(36% 40% at 94% 0%, rgba(139, 92, 246, 0.18), transparent 58%),
+    radial-gradient(42% 46% at 86% 98%, rgba(34, 197, 94, 0.12), transparent 60%);
+}
+@keyframes aurora {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(1.5%, -1.5%, 0) scale(1.06); }
+  to { transform: translate3d(-1%, 1%, 0) scale(1.03); }
 }
 
 button { font-family: inherit; cursor: pointer; }

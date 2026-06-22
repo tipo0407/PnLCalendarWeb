@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 
@@ -66,8 +67,8 @@ export default function Heatmap({ dailyMap, year, onSelectMonth }: Props) {
         <span className="hm-year">{year}</span>
         <span className="hm-eyebrow">ACTIVITY</span>
         <div className="hm-nav">
-          <button className="edge-nav sm" onClick={() => onSelectMonth(year - 1, 0)} title="Previous year">‹</button>
-          <button className="edge-nav sm" onClick={() => onSelectMonth(year + 1, 0)} title="Next year">›</button>
+          <button className="edge-nav sm" onClick={() => onSelectMonth(year - 1, 0)} title="Previous year" aria-label="Previous year"><ChevronLeft size={15} /></button>
+          <button className="edge-nav sm" onClick={() => onSelectMonth(year + 1, 0)} title="Next year" aria-label="Next year"><ChevronRight size={15} /></button>
         </div>
       </div>
 

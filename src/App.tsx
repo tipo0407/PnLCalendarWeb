@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { CandlestickChart, Sun, Moon, UploadCloud } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
@@ -58,7 +59,7 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
-            <span className="brand-mark">📈</span>
+            <span className="brand-mark"><CandlestickChart size={20} strokeWidth={2.25} /></span>
             <div className="brand-text">
               <h1>PnL Calendar</h1>
               <span className="brand-sub">Trading performance journal</span>
@@ -95,7 +96,9 @@ export default function App() {
             aria-label="Toggle theme"
           >
             <span className="tt-track">
-              <span className="tt-thumb">{theme === 'dark' ? '🌙' : '☀️'}</span>
+              <span className="tt-thumb">
+                {theme === 'dark' ? <Moon size={13} /> : <Sun size={13} />}
+              </span>
             </span>
           </button>
         </div>
@@ -109,7 +112,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="empty-mark">📊</span>
+            <span className="empty-mark"><UploadCloud size={30} strokeWidth={1.75} /></span>
             <h2>No data yet</h2>
             <p>
               Upload your <code>Trading.xlsx</code>, or paste a Google Sheet link to load

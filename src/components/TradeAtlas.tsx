@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { X } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -76,7 +77,7 @@ export default function TradeAtlas({ trades, summary, onClose }: Props) {
           <h2>Trade Atlas</h2>
           <p className="atlas-sub">Performance, behavior, and trend review</p>
         </div>
-        <button className="atlas-close" onClick={onClose}>Close</button>
+        <button className="atlas-close" onClick={onClose}><X size={15} /> Close</button>
       </div>
 
       <div className="kpi-row">

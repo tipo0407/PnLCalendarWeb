@@ -1,4 +1,5 @@
 import { useMemo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
@@ -160,10 +161,10 @@ export default function CalendarView({
           </div>
           <div className="hero-actions">
             <button className="hero-btn" onClick={() => onNavigate({ year: today.getFullYear(), month: today.getMonth() })}>
-              Today
+              <CalendarDays size={15} /> Today
             </button>
             <button className="hero-btn ghost" onClick={onOpenAtlas}>
-              Trade Atlas →
+              <Sparkles size={15} /> Trade Atlas <ArrowRight size={15} />
             </button>
           </div>
         </div>
@@ -205,9 +206,9 @@ export default function CalendarView({
       {/* Calendar grid */}
       <div className="calendar-card">
         <div className="cal-nav">
-          <button className="edge-nav" onClick={() => go(-1)} title="Previous month">‹</button>
+          <button className="edge-nav" onClick={() => go(-1)} title="Previous month" aria-label="Previous month"><ChevronLeft size={18} /></button>
           <span className="cal-nav-title">{MONTH_NAMES[month]} {year}</span>
-          <button className="edge-nav" onClick={() => go(1)} title="Next month">›</button>
+          <button className="edge-nav" onClick={() => go(1)} title="Next month" aria-label="Next month"><ChevronRight size={18} /></button>
         </div>
 
         <div className="cal-grid">
@@ -258,7 +259,7 @@ export default function CalendarView({
                       </div>
                     ) : holiday ? (
                       <div className="cell-body">
-                        <span className="cell-holiday">🎌 {holiday}</span>
+                        <span className="cell-holiday"><CalendarDays size={11} /> {holiday}</span>
                       </div>
                     ) : null}
                   </div>

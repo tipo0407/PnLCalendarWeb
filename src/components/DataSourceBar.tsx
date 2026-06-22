@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link2, RefreshCw, Upload } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { parseWorkbook, fetchGoogleSheet } from '../lib/parseWorkbook';
 
@@ -48,7 +49,7 @@ export default function DataSourceBar({ onLoaded, storageKey }: Props) {
     <div className="data-source">
       <div className="ds-row">
         <div className="ds-input-wrap">
-          <span className="ds-input-icon">🔗</span>
+          <span className="ds-input-icon"><Link2 size={15} /></span>
           <input
             className="ds-input"
             type="text"
@@ -59,6 +60,7 @@ export default function DataSourceBar({ onLoaded, storageKey }: Props) {
           />
         </div>
         <button className="btn btn-sync" onClick={handleSync} disabled={busy}>
+          <RefreshCw size={15} className={busy ? 'spin' : ''} />
           {busy ? 'Loading…' : 'Sync'}
         </button>
         <button
@@ -66,6 +68,7 @@ export default function DataSourceBar({ onLoaded, storageKey }: Props) {
           onClick={() => fileRef.current?.click()}
           disabled={busy}
         >
+          <Upload size={15} />
           Upload .xlsx
         </button>
         <input

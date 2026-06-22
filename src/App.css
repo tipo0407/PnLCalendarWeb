@@ -178,23 +178,38 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
-  background: linear-gradient(120deg, #4a73e6 0%, #5e7ff0 55%, #6f8ff5 100%);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(122, 160, 255, 0.55) 0%, transparent 52%),
+    radial-gradient(130% 150% at 100% 6%, rgba(138, 110, 246, 0.5) 0%, transparent 50%),
+    linear-gradient(120deg, #4068dd 0%, #5878ee 52%, #6a86f4 100%);
   border-radius: var(--radius);
   padding: 26px 28px;
   color: #fff;
-  box-shadow: 0 16px 40px rgba(74, 115, 230, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 18px 44px -10px rgba(64, 104, 221, 0.5);
   position: relative;
   overflow: hidden;
+}
+/* Fine grain texture for a premium, non-flat gradient. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
 }
 .hero::after {
   content: '';
   position: absolute;
   top: -40%;
   right: -10%;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
+  width: 360px;
+  height: 360px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 70%);
 }
+.hero > * { position: relative; z-index: 1; }
 .hero-eyebrow { font-size: 11px; letter-spacing: 1.6px; font-weight: 600; opacity: 0.78; }
 .hero-month { font-size: 34px; margin: 6px 0 16px; font-weight: 700; letter-spacing: -0.5px; }
 .hero-year { font-weight: 400; opacity: 0.8; }
@@ -500,6 +515,7 @@
 .trade-table th, .trade-table td { padding: 9px 12px; text-align: left; white-space: nowrap; }
 .trade-table thead th { background: var(--card-soft); color: var(--text-2); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; position: sticky; top: 0; }
 .trade-table tbody tr { border-top: 1px solid var(--border); }
+.trade-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--card-soft) 60%, transparent); }
 .trade-table tbody tr:hover { background: var(--card-soft); }
 .note-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
 .side-pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; background: var(--bg-2); color: var(--text-2); }
@@ -620,6 +636,36 @@
 .atlas-hero, .kpi-card, .cal-cell, .modal, .insight, .lens-equity, .panel-body {
   transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
+
+/* Refined surface material: hairline top highlight + layered shadow. */
+.heatmap-card, .calendar-card, .sidebar, .atlas-panel, .atlas-hero,
+.kpi-card, .empty-card, .day-chart {
+  box-shadow: inset 0 1px 0 var(--hairline), var(--shadow-md);
+}
+
+/* Micro-interactions */
+.kpi-card, .insight, .month-row, .recent-item {
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease, background 0.14s ease;
+}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 var(--hairline), var(--shadow-lg); }
+.insight:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.btn, .hero-btn, .atlas-close, .edge-nav, .dc-iv, .tab-btn, .modal-close, .theme-toggle {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease, color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.btn:active, .hero-btn:active, .atlas-close:active, .edge-nav:active, .modal-close:active { transform: scale(0.96); }
+.hero-btn:hover { box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.25); }
+.tt-track:hover { border-color: var(--accent); }
+
+/* Icon alignment & affordances */
+.btn, .hero-btn, .atlas-close, .tab-btn { display: inline-flex; align-items: center; gap: 7px; }
+.brand-mark { color: #fff; }
+.ds-input-icon { display: inline-flex; align-items: center; color: var(--muted); }
+.empty-mark { color: var(--accent); display: inline-grid; place-items: center; }
+.cell-holiday { display: inline-flex; align-items: center; gap: 4px; }
+.badge-holiday { display: inline-flex; align-items: center; gap: 5px; }
+.modal-close, .edge-nav { display: inline-grid; place-items: center; }
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 :root[data-theme='dark'] .cal-cell.win {
   background: rgba(34, 197, 94, calc(var(--tone-a, 0.18) + 0.06));

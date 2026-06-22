@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { X, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoney, formatMoneySigned, formatSeconds, longDate } from '../lib/metrics';
 import DayChart from './DayChart';
@@ -55,9 +56,9 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
         <div className="modal-head">
           <div className="modal-title">
             <h2 id={titleId}>{longDate(daily.date)}</h2>
-            {holidayName && <span className="badge-holiday">🎌 {holidayName}</span>}
+            {holidayName && <span className="badge-holiday"><CalendarDays size={12} /> {holidayName}</span>}
           </div>
-          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
 
         <div className="modal-stats">
