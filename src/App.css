@@ -506,6 +506,52 @@
 .side-pill.long { background: var(--pos-soft); color: var(--pos); }
 .side-pill.short { background: var(--neg-soft); color: var(--neg); }
 
+/* ===== Day intraday chart ===== */
+.day-chart {
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px 8px;
+  background: var(--card-soft);
+}
+.dc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.dc-title { display: flex; align-items: center; gap: 14px; }
+.dc-symbol { font-size: 14px; font-weight: 800; letter-spacing: 0.2px; }
+.dc-legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.dc-legend .lg { width: 14px; height: 3px; border-radius: 2px; display: inline-block; margin-left: 4px; }
+.lg-ema { background: #f59e0b; }
+.lg-vwap { background: #8b5cf6; }
+.dc-intervals { display: flex; gap: 3px; background: var(--bg-2); padding: 3px; border-radius: 9px; }
+.dc-iv {
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 7px;
+  transition: all 0.15s;
+}
+.dc-iv:hover { color: var(--text); }
+.dc-iv.active { background: var(--card); color: var(--accent); box-shadow: var(--shadow-sm); }
+.dc-canvas-wrap { position: relative; min-height: 320px; }
+.dc-canvas { width: 100%; height: 320px; }
+.dc-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+.dc-overlay-sub { font-size: 11px; color: var(--muted); }
+
 /* ===== Trade Atlas ===== */
 .atlas { padding: 22px 24px; max-width: var(--maxw); width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 .atlas-hero {

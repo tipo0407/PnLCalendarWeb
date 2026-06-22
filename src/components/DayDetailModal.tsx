@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { DailyPnl } from '../types';
 import { formatMoney, formatMoneySigned, formatSeconds, longDate } from '../lib/metrics';
+import DayChart from './DayChart';
 
 interface Props {
   daily: DailyPnl;
@@ -75,6 +76,8 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
             </span>
           </div>
         </div>
+
+        <DayChart date={daily.date} trades={daily.trades} />
 
         <div className="trade-table-wrap">
           <table className="trade-table">
