@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
-import { formatMoney, formatMoneySigned, formatSeconds, longDate } from '../lib/metrics';
+import { formatMoneySigned, longDate } from '../lib/metrics';
 import DayChart from './DayChart';
 
 interface Props {
@@ -78,49 +78,8 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
           </div>
         </div>
 
-        <DayChart date={daily.date} trades={daily.trades} />
-
-        <div className="trade-table-wrap">
-          <table className="trade-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Side</th>
-                <th>Symbol</th>
-                <th>Entry</th>
-                <th>Exit</th>
-                <th>Duration</th>
-                <th>Entry $</th>
-                <th>Exit $</th>
-                <th>Size</th>
-                <th>P&amp;L</th>
-                <th>Setup</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {daily.trades.map((t) => (
-                <tr key={t.rowNumber}>
-                  <td>{t.tradeNumber}</td>
-                  <td>
-                    <span className={`side-pill ${/long/i.test(t.direction) ? 'long' : /short/i.test(t.direction) ? 'short' : ''}`}>
-                      {t.direction || '—'}
-                    </span>
-                  </td>
-                  <td>{t.symbol || '—'}</td>
-                  <td>{formatSeconds(t.entryTime)}</td>
-                  <td>{formatSeconds(t.exitTime)}</td>
-                  <td>{formatSeconds(t.duration)}</td>
-                  <td>{t.entryPrice || '—'}</td>
-                  <td>{t.exitPrice || '—'}</td>
-                  <td>{t.size || '—'}</td>
-                  <td className={t.profitLoss >= 0 ? 'pos' : 'neg'}>{formatMoney(t.profitLoss)}</td>
-                  <td>{t.setup || '—'}</td>
-                  <td className="note-cell" title={t.note}>{t.note || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="day-detail-body">
+          <DayChart date={daily.date} trades={daily.trades} />
         </div>
       </motion.div>
     </motion.div>

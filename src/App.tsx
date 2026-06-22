@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
+import { parseWorkbook } from './lib/parseWorkbook';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
 import DataSourceBar from './components/DataSourceBar';
 import CalendarView from './components/CalendarView';
@@ -33,6 +34,29 @@ export default function App() {
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
+  }, []);
+
+  // Auto-load the live trades workbook served at /data/trades.xlsx (no manual upload needed).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch('/data/trades.xlsx', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const buf = await resp.arrayBuffer();
+        const loaded = parseWorkbook(buf);
+        if (cancelled || loaded.length === 0) return;
+        setTrades(loaded);
+        const last = loaded[loaded.length - 1].date;
+        const [yy, mm] = last.split('-').map(Number);
+        setViewMonth({ year: yy, month: mm - 1 });
+      } catch {
+        // Fall back to the empty state; manual upload/Sync still available.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -135,6 +159,12 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
+              <Sidebar
+                trades={trades}
+                summary={summary}
+                viewMonth={viewMonth}
+                onJumpMonth={(year, month) => setViewMonth({ year, month })}
+              />
               <section className="main-col">
                 <CalendarView
                   dailyMap={dailyMap}
@@ -153,11 +183,6 @@ export default function App() {
                   }
                 />
               </section>
-              <Sidebar
-                trades={trades}
-                summary={summary}
-                onJumpMonth={(year, month) => setViewMonth({ year, month })}
-              />
             </motion.main>
           ) : (
             <motion.div

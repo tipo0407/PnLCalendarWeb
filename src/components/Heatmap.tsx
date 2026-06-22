@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 
@@ -18,8 +17,8 @@ function iso(d: Date): string {
 function color(pnl: number, max: number): string {
   if (max === 0) return 'var(--card-soft)';
   const intensity = Math.min(1, Math.abs(pnl) / max);
-  const a = 0.28 + intensity * 0.62;
-  return pnl >= 0 ? `rgba(22,163,74,${a})` : `rgba(225,72,59,${a})`;
+  const a = 0.12 + Math.pow(intensity, 1.35) * 0.74;
+  return pnl >= 0 ? `rgba(var(--pos-rgb), ${a})` : `rgba(var(--neg-rgb), ${a})`;
 }
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -63,15 +62,6 @@ export default function Heatmap({ dailyMap, year, onSelectMonth }: Props) {
 
   return (
     <div className="heatmap-card">
-      <div className="heatmap-head">
-        <span className="hm-year">{year}</span>
-        <span className="hm-eyebrow">ACTIVITY</span>
-        <div className="hm-nav">
-          <button className="edge-nav sm" onClick={() => onSelectMonth(year - 1, 0)} title="Previous year" aria-label="Previous year"><ChevronLeft size={15} /></button>
-          <button className="edge-nav sm" onClick={() => onSelectMonth(year + 1, 0)} title="Next year" aria-label="Next year"><ChevronRight size={15} /></button>
-        </div>
-      </div>
-
       <div className="heatmap-body">
         <div className="hm-rowlabels">
           {ROW_LABELS.map((l) => (

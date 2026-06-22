@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import {
   monthlyBreakdown,
-  dailyEquityCurve,
   groupByDay,
   formatMoney,
   formatMoneySigned,
@@ -15,6 +14,7 @@ import MoneyCountUp from './CountUp';
 interface Props {
   trades: TradeRecord[];
   summary: Summary;
+  viewMonth: { year: number; month: number };
   onJumpMonth: (year: number, month: number) => void;
 }
 
@@ -48,9 +48,8 @@ function iso(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
+export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Props) {
   const months = useMemo(() => monthlyBreakdown(trades), [trades]);
-  const equity = useMemo(() => dailyEquityCurve(trades), [trades]);
 
   const bestWeek = useMemo(() => {
     const map = new Map<string, { sample: string; pnl: number }>();
@@ -65,17 +64,33 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
     return best;
   }, [trades]);
 
-  const year = summary.lastDate ? Number(summary.lastDate.slice(0, 4)) : new Date().getFullYear();
   const maxMonthAbs = Math.max(1, ...months.map((m) => Math.abs(m.pnl)));
   const winRate = summary.winRateDays;
   const positive = summary.totalPnl >= 0;
-  const lineColor = positive ? '#16a34a' : '#e1483b';
 
   return (
     <aside className="sidebar">
       <div className="lens-head">
-        <span className="lens-title">PORTFOLIO LENS</span>
-        <span className="lens-year">{year}</span>
+        <span className="lens-title">PORTFOLIO SUMMARY</span>
+        <div className="lens-year-nav">
+          <button
+            className="edge-nav sm"
+            onClick={() => onJumpMonth(viewMonth.year - 1, viewMonth.month)}
+            title="Previous year"
+            aria-label="Previous year"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="lens-year">{viewMonth.year}</span>
+          <button
+            className="edge-nav sm"
+            onClick={() => onJumpMonth(viewMonth.year + 1, viewMonth.month)}
+            title="Next year"
+            aria-label="Next year"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </div>
 
       <div className={`total-card ${positive ? 'pos' : 'neg'}`}>
@@ -89,7 +104,6 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
       </div>
 
       <div className="lens-block">
-        <span className="lens-section">MONTHLY BREAKDOWN</span>
         <div className="month-bars">
           {months.map((m) => {
             const ratio = Math.abs(m.pnl) / maxMonthAbs;
@@ -117,7 +131,6 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
       </div>
 
       <div className="lens-block">
-        <span className="lens-section">STATISTICS</span>
         <div className="stat-pair">
           <div className="stat-card win">
             <span className="sc-label">Win Days</span>
@@ -152,7 +165,6 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
       </div>
 
       <div className="lens-block">
-        <span className="lens-section">INSIGHTS</span>
         <div className="insight-grid">
           <Insight label="Avg Win" value={formatMoneySigned(summary.avgWin)} cls="pos" />
           <Insight label="Avg Loss" value={formatMoneySigned(-summary.avgLoss)} cls="neg" />
@@ -169,33 +181,6 @@ export default function Sidebar({ trades, summary, onJumpMonth }: Props) {
           />
           <Insight label="Expectancy" value={formatMoneySigned(summary.expectancy)} cls={summary.expectancy >= 0 ? 'pos' : 'neg'} />
           <Insight label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
-        </div>
-      </div>
-
-      <div className="lens-block">
-        <span className="lens-section">EQUITY CURVE</span>
-        <div className="lens-equity">
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={equity} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
-              <defs>
-                <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={lineColor} stopOpacity={0.28} />
-                  <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" hide />
-              <YAxis hide domain={['auto', 'auto']} />
-              <Tooltip
-                contentStyle={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)', color: 'var(--text)' }}
-                labelStyle={{ color: 'var(--muted)' }}
-                itemStyle={{ color: 'var(--text)' }}
-                labelFormatter={(l) => shortDate(String(l))}
-                formatter={(v) => [formatMoneySigned(Number(v)), 'Cumulative']}
-              />
-              <ReferenceLine y={0} stroke="var(--border-strong)" strokeDasharray="3 3" />
-              <Area type="monotone" dataKey="cumulative" stroke={lineColor} strokeWidth={2} fill="url(#eqGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
         </div>
       </div>
     </aside>

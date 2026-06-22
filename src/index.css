@@ -14,16 +14,19 @@
   --text-2: #5b6678;
   --muted: #647085;
 
-  --pos: #15a34a;
-  --pos-soft: #e7f6ec;
-  --pos-bg: #d9f2e1;
-  --neg: #e1483b;
-  --neg-soft: #fdecea;
-  --neg-bg: #fbdcd8;
+  --pos: #12a150;
+  --pos-rgb: 18, 161, 80;
+  --pos-soft: #e6f5ec;
+  --pos-bg: #d6f0df;
+  --neg: #e0473d;
+  --neg-rgb: 224, 71, 61;
+  --neg-soft: #fcebe9;
+  --neg-bg: #fbdad6;
 
-  --accent: #3b6fe0;
+  --accent: #3f6fd8;
+  --accent-rgb: 63, 111, 216;
   --accent-2: #5b8def;
-  --accent-soft: #eaf1fe;
+  --accent-soft: #ebf1fd;
 
   --gold-bg: #fdf3d8;
   --gold-fg: #a87f1e;
@@ -57,16 +60,19 @@
   --text-2: #9caac1;
   --muted: #6b788f;
 
-  --pos: #3ad17f;
-  --pos-soft: rgba(34, 197, 94, 0.16);
-  --pos-bg: rgba(34, 197, 94, 0.26);
-  --neg: #ff6f62;
-  --neg-soft: rgba(239, 90, 77, 0.16);
-  --neg-bg: rgba(239, 90, 77, 0.26);
+  --pos: #34d399;
+  --pos-rgb: 52, 211, 153;
+  --pos-soft: rgba(52, 211, 153, 0.15);
+  --pos-bg: rgba(52, 211, 153, 0.24);
+  --neg: #f4685c;
+  --neg-rgb: 244, 104, 92;
+  --neg-soft: rgba(244, 104, 92, 0.15);
+  --neg-bg: rgba(244, 104, 92, 0.24);
 
-  --accent: #5b8def;
-  --accent-2: #6f9bf5;
-  --accent-soft: rgba(91, 141, 239, 0.18);
+  --accent: #6090f2;
+  --accent-rgb: 96, 144, 242;
+  --accent-2: #79a2f7;
+  --accent-soft: rgba(96, 144, 242, 0.18);
 
   --gold-bg: rgba(245, 196, 81, 0.16);
   --gold-fg: #f0cd6b;
@@ -91,9 +97,13 @@ html, body, #root {
 body {
   background: var(--bg);
   color: var(--text);
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
+
+h1, h2, h3, h4 { font-weight: 600; }
 
 /* Ambient aurora background — subtle, slowly drifting gradient blobs. */
 body::before {

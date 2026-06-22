@@ -5,8 +5,6 @@ import {
   CrosshairMode,
   type IChartApi,
   type UTCTimestamp,
-  type SeriesMarker,
-  type Time,
 } from 'lightweight-charts';
 import type { TradeRecord } from '../types';
 import {
@@ -23,6 +21,12 @@ interface Props {
   trades: TradeRecord[];
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string)
+  );
+}
+
 type Interval = '1m' | '5m' | '15m';
 const INTERVALS: Interval[] = ['1m', '5m', '15m'];
 
@@ -36,6 +40,10 @@ export default function DayChart({ date, trades }: Props) {
   const [interval, setInterval] = useState<Interval>('5m');
   const [status, setStatus] = useState<Status>({ phase: 'loading' });
   const containerRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
+  const pillLayerRef = useRef<HTMLDivElement>(null);
+  const arrowLayerRef = useRef<SVGSVGElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,10 +71,13 @@ export default function DayChart({ date, trades }: Props) {
     const dark = document.documentElement.dataset.theme === 'dark';
     const text = dark ? '#9caac1' : '#5b6678';
     const grid = dark ? 'rgba(140,152,172,0.12)' : 'rgba(140,152,172,0.18)';
+    const cs = getComputedStyle(document.documentElement);
+    const cssRgb = (name: string, fallback: string) => `rgb(${(cs.getPropertyValue(name).trim() || fallback)})`;
+    const pos = cssRgb('--pos-rgb', '18,161,80');
+    const neg = cssRgb('--neg-rgb', '224,71,61');
 
     const chart: IChartApi = createChart(el, {
-      width: el.clientWidth,
-      height: 320,
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: text,
@@ -74,16 +85,16 @@ export default function DayChart({ date, trades }: Props) {
       },
       grid: { vertLines: { color: grid }, horzLines: { color: grid } },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: grid },
-      timeScale: { borderColor: grid, timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: grid, scaleMargins: { top: 0.12, bottom: 0.12 } },
+      timeScale: { borderColor: grid, timeVisible: true, secondsVisible: false, rightOffset: 4 },
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#16a34a',
-      downColor: '#e1483b',
+      upColor: pos,
+      downColor: neg,
       borderVisible: false,
-      wickUpColor: '#16a34a',
-      wickDownColor: '#e1483b',
+      wickUpColor: pos,
+      wickDownColor: neg,
     });
     candleSeries.setData(
       result.candles.map((c) => ({
@@ -101,41 +112,144 @@ export default function DayChart({ date, trades }: Props) {
     const vwapSeries = chart.addLineSeries({ color: '#8b5cf6', lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
     vwapSeries.setData(vwap(result.candles).map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
 
-    // Entry/exit markers from the day's trades.
+    // Trades: directional entry signal arrows (up = long, down = short) colored by win/loss.
     const [y, m, d] = date.split('-').map(Number);
     const dayStart = Date.UTC(y, m - 1, d) / 1000;
-    const markers: SeriesMarker<Time>[] = [];
-    for (const t of trades) {
-      const isLong = /long/i.test(t.direction);
-      if (t.entryTime != null) {
-        markers.push({
-          time: (dayStart + t.entryTime) as UTCTimestamp,
-          position: 'belowBar',
-          color: '#3b6fe0',
-          shape: isLong ? 'arrowUp' : 'arrowDown',
-          text: `In #${t.tradeNumber}`,
-        });
+    const candleTimes = result.candles.map((c) => c.time);
+    // Snap a trade timestamp to the nearest candle so markers sit on real bars.
+    const snap = (tSec: number): UTCTimestamp => {
+      let best = candleTimes[0];
+      let bestD = Infinity;
+      for (const ct of candleTimes) {
+        const dd = Math.abs(ct - tSec);
+        if (dd < bestD) { bestD = dd; best = ct; }
       }
-      if (t.exitTime != null) {
-        markers.push({
-          time: (dayStart + t.exitTime) as UTCTimestamp,
-          position: 'aboveBar',
-          color: t.profitLoss >= 0 ? '#16a34a' : '#e1483b',
-          shape: 'circle',
-          text: formatMoneySigned(t.profitLoss),
-        });
+      return best as UTCTimestamp;
+    };
+    const candleMap = new Map(result.candles.map((c) => [c.time, c]));
+
+    // Connector entry → exit (green = profit, red = loss) with a white/black halo
+    // Connectors and arrows are drawn in the SVG overlay so that same-candle
+    // trades (entry & exit on one bar) still show as a vertical line.
+    const halo = dark ? '#000000' : '#ffffff';
+
+    const pillLayer = pillLayerRef.current;
+    const arrowLayer = arrowLayerRef.current;
+    const tip = tipRef.current;
+    const showTip = (t: TradeRecord, x: number, y: number) => {
+      if (!tip) return;
+      const dir = /long/i.test(t.direction) ? 'Long' : /short/i.test(t.direction) ? 'Short' : t.direction;
+      const win = t.profitLoss >= 0;
+      const head = [`#${t.tradeNumber}`, dir, t.symbol].filter(Boolean).join(' · ');
+      const noteText = t.reasonEmotion || t.note;
+      tip.innerHTML =
+        `<div class="tt-head">${escapeHtml(head)}</div>` +
+        `<div class="tt-pnl ${win ? 'pos' : 'neg'}">${formatMoneySigned(t.profitLoss)}</div>` +
+        (t.entryPrice && t.exitPrice
+          ? `<div class="tt-sub">Entry ${t.entryPrice} → Exit ${t.exitPrice}</div>`
+          : '') +
+        (t.setup ? `<div class="tt-setup">${escapeHtml(t.setup)}</div>` : '') +
+        (noteText ? `<div class="tt-note">${escapeHtml(noteText)}</div>` : '');
+      tip.style.left = `${x}px`;
+      tip.style.top = `${y}px`;
+      tip.classList.add('show');
+    };
+    const hideTip = () => tip?.classList.remove('show');
+
+    // Small direction arrow whose tip points exactly at the given price coordinate.
+    // Long → green up arrow, short → red down arrow (same scheme at entry and exit).
+    const arrowSvg = (x: number, y: number, up: boolean, color: string): string => {
+      const s = 6;
+      const hgt = 13;
+      const pts = up
+        ? `${x},${y} ${x - s},${y + hgt} ${x + s},${y + hgt}`
+        : `${x},${y} ${x - s},${y - hgt} ${x + s},${y - hgt}`;
+      return `<polygon points="${pts}" fill="${color}" stroke="${halo}" stroke-width="1.25" stroke-linejoin="round" />`;
+    };
+
+    const renderOverlay = () => {
+      const tscale = chart.timeScale();
+      // Connectors (halo + colored core) and direction arrows, anchored at exact prices.
+      if (arrowLayer) {
+        const w = el.clientWidth;
+        const h = el.clientHeight;
+        let halos = '';
+        let cores = '';
+        let arrows = '';
+        for (const t of trades) {
+          const isLong = !/short/i.test(t.direction);
+          const win = t.profitLoss >= 0;
+          const xEntry = t.entryTime != null ? tscale.timeToCoordinate(snap(dayStart + t.entryTime)) : null;
+          const yEntry = t.entryPrice ? candleSeries.priceToCoordinate(t.entryPrice) : null;
+          const xExit = t.exitTime != null ? tscale.timeToCoordinate(snap(dayStart + t.exitTime)) : null;
+          const yExit = t.exitPrice ? candleSeries.priceToCoordinate(t.exitPrice) : null;
+          // Connector (works even when entry & exit share a candle → vertical line).
+          if (xEntry != null && yEntry != null && xExit != null && yExit != null) {
+            const line = `x1="${xEntry}" y1="${yEntry}" x2="${xExit}" y2="${yExit}"`;
+            halos += `<line ${line} stroke="${halo}" stroke-width="4.5" stroke-linecap="round" />`;
+            cores += `<line ${line} stroke="${win ? pos : neg}" stroke-width="2" stroke-linecap="round" />`;
+          }
+          // Entry arrow = open (long ↑, short ↓); exit arrow = close (the opposite).
+          if (xEntry != null && yEntry != null) arrows += arrowSvg(xEntry, yEntry, isLong, isLong ? pos : neg);
+          if (xExit != null && yExit != null) arrows += arrowSvg(xExit, yExit, !isLong, !isLong ? pos : neg);
+        }
+        arrowLayer.setAttribute('width', `${w}`);
+        arrowLayer.setAttribute('height', `${h}`);
+        arrowLayer.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        arrowLayer.innerHTML = halos + cores + arrows;
       }
-    }
-    markers.sort((a, b) => (a.time as number) - (b.time as number));
-    candleSeries.setMarkers(markers);
+      // P&L pills, anchored just outside each exit candle.
+      if (pillLayer) {
+        pillLayer.innerHTML = '';
+        for (const t of trades) {
+          if (t.exitTime == null || !t.exitPrice) continue;
+          const win = t.profitLoss >= 0;
+          const exitTime = snap(dayStart + t.exitTime);
+          const x = tscale.timeToCoordinate(exitTime);
+          const bar = candleMap.get(exitTime);
+          const anchorPrice = win ? (bar ? bar.high : t.exitPrice) : (bar ? bar.low : t.exitPrice);
+          const yCoord = candleSeries.priceToCoordinate(anchorPrice);
+          if (x == null || yCoord == null) continue;
+          const pill = document.createElement('div');
+          pill.className = `dc-pnl-pill ${win ? 'pos above' : 'neg below'}`;
+          pill.textContent = formatMoneySigned(t.profitLoss);
+          pill.style.left = `${x}px`;
+          pill.style.top = `${yCoord}px`;
+          pill.addEventListener('mouseenter', () => showTip(t, x, yCoord));
+          pill.addEventListener('mouseleave', hideTip);
+          pillLayer.appendChild(pill);
+        }
+      }
+    };
+    chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlay);
+    const overlayRo = new ResizeObserver(() => renderOverlay());
+    overlayRo.observe(el);
+
+    // Floating OHLC legend driven by the crosshair.
+    const legend = legendRef.current;
+    chart.subscribeCrosshairMove((param) => {
+      if (!legend) return;
+      const c = param.seriesData.get(candleSeries) as
+        | { open: number; high: number; low: number; close: number }
+        | undefined;
+      if (!param.time || !param.point || !c) {
+        legend.classList.remove('show');
+        return;
+      }
+      const up = c.close >= c.open;
+      legend.classList.add('show');
+      legend.innerHTML =
+        `<span>O <b>${c.open.toFixed(2)}</b></span>` +
+        `<span>H <b>${c.high.toFixed(2)}</b></span>` +
+        `<span>L <b>${c.low.toFixed(2)}</b></span>` +
+        `<span class="${up ? 'pos' : 'neg'}">C <b>${c.close.toFixed(2)}</b></span>`;
+    });
 
     chart.timeScale().fitContent();
-
-    const ro = new ResizeObserver(() => chart.applyOptions({ width: el.clientWidth }));
-    ro.observe(el);
+    requestAnimationFrame(renderOverlay);
 
     return () => {
-      ro.disconnect();
+      overlayRo.disconnect();
       chart.remove();
     };
   }, [result, date, trades]);
@@ -165,6 +279,10 @@ export default function DayChart({ date, trades }: Props) {
 
       <div className="dc-canvas-wrap">
         <div ref={containerRef} className="dc-canvas" />
+        <svg ref={arrowLayerRef} className="dc-arrow-layer" />
+        <div ref={pillLayerRef} className="dc-pill-layer" />
+        <div ref={tipRef} className="dc-trade-tip" />
+        <div ref={legendRef} className="dc-legend-float" />
         {status.phase === 'loading' && <div className="dc-overlay">Loading market data…</div>}
         {status.phase === 'error' && <div className="dc-overlay">⚠ {status.message}</div>}
         {status.phase === 'done' && status.result.candles.length === 0 && (

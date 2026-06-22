@@ -219,6 +219,70 @@ export function edgeByHour(trades: TradeRecord[]): GroupEdge[] {
   ).sort((a, b) => a.key.localeCompare(b.key));
 }
 
+/** Distinct trade symbols (uppercased), most-frequent first. */
+export function distinctSymbols(trades: TradeRecord[]): string[] {
+  const counts = new Map<string, number>();
+  for (const t of trades) {
+    const s = (t.symbol ?? '').trim().toUpperCase();
+    if (!s) continue;
+    counts.set(s, (counts.get(s) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s);
+}
+
+export interface HourEdge {
+  hour: number;
+  key: string; // 12-hour label, e.g. "9a", "12p"
+  avg: number; // average P&L per trade in this hour
+  pnl: number; // total P&L
+  count: number;
+}
+
+function hourLabel12(h: number): string {
+  const period = h < 12 ? 'a' : 'p';
+  const hr = h % 12 === 0 ? 12 : h % 12;
+  return `${hr}${period}`;
+}
+
+/** Average P&L per trade by entry hour, optionally filtered to one symbol ('All' = no filter). */
+export function hourEdgeBySymbol(trades: TradeRecord[], symbol: string): HourEdge[] {
+  const map = new Map<number, { pnl: number; count: number }>();
+  for (const t of trades) {
+    if (t.entryTime == null) continue;
+    if (symbol !== 'All' && (t.symbol ?? '').trim().toUpperCase() !== symbol) continue;
+    const h = Math.floor(t.entryTime / 3600);
+    const e = map.get(h) ?? { pnl: 0, count: 0 };
+    e.pnl += t.profitLoss;
+    e.count += 1;
+    map.set(h, e);
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([hour, v]) => ({
+      hour,
+      key: hourLabel12(hour),
+      avg: v.count ? v.pnl / v.count : 0,
+      pnl: v.pnl,
+      count: v.count,
+    }));
+}
+
+/** Rolling win-rate (%) over the last `window` trades. Starts at the first
+ *  fully-populated window so the curve doesn't ramp up from 0. */
+export function movingWinRate(trades: TradeRecord[], window = 20): { i: number; rate: number }[] {
+  const out: { i: number; rate: number }[] = [];
+  const buf: number[] = [];
+  let winsInWindow = 0;
+  const startAt = trades.length >= window ? window - 1 : 0;
+  trades.forEach((t, idx) => {
+    buf.push(t.profitLoss > 0 ? 1 : 0);
+    winsInWindow += buf[buf.length - 1];
+    if (buf.length > window) winsInWindow -= buf.shift() ?? 0;
+    if (idx >= startAt) out.push({ i: idx + 1, rate: (winsInWindow / buf.length) * 100 });
+  });
+  return out;
+}
+
 /** P&L distribution histogram buckets. */
 export function pnlHistogram(trades: TradeRecord[], bucketCount = 11): { label: string; count: number }[] {
   if (trades.length === 0) return [];
@@ -251,6 +315,14 @@ export function formatMoney(n: number): string {
 /** Signed money with an explicit leading + for non-negative values. */
 export function formatMoneySigned(n: number): string {
   return (n >= 0 ? '+' : '') + formatMoney(n);
+}
+
+/** Compact money for axis ticks, e.g. 1234 -> "$1.2k", -1234 -> "-$1.2k". */
+export function compactMoney(v: number): string {
+  const a = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  if (a >= 1000) return `${sign}$${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k`;
+  return `${sign}$${a.toFixed(0)}`;
 }
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

@@ -1,5 +1,5 @@
 export interface Candle {
-  time: number; // unix seconds, shifted to exchange-local for display
+  time: number; // unix seconds, shifted to Pacific (Seattle) time for display
   open: number;
   high: number;
   low: number;
@@ -15,6 +15,39 @@ export interface IntradayResult {
 }
 
 const FUTURES_ROOTS = new Set(['MES', 'MGC', 'MNQ', 'M2K', 'MYM', 'ES', 'NQ', 'GC', 'YM', 'RTY', 'CL']);
+
+// Trades are recorded in Seattle (Pacific) wall-clock time, so the chart axis
+// and the entry/exit markers must both be expressed in this timezone.
+export const DISPLAY_TZ = 'America/Los_Angeles';
+
+/**
+ * Offset (in seconds) of a timezone relative to UTC at a given UTC instant.
+ * Positive east of UTC, negative west. Handles DST automatically.
+ */
+export function tzOffsetSeconds(tz: string, utcSeconds: number): number {
+  const date = new Date(utcSeconds * 1000);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) map[p.type] = p.value;
+  const asUTC = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour),
+    Number(map.minute),
+    Number(map.second)
+  );
+  return Math.round((asUTC - date.getTime()) / 1000);
+}
 
 // Regular Trading Hours (US cash session), in exchange-local seconds-of-day: 09:30–16:00.
 const RTH_START = 9 * 3600 + 30 * 60;
@@ -68,8 +101,9 @@ interface YahooChartResponse {
 
 /**
  * Fetch intraday candles for a given ISO date and symbol from Yahoo Finance
- * (through the `/yahoo` dev proxy). Candle times are shifted by the exchange's
- * GMT offset so the chart axis reads in exchange-local time.
+ * (through the `/yahoo` dev proxy). Bars are selected using the exchange's
+ * regular trading hours, but candle times are emitted in Pacific (Seattle)
+ * time so the chart axis matches trades recorded in Seattle wall-clock time.
  */
 export async function fetchIntraday(
   isoDate: string,
@@ -108,14 +142,17 @@ export async function fetchIntraday(
     const l = q.low?.[i];
     const c = q.close?.[i];
     if (o == null || h == null || l == null || c == null) continue;
-    const localTime = ts[i] + gmtOffset;
+    // Select bars using the exchange-local session (date + Regular Trading Hours).
+    const exLocal = ts[i] + gmtOffset;
     // Keep only bars whose exchange-local calendar date matches the trade date…
-    if (Math.floor(localTime / 86400) !== Math.floor(dayStart / 86400)) continue;
-    // …and that fall within Regular Trading Hours (09:30–16:00 local).
-    const secondsOfDay = localTime - Math.floor(localTime / 86400) * 86400;
+    if (Math.floor(exLocal / 86400) !== Math.floor(dayStart / 86400)) continue;
+    // …and that fall within Regular Trading Hours (09:30–16:00 exchange-local).
+    const secondsOfDay = exLocal - Math.floor(exLocal / 86400) * 86400;
     if (secondsOfDay < RTH_START || secondsOfDay >= RTH_END) continue;
+    // Emit the bar in Pacific (Seattle) time so the axis and trade markers align.
+    const displayTime = ts[i] + tzOffsetSeconds(DISPLAY_TZ, ts[i]);
     candles.push({
-      time: localTime,
+      time: displayTime,
       open: o,
       high: h,
       low: l,
@@ -127,8 +164,8 @@ export async function fetchIntraday(
   return {
     candles,
     symbol: result.meta.symbol,
-    timezone: result.meta.exchangeTimezoneName ?? '',
-    gmtOffset,
+    timezone: DISPLAY_TZ,
+    gmtOffset: tzOffsetSeconds(DISPLAY_TZ, dayStart),
   };
 }
 

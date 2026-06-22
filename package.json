@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "node server/serve.cjs",
+    "autostart:install": "powershell -ExecutionPolicy Bypass -File server/install-autostart.ps1",
+    "autostart:uninstall": "powershell -ExecutionPolicy Bypass -File server/install-autostart.ps1 -Uninstall"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

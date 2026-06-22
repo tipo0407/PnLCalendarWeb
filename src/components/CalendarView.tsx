@@ -43,6 +43,7 @@ export default function CalendarView({
     let total = 0;
     let trades = 0;
     let winDays = 0;
+    let lossDays = 0;
     let activeDays = 0;
     let best: DailyPnl | null = null;
     let worst: DailyPnl | null = null;
@@ -56,6 +57,7 @@ export default function CalendarView({
       trades += day.tradeCount;
       activeDays++;
       if (day.pnl > 0) winDays++;
+      else if (day.pnl < 0) lossDays++;
       if (!best || day.pnl > best.pnl) best = day;
       if (!worst || day.pnl < worst.pnl) worst = day;
     }
@@ -103,6 +105,9 @@ export default function CalendarView({
       stats: {
         total,
         trades,
+        days: activeDays,
+        winDays,
+        lossDays,
         avgDay: activeDays ? total / activeDays : 0,
         winRate: activeDays ? winDays / activeDays : 0,
         streak,
@@ -136,70 +141,50 @@ export default function CalendarView({
     <>
       {/* Hero */}
       <div className="hero">
-        <div className="hero-left">
-          <span className="hero-eyebrow">TRADING JOURNAL</span>
-          <h2 className="hero-month">
-            {MONTH_NAMES[month]} <span className="hero-year">{year}</span>
-          </h2>
-          <div className="hero-pills">
-            <div className="hero-pill">
-              <span className="hp-label">Avg Day</span>
-              <span className="hp-value">{formatMoneySigned(stats.avgDay)}</span>
-            </div>
-            <div className="hero-pill">
-              <span className="hp-label">Win Rate</span>
-              <span className="hp-value">{(stats.winRate * 100).toFixed(0)}%</span>
-            </div>
-            <div className="hero-pill">
-              <span className="hp-label">Streak</span>
-              <span className="hp-value">
-                {stats.streak} winning day{stats.streak === 1 ? '' : 's'}
-              </span>
-            </div>
+        <div className="hero-lead">
+          <div className="hero-month-nav">
+            <button className="hero-nav-btn" onClick={() => go(-1)} title="Previous month" aria-label="Previous month"><ChevronLeft size={16} /></button>
+            <span className="hero-month-title">{MONTH_NAMES[month]} {year}</span>
+            <button className="hero-nav-btn" onClick={() => go(1)} title="Next month" aria-label="Next month"><ChevronRight size={16} /></button>
           </div>
-        </div>
-
-        <div className="hero-total">
-          <span className="ht-label">MONTH TOTAL</span>
-          <span className={`ht-value ${stats.total >= 0 ? 'pos-strong' : 'neg-strong'}`}>
+          <span className={`hero-big ${stats.total >= 0 ? 'pos-strong' : 'neg-strong'}`}>
             <MoneyCountUp value={stats.total} />
           </span>
-          <span className="ht-sub">{stats.trades} trades</span>
-          <div className="ht-bw">
-            <div className="ht-bw-item">
-              <span className="ht-bw-label">Best Day</span>
-              {stats.best ? (
-                <span className="ht-bw-val">
-                  {shortDate(stats.best.date)} · <span className="pos">{formatMoneySigned(stats.best.pnl)}</span>
-                </span>
-              ) : (
-                <span className="ht-bw-val muted">—</span>
-              )}
-            </div>
-            <div className="ht-bw-item">
-              <span className="ht-bw-label">Worst Day</span>
-              {stats.worst ? (
-                <span className="ht-bw-val">
-                  {shortDate(stats.worst.date)} · <span className="neg">{formatMoneySigned(stats.worst.pnl)}</span>
-                </span>
-              ) : (
-                <span className="ht-bw-val muted">—</span>
-              )}
-            </div>
+          <span className="hero-lead-sub">{stats.trades} trades · {stats.days} traded days</span>
+        </div>
+
+        <div className="hero-stats">
+          <div className="hstat">
+            <span className="hstat-label">Avg / Day</span>
+            <span className="hstat-val">{formatMoneySigned(stats.avgDay)}</span>
+            <span className="hstat-sub">over {stats.days} days</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Win Rate</span>
+            <span className="hstat-val">{(stats.winRate * 100).toFixed(0)}%</span>
+            <span className="hstat-sub">{stats.winDays}W · {stats.lossDays}L</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Win Streak</span>
+            <span className="hstat-val">{stats.streak}</span>
+            <span className="hstat-sub">{stats.streak === 1 ? 'day' : 'days'}</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Best Day</span>
+            <span className="hstat-val pos">{stats.best ? formatMoneySigned(stats.best.pnl) : '—'}</span>
+            <span className="hstat-sub">{stats.best ? shortDate(stats.best.date) : '—'}</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Worst Day</span>
+            <span className="hstat-val neg">{stats.worst ? formatMoneySigned(stats.worst.pnl) : '—'}</span>
+            <span className="hstat-sub">{stats.worst ? shortDate(stats.worst.date) : '—'}</span>
           </div>
         </div>
       </div>
 
-      {/* Activity heatmap */}
-      {heatmap}
-
-      {/* Calendar grid */}
+      {/* Calendar grid (activity heatmap sits above the grid) */}
       <div className="calendar-card">
-        <div className="cal-nav">
-          <button className="edge-nav" onClick={() => go(-1)} title="Previous month" aria-label="Previous month"><ChevronLeft size={18} /></button>
-          <span className="cal-nav-title">{MONTH_NAMES[month]} {year}</span>
-          <button className="edge-nav" onClick={() => go(1)} title="Next month" aria-label="Next month"><ChevronRight size={18} /></button>
-        </div>
+        <div className="cal-heatmap">{heatmap}</div>
 
         <div className="cal-grid">
           {WEEKDAYS.map((w) => (
@@ -216,11 +201,12 @@ export default function CalendarView({
                 const holiday = holidays[date];
                 const tone = day ? (day.pnl >= 0 ? 'win' : 'loss') : '';
                 const intensity = day && monthMax ? Math.min(1, Math.abs(day.pnl) / monthMax) : 0;
+                const toneA = 0.06 + Math.pow(intensity, 1.35) * 0.58;
                 return (
                   <div
                     key={date}
                     className={`cal-cell ${tone}${day ? ' clickable' : ''}${date === todayIso ? ' today' : ''}`}
-                    style={day ? ({ ['--tone-a' as string]: 0.18 + intensity * 0.32 }) : undefined}
+                    style={day ? ({ ['--tone-a' as string]: toneA }) : undefined}
                     onClick={() => day && onSelectDay(date)}
                     {...(day
                       ? {
