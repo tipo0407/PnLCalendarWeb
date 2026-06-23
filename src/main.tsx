@@ -5,8 +5,10 @@ import './index.css'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
 import { initErrorLogging } from './lib/logger'
+import { initThemePrefs } from './lib/theme'
 
 initErrorLogging()
+initThemePrefs()
 
 // Register the offline service worker in production builds.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

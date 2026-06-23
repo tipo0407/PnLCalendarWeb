@@ -188,6 +188,23 @@ code {
   }
 }
 
+/* High-contrast mode: strengthen borders and de-mute secondary text. */
+:root[data-contrast='high'] {
+  --border: #9aa4b8;
+  --border-strong: #5b6677;
+  --muted: #4a5366;
+  --text-2: #2a3340;
+}
+:root[data-theme='dark'][data-contrast='high'] {
+  --border: #5a6680;
+  --border-strong: #8a96b0;
+  --muted: #aab4c8;
+  --text-2: #d6deec;
+}
+:root[data-contrast='high'] .cal-cell,
+:root[data-contrast='high'] .atlas-panel,
+:root[data-contrast='high'] .kpi-card { border-width: 1.5px; }
+
 .pos { color: var(--pos); }
 .neg { color: var(--neg); }
 .muted { color: var(--muted); }

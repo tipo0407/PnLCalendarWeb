@@ -282,6 +282,11 @@
 .set-money { display: flex; align-items: center; gap: 6px; }
 .set-money > span { color: var(--muted); font-weight: 600; }
 .set-money input { width: 110px; text-align: right; }
+.accent-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.accent-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; padding: 0; transition: transform .12s; }
+.accent-swatch:hover { transform: scale(1.1); }
+.accent-swatch.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--card), 0 0 0 4px currentColor; }
+.set-checkbox { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
 .settings-foot { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-2); }
 .set-note { font-size: 12px; color: var(--muted); }
 .settings-data { padding: 14px 20px 4px; border-top: 1px solid var(--border); }

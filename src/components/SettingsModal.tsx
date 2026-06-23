@@ -7,6 +7,7 @@ import { exportBackup, restoreBackup, clearAllData, storageUsageMB } from '../li
 import { getErrors, clearErrors, type LoggedError } from '../lib/logger';
 import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
+import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } from '../lib/theme';
 
 interface Props {
   onClose: () => void;
@@ -21,6 +22,8 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [usage, setUsage] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [errors, setErrors] = useState<LoggedError[]>(() => getErrors());
+  const [accent, setAccentId] = useState(() => getAccentId());
+  const [contrast, setContrast] = useState(() => getHighContrast());
   const lang = useLang();
 
   useEffect(() => {
@@ -91,6 +94,32 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
               <option value="en">English</option>
               <option value="zh">中文</option>
             </select>
+          </label>
+
+          <div className="set-row">
+            <span className="set-label">Accent<small>Theme highlight color</small></span>
+            <div className="accent-swatches">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.id}
+                  className={`accent-swatch ${accent === a.id ? 'on' : ''}`}
+                  style={{ background: a.id === 'default' ? 'linear-gradient(120deg,#3f6fd8,#5b8def)' : `linear-gradient(120deg,${a.accent},${a.accent2})` }}
+                  title={a.name}
+                  aria-label={a.name}
+                  onClick={() => { setAccent(a.id); setAccentId(a.id); }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <label className="set-row">
+            <span className="set-label">High contrast<small>Stronger borders &amp; text</small></span>
+            <input
+              type="checkbox"
+              className="set-checkbox"
+              checked={contrast}
+              onChange={(e) => { setHighContrast(e.target.checked); setContrast(e.target.checked); }}
+            />
           </label>
 
           <label className="set-row">
