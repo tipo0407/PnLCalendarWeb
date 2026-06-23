@@ -1205,3 +1205,11 @@
 @media (max-width: 720px) {
   .iw-body { grid-template-columns: 1fr; }
 }
+.atlas-empty {
+  padding: 22px 16px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.atlas-empty b { color: var(--text); }

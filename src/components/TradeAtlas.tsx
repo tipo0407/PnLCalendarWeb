@@ -9,6 +9,7 @@ import {
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
+import { tagEdge, taggedTradeCount } from '../lib/tags';
 import {
   dailyEquityCurve,
   edgeByField,
@@ -70,6 +71,8 @@ export default function TradeAtlas({ trades, summary }: Props) {
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
+  const mistakes = useMemo(() => tagEdge(trades), [trades]);
+  const taggedCount = useMemo(() => taggedTradeCount(trades), [trades]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
@@ -269,6 +272,41 @@ export default function TradeAtlas({ trades, summary }: Props) {
             <span><i className="dot" style={{ background: POS }} /> Wins {summary.winTrades}</span>
             <span><i className="dot" style={{ background: NEG }} /> Losses {summary.lossTrades}</span>
           </div>
+        </Panel>
+
+        <Panel
+          title="Mistake Edge"
+          subtitle={`P&L by behavioral mistake auto-detected from your notes · ${taggedCount}/${trades.length} trades tagged`}
+          span={12}
+        >
+          {mistakes.length === 0 ? (
+            <div className="atlas-empty">
+              No mistakes detected yet. Note what went wrong in <b>Reason&amp;Emotion</b> or
+              <b> Note</b> (e.g. “FOMO”, “revenge”, “no stop”, “追高”, “手痒”) to see where your
+              behavior costs you.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(150, mistakes.length * 34)}>
+              <BarChart data={mistakes} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 0 }}>
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => compactMoney(Number(v))} />
+                <YAxis type="category" dataKey="label" {...AXIS} width={96} />
+                <Tooltip
+                  {...TOOLTIP}
+                  formatter={(v) => [formatMoneySigned(Number(v)), 'Impact']}
+                  labelFormatter={(l) => {
+                    const m = mistakes.find((x) => x.label === String(l));
+                    return m ? `${l} · ${m.count} trades · ${(m.winRate * 100).toFixed(0)}% win` : String(l);
+                  }}
+                />
+                <ReferenceLine x={0} stroke="var(--border-strong)" />
+                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16}>
+                  {mistakes.map((d, i) => (
+                    <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </Panel>
 
         <Panel title="Trade-by-Trade P&L" subtitle="Result of each individual trade" span={12}>
