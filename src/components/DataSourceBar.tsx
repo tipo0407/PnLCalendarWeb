@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react';
 import { Link2, RefreshCw, Upload, Sparkles } from 'lucide-react';
-import type { TradeRecord } from '../types';
-import { parseWorkbook, fetchGoogleSheet } from '../lib/parseWorkbook';
+import type { SheetData } from '../lib/parseWorkbook';
+import { readSheets, fetchGoogleSheetBuffer } from '../lib/parseWorkbook';
 
 interface Props {
-  onLoaded: (trades: TradeRecord[]) => void;
+  onSheets: (sheets: SheetData[]) => void;
   storageKey: string;
   onSample?: () => void;
 }
 
-export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props) {
+export default function DataSourceBar({ onSheets, storageKey, onSample }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState<string>(() => localStorage.getItem(storageKey) ?? '');
   const [busy, setBusy] = useState(false);
@@ -20,7 +20,9 @@ export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props)
     setError(null);
     try {
       const buf = await file.arrayBuffer();
-      onLoaded(parseWorkbook(buf));
+      const sheets = readSheets(buf);
+      if (sheets.length === 0) throw new Error('That file has no readable sheets.');
+      onSheets(sheets);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -36,9 +38,10 @@ export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props)
     setBusy(true);
     setError(null);
     try {
-      const trades = await fetchGoogleSheet(link);
+      const buf = await fetchGoogleSheetBuffer(link);
+      const sheets = readSheets(buf);
       localStorage.setItem(storageKey, link.trim());
-      onLoaded(trades);
+      onSheets(sheets);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -70,7 +73,7 @@ export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props)
           disabled={busy}
         >
           <Upload size={15} />
-          Upload .xlsx
+          Upload
         </button>
         {onSample && (
           <button className="btn btn-ghost-sample" onClick={onSample} disabled={busy} title="Load sample data">
@@ -81,7 +84,7 @@ export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props)
         <input
           ref={fileRef}
           type="file"
-          accept=".xlsx,.xls"
+          accept=".xlsx,.xls,.csv"
           style={{ display: 'none' }}
           onChange={(e) => {
             const f = e.target.files?.[0];

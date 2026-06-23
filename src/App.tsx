@@ -4,9 +4,11 @@ import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles } from 'lucide-react
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
+import type { SheetData } from './lib/parseWorkbook';
 import { sampleTrades } from './data/sampleTrades';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
 import DataSourceBar from './components/DataSourceBar';
+import ImportWizard from './components/ImportWizard';
 import CalendarView from './components/CalendarView';
 import Heatmap from './components/Heatmap';
 import Sidebar from './components/Sidebar';
@@ -35,6 +37,7 @@ export default function App() {
   });
   const [syncing, setSyncing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
+  const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
@@ -171,7 +174,7 @@ export default function App() {
             </nav>
           )}
 
-          <DataSourceBar onLoaded={handleLoaded} storageKey={STORAGE_KEY} onSample={loadSample} />
+          <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
 
           <button
             className="theme-toggle"
@@ -267,6 +270,16 @@ export default function App() {
             daily={selectedDaily}
             holidayName={holidays[selectedDaily.date]}
             onClose={() => setSelectedDay(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {importSheets && (
+          <ImportWizard
+            sheets={importSheets}
+            onClose={() => setImportSheets(null)}
+            onImport={(t) => { handleLoaded(t); setImportSheets(null); }}
           />
         )}
       </AnimatePresence>

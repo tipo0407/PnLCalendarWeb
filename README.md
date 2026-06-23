@@ -34,13 +34,19 @@ convention: it reads **only the 3rd worksheet**, with the same column names as t
 
 ## Data sources
 
-Two ways to load trades:
+Three ways to load trades:
 
-1. **Upload `.xlsx`** (most reliable) — click **Upload .xlsx** and pick your `Trading.xlsx`.
-2. **Google Sheet link** — paste the link and click **Sync**.
+1. **Sample data** — click **Sample** (or **Explore with sample data**) for an instant demo.
+2. **Upload a file** — `.xlsx`, `.xls`, or `.csv`. An **import wizard** opens so you can pick the
+   worksheet and map your columns; it auto-detects common headers and dates, shows a live
+   preview, and reports any rows it had to skip. You don't need a fixed layout or column order.
+3. **Google Sheet link** — paste the link and click **Sync**.
    - The browser cannot carry your Google login session, so the sheet must be shared as
      **"Anyone with the link can view"**, otherwise the request returns 401.
    - In dev mode this goes through a Vite proxy (`/gsheet`) to avoid browser CORS issues.
+
+Dates are flexible: Excel serials, `2026-06-23`, `6/23/2026`, `23-Jun-2026`, etc. Times accept
+day fractions, `HH:MM`, or `9:35 AM`. Only **Date** is required to import a row.
 
 ## Workbook format
 
