@@ -21,6 +21,7 @@ import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import ProGate from './ProGate';
 import Playbook from './Playbook';
+import TradeTable from './TradeTable';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -44,6 +45,7 @@ interface Props {
   trades: TradeRecord[];
   summary: Summary;
   onOpenSettings?: () => void;
+  onSelectDay?: (date: string) => void;
 }
 
 const AXIS = { stroke: '#9aa6ba', fontSize: 11, tickLine: false, axisLine: false };
@@ -67,7 +69,7 @@ function printAtlas() {
   setTimeout(cleanup, 1000);
 }
 
-export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
+export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDay }: Props) {
   useLang(); // re-render on language change
   const theme = useThemeColors();
   const POS = theme.pos;
@@ -555,6 +557,10 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </Panel>
+
+        <Panel title="All Trades" subtitle="Sortable, filterable trade log — click a row to open the day" span={12}>
+          <TradeTable trades={trades} onSelectDay={onSelectDay ?? (() => {})} />
         </Panel>
       </div>
     </div>

@@ -502,7 +502,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} />
+              <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }} />
             </motion.div>
           ) : (
             <motion.div
