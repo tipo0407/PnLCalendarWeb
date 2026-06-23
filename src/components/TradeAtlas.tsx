@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Download, Printer } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -14,6 +15,7 @@ import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
+import { exportTradesCsv } from '../lib/exportCsv';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -44,6 +46,18 @@ const TOOLTIP = {
   itemStyle: { color: 'var(--text)' },
   cursor: { fill: 'rgba(120,140,170,0.10)' },
 };
+
+/** Print just the Trade Atlas as a PDF via a scoped print stylesheet. */
+function printAtlas() {
+  document.body.classList.add('printing-atlas');
+  const cleanup = () => {
+    document.body.classList.remove('printing-atlas');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+  setTimeout(cleanup, 1000);
+}
 
 export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
   const theme = useThemeColors();
@@ -109,6 +123,14 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
           <span className="atlas-eyebrow">ANALYTICS · {range}</span>
           <h2>Trade Atlas</h2>
           <p className="atlas-sub">Performance, behavior, and trend review</p>
+        </div>
+        <div className="atlas-actions">
+          <button className="atlas-export" onClick={() => exportTradesCsv(trades)} title="Download all trades as CSV">
+            <Download size={14} /> CSV
+          </button>
+          <button className="atlas-export" onClick={printAtlas} title="Export this report as PDF">
+            <Printer size={14} /> PDF
+          </button>
         </div>
         <div className="kpi-row">
           <Kpi dot={NEG} label="Net P&L" value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />

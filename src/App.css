@@ -867,6 +867,15 @@
   flex-wrap: wrap;
 }
 .atlas-hero-head { flex: 0 0 auto; }
+.atlas-actions { display: flex; gap: 8px; }
+.atlas-export {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.atlas-export:hover { border-color: var(--accent); color: var(--accent); }
 .atlas-eyebrow { font-size: 11px; letter-spacing: 1.2px; color: var(--accent); font-weight: 600; }
 .atlas-hero h2 { font-size: 24px; margin: 5px 0 3px; letter-spacing: -0.5px; }
 .atlas-sub { color: var(--text-2); margin: 0; font-size: 13px; }
@@ -1484,4 +1493,21 @@
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   @page { margin: 14mm; }
+}
+
+/* ===== Print: full Trade Atlas report ===== */
+@media print {
+  body.printing-atlas .topbar,
+  body.printing-atlas .view-tabs,
+  body.printing-atlas .aurora,
+  body.printing-atlas .atlas-actions,
+  body.printing-atlas .panel-action { display: none !important; }
+  body.printing-atlas { background: #fff !important; }
+  body.printing-atlas .app { background: #fff !important; }
+  body.printing-atlas .atlas-panel,
+  body.printing-atlas .kpi-card,
+  body.printing-atlas .atlas-hero { box-shadow: none !important; border-color: #ccc !important; break-inside: avoid; }
+  body.printing-atlas .atlas-grid { display: block !important; }
+  body.printing-atlas .atlas-panel { width: 100% !important; margin-bottom: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { margin: 12mm; }
 }
