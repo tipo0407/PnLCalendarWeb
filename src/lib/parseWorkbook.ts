@@ -55,7 +55,7 @@ const MONTHS: Record<string, number> = {
 };
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+export const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 function isoDate(y: number, m: number, d: number): string | null {
   if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2200)) return null;

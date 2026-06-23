@@ -6,6 +6,7 @@ import {
   FIELDS, autoMap, guessSheetIndex, headerRowIndex, parseSheet,
   type SheetData, type Mapping, type FieldKey,
 } from '../lib/parseWorkbook';
+import { BROKER_TEMPLATES, applyTemplate, detectTemplate } from '../lib/brokerTemplates';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 
 interface Props {
@@ -16,6 +17,13 @@ interface Props {
 
 export default function ImportWizard({ sheets, onImport, onClose }: Props) {
   const [sheetIdx, setSheetIdx] = useState(() => guessSheetIndex(sheets));
+  // 'auto' = alias auto-mapping; otherwise a broker template id.
+  const [templateId, setTemplateId] = useState<string>(() => {
+    const sheet = sheets[guessSheetIndex(sheets)];
+    const hIdx = headerRowIndex(sheet.rows);
+    const detected = detectTemplate((sheet.rows[hIdx] ?? []) as unknown[]);
+    return detected ? detected.id : 'auto';
+  });
 
   return (
     <motion.div
@@ -44,28 +52,45 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
           <button className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
 
-        {sheets.length > 1 && (
+        <div className="iw-selects">
+          {sheets.length > 1 && (
+            <label className="iw-sheet">
+              <span>Worksheet</span>
+              <select value={sheetIdx} onChange={(e) => setSheetIdx(Number(e.target.value))}>
+                {sheets.map((s, i) => (
+                  <option key={i} value={i}>{s.name || `Sheet ${i + 1}`}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="iw-sheet">
-            <span>Worksheet</span>
-            <select value={sheetIdx} onChange={(e) => setSheetIdx(Number(e.target.value))}>
-              {sheets.map((s, i) => (
-                <option key={i} value={i}>{s.name || `Sheet ${i + 1}`}</option>
+            <span>Format / broker</span>
+            <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+              <option value="auto">Auto-detect columns</option>
+              {BROKER_TEMPLATES.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}{t.hint ? ` — ${t.hint}` : ''}</option>
               ))}
             </select>
           </label>
-        )}
+        </div>
 
-        {/* Remounts (and re-detects mapping) whenever the chosen sheet changes. */}
-        <SheetStep key={sheetIdx} sheet={sheets[sheetIdx]} onImport={onImport} onClose={onClose} />
+        {/* Remounts (and re-detects mapping) whenever the chosen sheet or template changes. */}
+        <SheetStep key={`${sheetIdx}:${templateId}`} sheet={sheets[sheetIdx]} templateId={templateId} onImport={onImport} onClose={onClose} />
       </motion.div>
     </motion.div>
   );
 }
 
-function SheetStep({ sheet, onImport, onClose }: { sheet: SheetData; onImport: (t: TradeRecord[]) => void; onClose: () => void }) {
+function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData; templateId: string; onImport: (t: TradeRecord[]) => void; onClose: () => void }) {
   const hIdx = useMemo(() => headerRowIndex(sheet.rows), [sheet]);
   const headerCells = (sheet.rows[hIdx] ?? []) as unknown[];
-  const [mapping, setMapping] = useState<Mapping>(() => autoMap(headerCells));
+  const [mapping, setMapping] = useState<Mapping>(() => {
+    if (templateId !== 'auto') {
+      const tpl = BROKER_TEMPLATES.find((t) => t.id === templateId);
+      if (tpl) return applyTemplate(headerCells, tpl);
+    }
+    return autoMap(headerCells);
+  });
 
   const result = useMemo(() => parseSheet(sheet, mapping), [sheet, mapping]);
   const canImport = mapping.date !== undefined && result.trades.length > 0;

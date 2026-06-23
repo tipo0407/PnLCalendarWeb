@@ -1228,6 +1228,9 @@
 .iw-title { display: flex; align-items: center; gap: 10px; color: var(--accent); }
 .iw-title h2 { margin: 0; font-size: 17px; color: var(--text); }
 .iw-sheet { display: flex; align-items: center; gap: 10px; padding: 12px 20px 0; font-size: 13px; color: var(--text-2); }
+.iw-selects { display: flex; flex-wrap: wrap; gap: 4px 0; }
+.iw-selects .iw-sheet { flex: 1 1 240px; }
+.iw-sheet > span { white-space: nowrap; }
 .iw-sheet select { flex: 1; max-width: 320px; }
 .iw-sheet select, .iw-select {
   background: var(--card-soft);
