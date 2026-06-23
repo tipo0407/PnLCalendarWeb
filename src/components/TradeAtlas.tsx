@@ -10,6 +10,7 @@ import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
+import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
   edgeByField,
@@ -277,7 +278,7 @@ export default function TradeAtlas({ trades, summary }: Props) {
         <Panel
           title="Mistake Edge"
           subtitle={`P&L by behavioral mistake auto-detected from your notes · ${taggedCount}/${trades.length} trades tagged`}
-          span={12}
+          span={6}
         >
           {mistakes.length === 0 ? (
             <div className="atlas-empty">
@@ -307,6 +308,14 @@ export default function TradeAtlas({ trades, summary }: Props) {
               </BarChart>
             </ResponsiveContainer>
           )}
+        </Panel>
+
+        <Panel
+          title="Rule Adherence"
+          subtitle="Set your rules; see how often you broke them and what it cost"
+          span={6}
+        >
+          <RulesPanel trades={trades} />
         </Panel>
 
         <Panel title="Trade-by-Trade P&L" subtitle="Result of each individual trade" span={12}>
