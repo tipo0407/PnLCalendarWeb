@@ -1156,8 +1156,11 @@
 .btn:focus-visible, .hero-btn:focus-visible, .edge-nav:focus-visible,
 .hero-nav-btn:focus-visible, .dc-iv:focus-visible, .tab-btn:focus-visible,
 .modal-close:focus-visible, .theme-toggle:focus-visible, .panel-select:focus-visible,
-.month-row:focus-visible {
+.month-row:focus-visible, .icon-btn:focus-visible, .pro-pill:focus-visible,
+.atlas-export:focus-visible, .set-data-btn:focus-visible, .tier-cta:focus-visible,
+.review-export:focus-visible {
   box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
 }
 
 /* Richer surface response on hover. */

@@ -63,6 +63,26 @@ export default function App() {
     loadHolidays().then(setHolidays);
   }, []);
 
+  // Global keyboard shortcuts: 1/2/3 switch views, t toggles theme, , opens settings.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      const hasData = trades.length > 0;
+      switch (e.key) {
+        case '1': if (hasData) setView('calendar'); break;
+        case '2': if (hasData) setView('atlas'); break;
+        case '3': if (hasData) setView('review'); break;
+        case 't': case 'T': setTheme((t) => (t === 'dark' ? 'light' : 'dark')); break;
+        case ',': setShowSettings(true); break;
+        default: return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [trades.length]);
+
   // Auto-load the live trades workbook served at /data/trades.xlsx (no manual upload needed).
   // On the first page load each day, first trigger a Google Sheet sync so the data is current.
   useEffect(() => {
@@ -181,12 +201,15 @@ export default function App() {
           )}
 
           {trades.length > 0 && (
-            <nav className="view-tabs">
-              {(['calendar', 'atlas', 'review'] as const).map((v) => (
+            <nav className="view-tabs" aria-label="Views">
+              {(['calendar', 'atlas', 'review'] as const).map((v, i) => (
                 <button
                   key={v}
                   className={`tab-btn ${view === v ? 'active' : ''}`}
                   onClick={() => setView(v)}
+                  title={`${v === 'calendar' ? 'Calendar' : v === 'atlas' ? 'Trade Atlas' : 'Review'} (${i + 1})`}
+                  aria-keyshortcuts={String(i + 1)}
+                  aria-current={view === v ? 'page' : undefined}
                 >
                   {view === v && (
                     <motion.span
