@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
+import { t } from '../lib/i18n';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
 
@@ -55,7 +56,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
       <div className="ttable-bar">
         <div className="ttable-search">
           <Search size={14} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by symbol, setup, note…" aria-label="Filter trades" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tt.filter')} aria-label="Filter trades" />
         </div>
         <span className="ttable-count">{rows.length} trade{rows.length === 1 ? '' : 's'}{rows.length > MAX_ROWS && ` · showing ${MAX_ROWS}`}</span>
       </div>
@@ -63,13 +64,13 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
         <table className="ttable-grid">
           <thead>
             <tr>
-              <Th label="Date" k="date" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <th>Time</th>
-              <Th label="Symbol" k="symbol" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <Th label="Side" k="direction" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <Th label="Size" k="size" cur={sortKey} Caret={Caret} onClick={sortBy} num />
-              <Th label="P&L" k="profitLoss" cur={sortKey} Caret={Caret} onClick={sortBy} num />
-              <Th label="Setup" k="setup" cur={sortKey} Caret={Caret} onClick={sortBy} />
+              <Th label={t('tt.date')} k="date" cur={sortKey} Caret={Caret} onClick={sortBy} />
+              <th>{t('tt.time')}</th>
+              <Th label={t('tt.symbol')} k="symbol" cur={sortKey} Caret={Caret} onClick={sortBy} />
+              <Th label={t('tt.side')} k="direction" cur={sortKey} Caret={Caret} onClick={sortBy} />
+              <Th label={t('tt.size')} k="size" cur={sortKey} Caret={Caret} onClick={sortBy} num />
+              <Th label={t('tt.pnl')} k="profitLoss" cur={sortKey} Caret={Caret} onClick={sortBy} num />
+              <Th label={t('tt.setup')} k="setup" cur={sortKey} Caret={Caret} onClick={sortBy} />
             </tr>
           </thead>
           <tbody>

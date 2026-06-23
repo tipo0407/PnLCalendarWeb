@@ -120,6 +120,17 @@ const EN: Record<string, string> = {
   'settings.diagnostics': 'Diagnostics (opt-in)',
   'settings.done': 'Done',
   'settings.savedLocal': 'Saved locally on this device.',
+  // Rules panel
+  'rules.maxLoss': 'Max daily loss ($)',
+  'rules.maxTrades': 'Max trades / day',
+  'rules.windowStart': 'Window start (h)',
+  'rules.windowEnd': 'Window end (h)',
+  // Trade table
+  'tt.date': 'Date', 'tt.time': 'Time', 'tt.symbol': 'Symbol', 'tt.side': 'Side',
+  'tt.size': 'Size', 'tt.pnl': 'P&L', 'tt.setup': 'Setup', 'tt.filter': 'Filter by symbol, setup, note…',
+  // Playbook columns
+  'pb.setup': 'Setup', 'pb.trades': 'Trades', 'pb.winPct': 'Win%', 'pb.net': 'Net',
+  'pb.expectancy': 'Expectancy', 'pb.pf': 'PF',
 };
 
 const ZH: Record<string, string> = {
@@ -232,6 +243,17 @@ const ZH: Record<string, string> = {
   'settings.diagnostics': '诊断（可选）',
   'settings.done': '完成',
   'settings.savedLocal': '已保存在本设备本地。',
+  // Rules panel
+  'rules.maxLoss': '每日最大亏损 ($)',
+  'rules.maxTrades': '每日最多交易',
+  'rules.windowStart': '时段起始 (时)',
+  'rules.windowEnd': '时段结束 (时)',
+  // Trade table
+  'tt.date': '日期', 'tt.time': '时间', 'tt.symbol': '品种', 'tt.side': '方向',
+  'tt.size': '数量', 'tt.pnl': '盈亏', 'tt.setup': '套路', 'tt.filter': '按品种、套路、备注筛选…',
+  // Playbook columns
+  'pb.setup': '套路', 'pb.trades': '交易数', 'pb.winPct': '胜率', 'pb.net': '净额',
+  'pb.expectancy': '期望值', 'pb.pf': '盈亏比',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };

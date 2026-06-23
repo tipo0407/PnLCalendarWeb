@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoney, formatMoneySigned } from '../lib/metrics';
 import { setupStats, getPlaybookEntry, setPlaybookEntry } from '../lib/playbook';
+import { t } from '../lib/i18n';
 
 export default function Playbook({ trades }: { trades: TradeRecord[] }) {
   const stats = useMemo(() => setupStats(trades), [trades]);
@@ -15,12 +16,12 @@ export default function Playbook({ trades }: { trades: TradeRecord[] }) {
   return (
     <div className="playbook">
       <div className="pb-row pb-head">
-        <span className="pb-c-setup">Setup</span>
-        <span>Trades</span>
-        <span>Win%</span>
-        <span>Net</span>
-        <span>Expectancy</span>
-        <span>PF</span>
+        <span className="pb-c-setup">{t('pb.setup')}</span>
+        <span>{t('pb.trades')}</span>
+        <span>{t('pb.winPct')}</span>
+        <span>{t('pb.net')}</span>
+        <span>{t('pb.expectancy')}</span>
+        <span>{t('pb.pf')}</span>
         <span />
       </div>
       {stats.map((s) => {
