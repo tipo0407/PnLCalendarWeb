@@ -8,6 +8,7 @@ import { getErrors, clearErrors, type LoggedError } from '../lib/logger';
 import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } from '../lib/theme';
+import AccountSection from './AccountSection';
 
 interface Props {
   onClose: () => void;
@@ -173,6 +174,8 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
             </div>
           </label>
         </div>
+
+        <AccountSection />
 
         <div className="settings-data">
           <div className="set-section-head"><ShieldCheck size={14} /> {t('settings.dataPrivacy')}</div>
