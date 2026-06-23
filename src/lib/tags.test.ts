@@ -23,6 +23,16 @@ describe('detectTags', () => {
   it('returns nothing for clean notes', () => {
     expect(detectTags(trade({ reasonEmotion: 'Clean trend follow, trailed to structure' }))).toEqual([]);
   });
+  it('merges manual tags with auto-detected ones (union, de-duped)', () => {
+    const t = trade({ date: '2025-01-02', tradeNumber: 1, reasonEmotion: 'FOMO' });
+    const userTags = { '2025-01-02#1': { mistakes: ['oversize', 'fomo'], emotions: [] } };
+    expect(detectTags(t, userTags).sort()).toEqual(['fomo', 'oversize']);
+  });
+  it('applies manual tags even when journal text is empty', () => {
+    const t = trade({ date: '2025-01-02', tradeNumber: 2, reasonEmotion: '' });
+    const userTags = { '2025-01-02#2': { mistakes: ['revenge'], emotions: [] } };
+    expect(detectTags(t, userTags)).toEqual(['revenge']);
+  });
 });
 
 describe('tagEdge', () => {

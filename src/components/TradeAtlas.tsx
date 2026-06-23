@@ -9,6 +9,7 @@ import {
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
+import { useUserTags } from '../lib/useUserTags';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
 import RulesPanel from './RulesPanel';
@@ -73,9 +74,10 @@ export default function TradeAtlas({ trades, summary }: Props) {
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
-  const mistakes = useMemo(() => tagEdge(trades), [trades]);
-  const taggedCount = useMemo(() => taggedTradeCount(trades), [trades]);
-  const emotions = useMemo(() => emotionEdge(trades), [trades]);
+  const userTags = useUserTags();
+  const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
+  const taggedCount = useMemo(() => taggedTradeCount(trades, userTags), [trades, userTags]);
+  const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;

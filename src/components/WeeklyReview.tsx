@@ -6,12 +6,14 @@ import {
 } from '../lib/metrics';
 import { tagEdge } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
+import { useUserTags } from '../lib/useUserTags';
 import { avgDiscipline } from '../lib/discipline';
 import { evaluateRules, loadRules } from '../lib/rules';
 import { groupByWeek, weekLabel } from '../lib/review';
 
 export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   const weeks = useMemo(() => groupByWeek(trades), [trades]);
+  const userTags = useUserTags();
   const [idx, setIdx] = useState(0);
 
   if (weeks.length === 0) {
@@ -25,8 +27,8 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   const s = computeSummary(wt);
   const days = [...groupByDay(wt).values()];
   const disc = avgDiscipline(days);
-  const mistakes = tagEdge(wt);
-  const emotions = emotionEdge(wt);
+  const mistakes = tagEdge(wt, userTags);
+  const emotions = emotionEdge(wt, userTags);
   const setups = edgeByField(wt, (t) => t.setup).filter((x) => x.key !== '(未填写)').sort((a, b) => a.pnl - b.pnl);
   const hours = hourEdgeBySymbol(wt, 'All').slice().sort((a, b) => a.pnl - b.pnl);
   const rules = evaluateRules(wt, loadRules()).filter((r) => r.count > 0).sort((a, b) => a.impact - b.impact);

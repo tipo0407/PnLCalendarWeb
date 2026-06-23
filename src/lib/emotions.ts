@@ -1,4 +1,5 @@
 import type { TradeRecord } from '../types';
+import { tradeTagKey, type TradeTags } from './userTags';
 
 export interface EmotionDef {
   key: string;
@@ -24,12 +25,17 @@ function tradeText(t: TradeRecord): string {
   return `${t.reasonEmotion} ${t.note}`.toLowerCase();
 }
 
-export function detectEmotions(t: TradeRecord): string[] {
+export function detectEmotions(t: TradeRecord, userTags?: Record<string, TradeTags>): string[] {
   const text = tradeText(t);
-  if (!text.trim()) return [];
   const out: string[] = [];
-  for (const e of EMOTIONS) {
-    if (e.keywords.some((k) => text.includes(k))) out.push(e.key);
+  if (text.trim()) {
+    for (const e of EMOTIONS) {
+      if (e.keywords.some((k) => text.includes(k))) out.push(e.key);
+    }
+  }
+  if (userTags) {
+    const manual = userTags[tradeTagKey(t.date, t.tradeNumber, t.rowNumber)]?.emotions;
+    if (manual) for (const k of manual) if (!out.includes(k)) out.push(k);
   }
   return out;
 }
@@ -43,13 +49,13 @@ export interface EmotionEdge {
   winRate: number;
 }
 
-export function emotionEdge(trades: TradeRecord[]): EmotionEdge[] {
+export function emotionEdge(trades: TradeRecord[], userTags?: Record<string, TradeTags>): EmotionEdge[] {
   const byKey = new Map<string, EmotionEdge>();
   for (const e of EMOTIONS) {
     byKey.set(e.key, { key: e.key, label: e.label, count: 0, pnl: 0, wins: 0, winRate: 0 });
   }
   for (const t of trades) {
-    for (const key of detectEmotions(t)) {
+    for (const key of detectEmotions(t, userTags)) {
       const e = byKey.get(key);
       if (!e) continue;
       e.count += 1;

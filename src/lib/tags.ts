@@ -1,4 +1,5 @@
 import type { TradeRecord } from '../types';
+import { tradeTagKey, type TradeTags } from './userTags';
 
 export interface MistakeTag {
   key: string;
@@ -32,13 +33,18 @@ function tradeText(t: TradeRecord): string {
   return `${t.reasonEmotion} ${t.note} ${t.setup}`.toLowerCase();
 }
 
-/** Mistake tag keys detected on a single trade. */
-export function detectTags(t: TradeRecord): string[] {
+/** Mistake tag keys for a single trade: auto-detected text ∪ manual overrides. */
+export function detectTags(t: TradeRecord, userTags?: Record<string, TradeTags>): string[] {
   const text = tradeText(t);
-  if (!text.trim()) return [];
   const out: string[] = [];
-  for (const tag of MISTAKE_TAGS) {
-    if (tag.keywords.some((k) => text.includes(k))) out.push(tag.key);
+  if (text.trim()) {
+    for (const tag of MISTAKE_TAGS) {
+      if (tag.keywords.some((k) => text.includes(k))) out.push(tag.key);
+    }
+  }
+  if (userTags) {
+    const manual = userTags[tradeTagKey(t.date, t.tradeNumber, t.rowNumber)]?.mistakes;
+    if (manual) for (const k of manual) if (!out.includes(k)) out.push(k);
   }
   return out;
 }
@@ -53,13 +59,13 @@ export interface TagEdge {
 }
 
 /** Aggregate P&L / win-rate per mistake tag across all trades. */
-export function tagEdge(trades: TradeRecord[]): TagEdge[] {
+export function tagEdge(trades: TradeRecord[], userTags?: Record<string, TradeTags>): TagEdge[] {
   const byKey = new Map<string, TagEdge>();
   for (const tag of MISTAKE_TAGS) {
     byKey.set(tag.key, { key: tag.key, label: tag.label, count: 0, pnl: 0, wins: 0, winRate: 0 });
   }
   for (const t of trades) {
-    for (const key of detectTags(t)) {
+    for (const key of detectTags(t, userTags)) {
       const e = byKey.get(key);
       if (!e) continue;
       e.count += 1;
@@ -74,6 +80,6 @@ export function tagEdge(trades: TradeRecord[]): TagEdge[] {
 }
 
 /** How many trades carry at least one mistake tag. */
-export function taggedTradeCount(trades: TradeRecord[]): number {
-  return trades.reduce((n, t) => (detectTags(t).length > 0 ? n + 1 : n), 0);
+export function taggedTradeCount(trades: TradeRecord[], userTags?: Record<string, TradeTags>): number {
+  return trades.reduce((n, t) => (detectTags(t, userTags).length > 0 ? n + 1 : n), 0);
 }
