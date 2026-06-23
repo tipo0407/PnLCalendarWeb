@@ -4,28 +4,37 @@ import { loadRules, saveRules, DEFAULT_RULES } from './rules';
 import { getSettings, replaceSettings, DEFAULT_SETTINGS } from './settings';
 import { savePersistedTrades, clearPersistedTrades } from './persist';
 import { clearAllShots } from './screenshots';
+import { exportPlaybook, importPlaybook, type PlaybookEntry } from './playbook';
+import { exportReviewed, importReviewed } from './reviewLog';
+import { getActiveProfile } from './profiles';
 import { downloadText } from './exportCsv';
 
 export interface Backup {
   app: 'pnlcalendar';
-  version: 1;
+  version: 1 | 2;
   exportedAt: string;
+  profile?: string;
   trades: TradeRecord[];
   userTags: ReturnType<typeof loadUserTags>;
   rules: ReturnType<typeof loadRules>;
   settings: ReturnType<typeof getSettings>;
+  playbook?: Record<string, PlaybookEntry>;
+  reviewed?: string[];
 }
 
-/** Build a full local backup object (trades + tags + rules + settings). */
+/** Build a full local backup of the active profile (data + preferences). */
 export function buildBackup(trades: TradeRecord[]): Backup {
   return {
     app: 'pnlcalendar',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
+    profile: getActiveProfile().name,
     trades,
     userTags: loadUserTags(),
     rules: loadRules(),
     settings: getSettings(),
+    playbook: exportPlaybook(),
+    reviewed: exportReviewed(),
   };
 }
 
@@ -43,6 +52,8 @@ export function restoreBackup(json: string): TradeRecord[] {
   if (data.userTags) replaceAllUserTags(data.userTags);
   if (data.rules) saveRules({ ...DEFAULT_RULES, ...data.rules });
   if (data.settings) replaceSettings({ ...DEFAULT_SETTINGS, ...data.settings });
+  if (data.playbook) importPlaybook(data.playbook);
+  if (data.reviewed) importReviewed(data.reviewed);
   savePersistedTrades(data.trades);
   return data.trades;
 }
@@ -53,6 +64,8 @@ export async function clearAllData() {
   replaceAllUserTags({});
   saveRules(DEFAULT_RULES);
   replaceSettings(DEFAULT_SETTINGS);
+  importPlaybook({});
+  importReviewed([]);
   try { await clearAllShots(); } catch { /* ignore */ }
   for (const k of ['pnlcalendar.gsheet', 'pnlcalendar.lastSync']) {
     try { localStorage.removeItem(k); } catch { /* ignore */ }

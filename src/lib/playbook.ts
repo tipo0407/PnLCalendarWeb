@@ -92,3 +92,15 @@ export function setPlaybookEntry(setup: string, entry: PlaybookEntry) {
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(PLAYBOOK_EVENT));
 }
+
+/** Whole playbook store for the active profile (backup). */
+export function exportPlaybook(): Record<string, PlaybookEntry> {
+  return { ...load() };
+}
+
+/** Replace the playbook store for the active profile (restore). */
+export function importPlaybook(data: Record<string, PlaybookEntry>) {
+  cache = { ...data };
+  try { localStorage.setItem(keyName(), JSON.stringify(cache)); } catch { /* ignore */ }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(PLAYBOOK_EVENT));
+}

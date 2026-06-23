@@ -54,3 +54,14 @@ export function reviewStreak(weekKeysNewestFirst: string[]): number {
 export function reviewedCount(): number {
   return load().size;
 }
+
+/** All reviewed week keys for the active profile (backup). */
+export function exportReviewed(): string[] {
+  return [...load()];
+}
+
+/** Replace reviewed week keys for the active profile (restore). */
+export function importReviewed(keys: string[]) {
+  cache = new Set(Array.isArray(keys) ? keys : []);
+  persist();
+}
