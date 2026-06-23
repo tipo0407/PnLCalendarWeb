@@ -26,6 +26,8 @@ import {
   distinctSymbols,
   movingWinRate,
   pnlHistogram,
+  dayOfWeekEdge,
+  holdTimeEdge,
   groupByDay,
   formatMoney,
   compactMoney,
@@ -90,6 +92,8 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
   }, [hourSymbol, symbols]);
   const hourEdge = useMemo(() => hourEdgeBySymbol(trades, effectiveHourSymbol), [trades, effectiveHourSymbol]);
   const histogram = useMemo(() => pnlHistogram(trades), [trades]);
+  const dowEdge = useMemo(() => dayOfWeekEdge(trades), [trades]);
+  const holdEdge = useMemo(() => holdTimeEdge(trades), [trades]);
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
@@ -236,6 +240,60 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               <Area type="monotone" dataKey="rate" stroke={ACC} strokeWidth={2.5} fill="url(#atlWr)" />
             </AreaChart>
           </ResponsiveContainer>
+        </Panel>
+
+        <Panel title="Day of Week Edge" subtitle="Net P&L by weekday" span={6}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={dowEdge} barCategoryGap="28%">
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+              <XAxis dataKey="key" {...AXIS} />
+              <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
+              <Tooltip
+                {...TOOLTIP}
+                formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
+                labelFormatter={(l) => {
+                  const g = dowEdge.find((x) => x.key === String(l));
+                  return g ? `${l} · ${g.count} trades · ${(g.winRate * 100).toFixed(0)}% win` : String(l);
+                }}
+              />
+              <ReferenceLine y={0} stroke="var(--border-strong)" />
+              <Bar dataKey="pnl" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                {dowEdge.map((d, i) => (
+                  <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        <Panel title="Hold-Time Edge" subtitle="Net P&L by trade duration" span={6}>
+          <ProGate feature="Hold-Time Edge">
+            {holdEdge.length === 0 ? (
+              <div className="atlas-empty">No trade durations found. Map a <b>Duration</b> column on import to see which hold-times pay.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={holdEdge} barCategoryGap="28%">
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="key" {...AXIS} />
+                  <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
+                  <Tooltip
+                    {...TOOLTIP}
+                    formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
+                    labelFormatter={(l) => {
+                      const g = holdEdge.find((x) => x.key === String(l));
+                      return g ? `${l} · ${g.count} trades · ${(g.winRate * 100).toFixed(0)}% win` : String(l);
+                    }}
+                  />
+                  <ReferenceLine y={0} stroke="var(--border-strong)" />
+                  <Bar dataKey="pnl" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                    {holdEdge.map((d, i) => (
+                      <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </ProGate>
         </Panel>
 
         <Panel

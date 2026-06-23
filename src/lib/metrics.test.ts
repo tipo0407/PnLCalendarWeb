@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TradeRecord } from '../types';
-import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol } from './metrics';
+import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol, dayOfWeekEdge, holdTimeEdge } from './metrics';
 
 function trade(p: Partial<TradeRecord>): TradeRecord {
   return {
@@ -16,6 +16,40 @@ const SET: TradeRecord[] = [
   trade({ date: '2025-01-02', profitLoss: -40, entryTime: 7 * 3600, symbol: 'MES' }),
   trade({ date: '2025-01-03', profitLoss: 60, entryTime: 6 * 3600 + 45 * 60, symbol: 'MNQ' }),
 ];
+
+describe('dayOfWeekEdge', () => {
+  it('buckets net P&L by weekday in Mon-first order', () => {
+    // 2025-01-02 is a Thursday, 2025-01-03 a Friday
+    const edge = dayOfWeekEdge(SET);
+    const thu = edge.find((e) => e.key === 'Thu')!;
+    const fri = edge.find((e) => e.key === 'Fri')!;
+    expect(thu.pnl).toBe(60); // 100 - 40
+    expect(thu.count).toBe(2);
+    expect(fri.pnl).toBe(60);
+    // Mon-first ordering: Thu appears before Fri
+    expect(edge.map((e) => e.key)).toEqual(['Thu', 'Fri']);
+  });
+});
+
+describe('holdTimeEdge', () => {
+  it('buckets by duration and skips trades without one', () => {
+    const data = [
+      trade({ profitLoss: 50, duration: 30 }),     // <1m
+      trade({ profitLoss: -20, duration: 200 }),    // 1-5m
+      trade({ profitLoss: 80, duration: 200 }),     // 1-5m
+      trade({ profitLoss: 999, duration: null }),   // skipped
+    ];
+    const edge = holdTimeEdge(data);
+    expect(edge.find((e) => e.key === '<1m')!.pnl).toBe(50);
+    const mid = edge.find((e) => e.key === '1–5m')!;
+    expect(mid.pnl).toBe(60);
+    expect(mid.count).toBe(2);
+    expect(edge.reduce((n, e) => n + e.count, 0)).toBe(3); // null excluded
+  });
+  it('returns empty when no durations present', () => {
+    expect(holdTimeEdge([trade({ duration: null })])).toEqual([]);
+  });
+});
 
 describe('computeSummary', () => {
   const s = computeSummary(SET);

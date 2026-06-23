@@ -220,6 +220,52 @@ export function edgeByHour(trades: TradeRecord[]): GroupEdge[] {
   ).sort((a, b) => a.key.localeCompare(b.key));
 }
 
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Net P&L / win-rate per weekday (Mon–Fri order), only days that traded. */
+export function dayOfWeekEdge(trades: TradeRecord[]): GroupEdge[] {
+  const buckets = new Map<number, GroupEdge>();
+  for (const t of trades) {
+    const [y, m, d] = t.date.split('-').map(Number);
+    const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    let g = buckets.get(wd);
+    if (!g) { g = { key: WEEKDAY_LABELS[wd], pnl: 0, count: 0, wins: 0, winRate: 0 }; buckets.set(wd, g); }
+    g.pnl += t.profitLoss;
+    g.count += 1;
+    if (t.profitLoss > 0) g.wins += 1;
+  }
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  return order
+    .map((wd) => buckets.get(wd))
+    .filter((g): g is GroupEdge => !!g)
+    .map((g) => ({ ...g, winRate: g.count ? g.wins / g.count : 0 }));
+}
+
+const HOLD_BUCKETS: { label: string; max: number }[] = [
+  { label: '<1m', max: 60 },
+  { label: '1–5m', max: 300 },
+  { label: '5–15m', max: 900 },
+  { label: '15–60m', max: 3600 },
+  { label: '>1h', max: Infinity },
+];
+
+/** Net P&L / win-rate by trade hold-time bucket (uses the duration field). */
+export function holdTimeEdge(trades: TradeRecord[]): GroupEdge[] {
+  const buckets = HOLD_BUCKETS.map((b) => ({ key: b.label, pnl: 0, count: 0, wins: 0, winRate: 0 }));
+  let any = false;
+  for (const t of trades) {
+    if (t.duration === null || t.duration === undefined) continue;
+    any = true;
+    const i = HOLD_BUCKETS.findIndex((b) => t.duration! <= b.max);
+    const g = buckets[i < 0 ? buckets.length - 1 : i];
+    g.pnl += t.profitLoss;
+    g.count += 1;
+    if (t.profitLoss > 0) g.wins += 1;
+  }
+  if (!any) return [];
+  return buckets.filter((g) => g.count > 0).map((g) => ({ ...g, winRate: g.count ? g.wins / g.count : 0 }));
+}
+
 /** Distinct trade symbols (uppercased), most-frequent first. */
 export function distinctSymbols(trades: TradeRecord[]): string[] {
   const counts = new Map<string, number>();
