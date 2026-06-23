@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import {
-  CalendarRange, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, ArrowRight, Flame, Target,
+  CalendarRange, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, ArrowRight, Flame, Target, Lightbulb,
 } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { dayStreaks, monthProgress } from '../lib/goals';
+import { generateInsights } from '../lib/insights';
+import { useUserTags } from '../lib/useUserTags';
 import { getSettings } from '../lib/settings';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
@@ -25,6 +27,8 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   useLang(); // re-render on language change
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streak = useMemo(() => dayStreaks(days), [days]);
+  const userTags = useUserTags();
+  const insights = useMemo(() => generateInsights(trades, userTags), [trades, userTags]);
 
   const lastDate = trades.length ? trades[trades.length - 1].date : null;
   const { monthlyGoal } = getSettings();
@@ -73,6 +77,20 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
             </div>
           )}
           <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
+        </div>
+      )}
+
+      {insights.length > 0 && (
+        <div className="dash-insights">
+          <h3 className="dash-h"><Lightbulb size={14} /> Insights</h3>
+          <ul className="dash-insight-list">
+            {insights.map((ins, i) => (
+              <li key={i} className={`dash-insight ${ins.tone}`}>
+                <span className="di-dot" />
+                <span>{ins.text}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

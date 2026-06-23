@@ -415,6 +415,14 @@
 .dash-month-fill.neg { background: var(--neg); }
 .dash-month-sub { font-size: 12px; color: var(--muted); }
 .dash-month-sub b { font-variant-numeric: tabular-nums; }
+.dash-insights { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px 18px; box-shadow: var(--shadow-sm); }
+.dash-insights .dash-h { display: flex; align-items: center; gap: 7px; }
+.dash-insights .dash-h svg { color: var(--accent); }
+.dash-insight-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.dash-insight { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.di-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--muted); }
+.dash-insight.good .di-dot { background: var(--pos); }
+.dash-insight.bad .di-dot { background: var(--neg); }
 .dash-cols { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; align-items: start; }
 .dash-h { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .dash-quick, .dash-recent { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; box-shadow: var(--shadow-sm); }
