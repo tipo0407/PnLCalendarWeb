@@ -10,10 +10,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const rl = require('./ratelimit.cjs');
 
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
 const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, '.users.json');
 const TOKEN_TTL = 30 * 24 * 3600; // 30 days
+const MAX_PER_MIN = 20;           // auth requests per IP per minute
+const MAX_FAILS = 5;              // failed logins before lockout
+const LOCK_MS = 15 * 60 * 1000;   // lockout window
 
 function loadUsers() {
   try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { return {}; }
@@ -59,6 +63,12 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 /** Handle /api/auth/* routes. Returns true if it handled the request. */
 async function route(req, res, { send, readBody }) {
   const url = (req.url || '').split('?')[0];
+  const ip = rl.clientIp(req);
+
+  // Throttle all auth endpoints per IP.
+  if (url.startsWith('/api/auth/') && !rl.allow(`auth:${ip}`, MAX_PER_MIN, 60_000)) {
+    return send(res, 429, { error: 'too many requests, slow down' }), true;
+  }
 
   if (req.method === 'POST' && url === '/api/auth/signup') {
     const { email, password } = await readBody(req);
@@ -76,12 +86,20 @@ async function route(req, res, { send, readBody }) {
   if (req.method === 'POST' && url === '/api/auth/login') {
     const { email, password } = await readBody(req);
     const key = String(email || '').toLowerCase();
+    const lockKey = `login:${key}:${ip}`;
+    if (rl.isLocked(lockKey, MAX_FAILS)) {
+      return send(res, 429, { error: 'too many failed attempts, try again later' }), true;
+    }
     const user = loadUsers()[key];
     const ok = user && crypto.timingSafeEqual(
       Buffer.from(user.hash),
       Buffer.from(hashPassword(password || '', user.salt)),
     );
-    if (!ok) return send(res, 401, { error: 'invalid credentials' }), true;
+    if (!ok) {
+      rl.recordFailure(lockKey, LOCK_MS);
+      return send(res, 401, { error: 'invalid credentials' }), true;
+    }
+    rl.clearFailures(lockKey);
     return send(res, 200, { token: signToken(key), email: key }), true;
   }
 
