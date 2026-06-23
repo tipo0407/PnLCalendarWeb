@@ -12,6 +12,8 @@ import {
 import { avgDiscipline } from '../lib/discipline';
 import { dayStreaks, disciplineStreak, monthProgress } from '../lib/goals';
 import { getSettings } from '../lib/settings';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 import MoneyCountUp from './CountUp';
 
 interface Props {
@@ -53,6 +55,7 @@ function iso(d: Date): string {
 }
 
 export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpenSettings }: Props) {
+  useLang(); // re-render on language change
   const months = useMemo(() => monthlyBreakdown(trades), [trades]);
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streaks = useMemo(() => dayStreaks(days), [days]);
@@ -107,7 +110,7 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
       </div>
 
       <div className={`total-card ${positive ? 'pos' : 'neg'}`}>
-        <span className="tc-label">TOTAL P&amp;L</span>
+        <span className="tc-label">{t('side.totalPnl')}</span>
         <span className="tc-value"><MoneyCountUp value={summary.totalPnl} /></span>
         <div className="tc-meta">
           <span>{summary.tradingDays} traded days</span>
@@ -186,17 +189,17 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
       <div className="lens-block">
         <div className="stat-pair">
           <div className="stat-card win">
-            <span className="sc-label">Win Days</span>
+            <span className="sc-label">{t('side.winDays')}</span>
             <span className="sc-value">{summary.winDays}</span>
           </div>
           <div className="stat-card loss">
-            <span className="sc-label">Loss Days</span>
+            <span className="sc-label">{t('side.lossDays')}</span>
             <span className="sc-value">{summary.lossDays}</span>
           </div>
         </div>
         <div className="winrate">
           <div className="winrate-top">
-            <span>Win Rate</span>
+            <span>{t('side.winRate')}</span>
             <span className="winrate-pct">{pct(winRate)}</span>
           </div>
           <div className="winrate-bar">
@@ -205,12 +208,12 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
         </div>
         <div className="stat-pair">
           <div className="bw-card win">
-            <span className="sc-label">Best Day</span>
+            <span className="sc-label">{t('side.bestDay')}</span>
             <span className="sc-value pos">{summary.bestDay ? formatMoneySigned(summary.bestDay.pnl) : '—'}</span>
             <span className="sc-sub">{summary.bestDay ? shortDate(summary.bestDay.date) : ''}</span>
           </div>
           <div className="bw-card loss">
-            <span className="sc-label">Worst Day</span>
+            <span className="sc-label">{t('side.worstDay')}</span>
             <span className="sc-value neg">{summary.worstDay ? formatMoneySigned(summary.worstDay.pnl) : '—'}</span>
             <span className="sc-sub">{summary.worstDay ? shortDate(summary.worstDay.date) : ''}</span>
           </div>
@@ -219,8 +222,8 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
 
       <div className="lens-block">
         <div className="insight-grid">
-          <Insight label="Avg Win" value={formatMoneySigned(summary.avgWin)} cls="pos" />
-          <Insight label="Avg Loss" value={formatMoneySigned(-summary.avgLoss)} cls="neg" />
+          <Insight label={t('side.avgWin')} value={formatMoneySigned(summary.avgWin)} cls="pos" />
+          <Insight label={t('side.avgLoss')} value={formatMoneySigned(-summary.avgLoss)} cls="neg" />
           <Insight
             label="Best Week"
             value={bestWeek ? formatMoneySigned(bestWeek.pnl) : '—'}

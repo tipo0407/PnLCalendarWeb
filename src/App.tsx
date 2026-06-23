@@ -347,17 +347,17 @@ export default function App() {
               <span className="grad">visual discipline journal</span>.
             </h2>
             <p className="landing-tagline">
-              Not to predict the market — to help you stop repeating the same trading mistake.
+              {t('landing.tagline')}
             </p>
             <div className="landing-cta">
               <button className="btn btn-sample" onClick={loadSample}>
-                <Sparkles size={16} /> Explore with sample data
+                <Sparkles size={16} /> {t('landing.cta')}
               </button>
               <span className="landing-cta-hint">
                 <UploadCloud size={14} /> or upload your <code>.xlsx</code> / CSV, or paste a Google Sheet link above
               </span>
               <button className="landing-plans" onClick={() => setShowPricing(true)}>
-                <Sparkles size={14} /> See plans &amp; pricing
+                <Sparkles size={14} /> {t('landing.plans')}
               </button>
             </div>
 

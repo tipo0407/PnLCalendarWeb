@@ -25,6 +25,26 @@ const EN: Record<string, string> = {
   'settings.goal': 'Monthly P&L goal',
   'settings.language': 'Language',
   'settings.dataPrivacy': 'Data & privacy',
+  // Landing
+  'landing.tagline': 'Not to predict the market — to help you stop repeating the same trading mistake.',
+  'landing.cta': 'Explore with sample data',
+  'landing.plans': 'See plans & pricing',
+  // Sidebar
+  'side.totalPnl': 'TOTAL P&L',
+  'side.winDays': 'Win Days',
+  'side.lossDays': 'Loss Days',
+  'side.winRate': 'Win Rate',
+  'side.avgWin': 'Avg Win',
+  'side.avgLoss': 'Avg Loss',
+  'side.bestDay': 'Best Day',
+  'side.worstDay': 'Worst Day',
+  // Atlas KPIs
+  'atlas.netPnl': 'Net P&L',
+  'atlas.trades': 'Trades',
+  'atlas.winRate': 'Win Rate',
+  'atlas.avgTrade': 'Avg Trade',
+  'atlas.profitFactor': 'Profit Factor',
+  'atlas.maxDD': 'Max Drawdown',
 };
 
 const ZH: Record<string, string> = {
@@ -42,6 +62,26 @@ const ZH: Record<string, string> = {
   'settings.goal': '每月盈亏目标',
   'settings.language': '语言',
   'settings.dataPrivacy': '数据与隐私',
+  // Landing
+  'landing.tagline': '不是帮你预测市场，而是帮你停止重复犯同一个交易错误。',
+  'landing.cta': '用示例数据体验',
+  'landing.plans': '查看套餐与价格',
+  // Sidebar
+  'side.totalPnl': '总盈亏',
+  'side.winDays': '盈利天数',
+  'side.lossDays': '亏损天数',
+  'side.winRate': '胜率',
+  'side.avgWin': '平均盈利',
+  'side.avgLoss': '平均亏损',
+  'side.bestDay': '最佳单日',
+  'side.worstDay': '最差单日',
+  // Atlas KPIs
+  'atlas.netPnl': '净盈亏',
+  'atlas.trades': '交易数',
+  'atlas.winRate': '胜率',
+  'atlas.avgTrade': '每笔均值',
+  'atlas.profitFactor': '盈亏比',
+  'atlas.maxDD': '最大回撤',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };

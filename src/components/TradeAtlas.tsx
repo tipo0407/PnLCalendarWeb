@@ -17,6 +17,8 @@ import { emotionEdge } from '../lib/emotions';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 import ProGate from './ProGate';
 import Playbook from './Playbook';
 import RulesPanel from './RulesPanel';
@@ -66,6 +68,7 @@ function printAtlas() {
 }
 
 export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
+  useLang(); // re-render on language change
   const theme = useThemeColors();
   const POS = theme.pos;
   const NEG = theme.neg;
@@ -155,12 +158,12 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
           </button>
         </div>
         <div className="kpi-row">
-          <Kpi dot={NEG} label="Net P&L" value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
-          <Kpi dot={ACC} label="Trades" value={String(summary.tradeCount)} />
-          <Kpi dot={POS} label="Win Rate" value={`${(summary.winRateTrades * 100).toFixed(1)}%`} />
-          <Kpi dot={summary.expectancy >= 0 ? POS : NEG} label="Avg Trade" value={formatMoneySigned(summary.tradeCount ? summary.totalPnl / summary.tradeCount : 0)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
-          <Kpi dot={ACC} label="Profit Factor" value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} />
-          <Kpi dot={NEG} label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
+          <Kpi dot={NEG} label={t('atlas.netPnl')} value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
+          <Kpi dot={ACC} label={t('atlas.trades')} value={String(summary.tradeCount)} />
+          <Kpi dot={POS} label={t('atlas.winRate')} value={`${(summary.winRateTrades * 100).toFixed(1)}%`} />
+          <Kpi dot={summary.expectancy >= 0 ? POS : NEG} label={t('atlas.avgTrade')} value={formatMoneySigned(summary.tradeCount ? summary.totalPnl / summary.tradeCount : 0)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
+          <Kpi dot={ACC} label={t('atlas.profitFactor')} value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} />
+          <Kpi dot={NEG} label={t('atlas.maxDD')} value={formatMoney(summary.maxDrawdown)} cls="neg" />
         </div>
       </div>
 
