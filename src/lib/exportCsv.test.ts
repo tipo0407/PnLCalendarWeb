@@ -17,10 +17,18 @@ describe('tradesToCsv', () => {
     const lines = csv.split('\r\n');
     expect(lines[0]).toContain('Date');
     expect(lines[0]).toContain('P&L');
+    expect(lines[0]).toContain('Cumulative');
+    expect(lines[0]).toContain('R');
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('2025-06-02');
     expect(lines[1]).toContain('09:30:00'); // 34200s -> 09:30:00
     expect(lines[1]).toContain('100');
+  });
+  it('computes a running cumulative column', () => {
+    const csv = tradesToCsv([trade({ profitLoss: 100 }), trade({ profitLoss: -40 })]);
+    const lines = csv.split('\r\n');
+    expect(lines[1].endsWith('100.00,')).toBe(true); // cum after row 1, R blank (no risk)
+    expect(lines[2].endsWith('60.00,')).toBe(true);  // cum after row 2
   });
   it('quotes cells containing commas', () => {
     const csv = tradesToCsv([trade({ reasonEmotion: 'fomo, chased' })]);

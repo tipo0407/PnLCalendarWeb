@@ -1,4 +1,6 @@
 import type { TradeRecord } from '../types';
+import { getSettings } from './settings';
+import { getActiveProfile, DEFAULT_PROFILE } from './profiles';
 
 function hms(secs: number | null): string {
   if (secs == null) return '';
@@ -29,11 +31,24 @@ const COLUMNS: { header: string; get: (t: TradeRecord) => string | number }[] = 
   { header: 'Note', get: (t) => t.note },
 ];
 
-/** Serialize trades to a CSV string (header row + one row per trade). */
+/** Serialize trades to a CSV string (header + computed Cumulative & R columns). */
 export function tradesToCsv(trades: TradeRecord[]): string {
-  const head = COLUMNS.map((c) => csvCell(c.header)).join(',');
-  const rows = trades.map((t) => COLUMNS.map((c) => csvCell(c.get(t))).join(','));
+  const risk = getSettings().riskPerTrade;
+  const head = [...COLUMNS.map((c) => csvCell(c.header)), 'Cumulative', 'R'].join(',');
+  let cum = 0;
+  const rows = trades.map((t) => {
+    cum += t.profitLoss;
+    const r = risk > 0 ? (t.profitLoss / risk).toFixed(2) : '';
+    return [...COLUMNS.map((c) => csvCell(c.get(t))), cum.toFixed(2), r].join(',');
+  });
   return [head, ...rows].join('\r\n');
+}
+
+function profileSlug(): string {
+  const p = getActiveProfile();
+  if (p.id === DEFAULT_PROFILE.id) return '';
+  const s = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s ? `${s}-` : '';
 }
 
 /** Trigger a client-side download of text content. */
@@ -51,5 +66,5 @@ export function downloadText(filename: string, text: string, mime = 'text/plain'
 
 export function exportTradesCsv(trades: TradeRecord[]) {
   const stamp = new Date().toISOString().slice(0, 10);
-  downloadText(`trades-${stamp}.csv`, tradesToCsv(trades), 'text/csv');
+  downloadText(`trades-${profileSlug()}${stamp}.csv`, tradesToCsv(trades), 'text/csv');
 }
