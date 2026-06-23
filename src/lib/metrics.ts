@@ -1,4 +1,5 @@
 import type { TradeRecord, DailyPnl } from '../types';
+import { currencySymbol } from './settings';
 
 export function groupByDay(trades: TradeRecord[]): Map<string, DailyPnl> {
   const map = new Map<string, DailyPnl>();
@@ -306,7 +307,7 @@ export function pnlHistogram(trades: TradeRecord[], bucketCount = 11): { label: 
 
 export function formatMoney(n: number): string {
   const sign = n < 0 ? '-' : '';
-  return `${sign}$${Math.abs(n).toLocaleString('en-US', {
+  return `${sign}${currencySymbol()}${Math.abs(n).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -321,8 +322,9 @@ export function formatMoneySigned(n: number): string {
 export function compactMoney(v: number): string {
   const a = Math.abs(v);
   const sign = v < 0 ? '-' : '';
-  if (a >= 1000) return `${sign}$${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k`;
-  return `${sign}$${a.toFixed(0)}`;
+  const c = currencySymbol();
+  if (a >= 1000) return `${sign}${c}${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k`;
+  return `${sign}${c}${a.toFixed(0)}`;
 }
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

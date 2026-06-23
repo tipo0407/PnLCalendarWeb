@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
@@ -16,6 +16,8 @@ import Sidebar from './components/Sidebar';
 import DayDetailModal from './components/DayDetailModal';
 import TradeAtlas from './components/TradeAtlas';
 import WeeklyReview from './components/WeeklyReview';
+import SettingsModal from './components/SettingsModal';
+import { SETTINGS_EVENT } from './lib/settings';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
@@ -45,6 +47,15 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  // Bumped on any settings change so money/labels re-render with new prefs.
+  const [, setSettingsTick] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setSettingsTick((n) => n + 1);
+    window.addEventListener(SETTINGS_EVENT, bump);
+    return () => window.removeEventListener(SETTINGS_EVENT, bump);
+  }, []);
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
@@ -191,6 +202,15 @@ export default function App() {
           <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
 
           <button
+            className="icon-btn"
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+            aria-label="Settings"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+
+          <button
             className="theme-toggle"
             onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -204,6 +224,10 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <AnimatePresence>
+        {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} />}
+      </AnimatePresence>
 
       {trades.length === 0 ? (
         <div className="landing">
