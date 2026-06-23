@@ -164,6 +164,38 @@ the order id → email the returned key to the buyer → they paste it into Sett
 activate. Issue keys offline with `npm run license:gen` (or `node server/api.cjs --gen <payload>`).
 Run the API standalone with `npm run api` (port 8788); `server/serve.cjs` also serves these routes.
 
+## Deploy
+
+The app is static and the server is dependency-free Node, so deployment is simple.
+
+**Static hosting (frontend only):** `npm run build` and serve `dist/` on any static host
+(Netlify, Vercel, GitHub Pages, S3). License activation falls back to the offline format check
+when `/api/*` isn't present, so the journal works fully without a backend.
+
+**Docker (frontend + API + proxies):**
+
+```sh
+docker build -t pnlcalendar .
+docker run -p 4173:4173 \
+  -e LICENSE_SECRET=change-me \
+  -e ADMIN_TOKEN=some-admin-token \
+  # -e STRIPE_SECRET_KEY=sk_live_...   # enables real checkout
+  pnlcalendar
+```
+
+The image builds the frontend and serves it via `server/serve.cjs` on port 4173, including
+`/api/checkout` and `/api/license/*`. Environment variables:
+
+| Var | Purpose |
+| --- | --- |
+| `PORT` | Server port (default 4173) |
+| `LICENSE_SECRET` | HMAC secret for signing/verifying license keys |
+| `ADMIN_TOKEN` | Enables `/api/license/issue`; sent as the `x-admin-token` header |
+| `STRIPE_SECRET_KEY` | When set, `/api/checkout` returns a real Checkout URL |
+
+Note: the Google-Sheet `/api/sync` refresh is Windows-only (it runs a `.bat`); it is inert in the
+Linux container and the app degrades gracefully (uploads and pasted Google Sheet links still work).
+
 ## Tech stack
 
 - React 19 + TypeScript + Vite

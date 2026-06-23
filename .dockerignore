@@ -1,0 +1,11 @@
+node_modules
+dist
+test-results
+playwright-report
+blob-report
+playwright/.cache
+.git
+.github
+e2e
+*.log
+.DS_Store
