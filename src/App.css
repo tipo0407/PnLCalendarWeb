@@ -325,6 +325,18 @@
 .acct-actions { display: flex; gap: 8px; }
 .acct-err { margin-top: 9px; font-size: 12.5px; color: var(--neg); }
 .sync-section .set-section-head svg { color: var(--accent); }
+.tags-mgr { padding: 14px 20px 4px; border-top: 1px solid var(--border); }
+.tags-group { margin-top: 8px; }
+.tags-group-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+.tags-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+.tags-name { flex: 1; font-size: 13.5px; }
+.tags-edit { flex: 1; background: var(--surface-2); border: 1px solid var(--accent); color: var(--text); border-radius: 7px; padding: 6px 8px; font-size: 13px; }
+.tags-edit:focus { outline: none; box-shadow: var(--ring); }
+.tags-actions { display: flex; align-items: center; gap: 4px; }
+.tags-actions > button { background: none; border: none; cursor: pointer; color: var(--muted); padding: 5px; border-radius: 6px; display: inline-flex; }
+.tags-actions > button:hover { color: var(--text); background: var(--surface-2); }
+.tags-merge { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); }
+.tags-merge select { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 4px 6px; font-size: 12px; }
 
 /* ===== Empty state ===== */
 .empty-state { flex: 1; display: grid; place-items: center; }

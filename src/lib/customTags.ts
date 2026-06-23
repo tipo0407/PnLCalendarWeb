@@ -67,3 +67,11 @@ export function removeCustomTag(kind: 'mistake' | 'emotion', key: string) {
   else c.emotions = c.emotions.filter((d) => d.key !== key);
   persist();
 }
+
+export function renameCustomTag(kind: 'mistake' | 'emotion', key: string, label: string) {
+  const c = load();
+  const list = kind === 'mistake' ? c.mistakes : c.emotions;
+  const def = list.find((d) => d.key === key);
+  if (def) def.label = label.trim() || def.label;
+  persist();
+}

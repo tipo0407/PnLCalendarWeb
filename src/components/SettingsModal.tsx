@@ -9,6 +9,7 @@ import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } from '../lib/theme';
 import AccountSection from './AccountSection';
+import TagsManager from './TagsManager';
 import { useAccount } from '../lib/useAccount';
 import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced } from '../lib/cloudSync';
 
@@ -217,6 +218,8 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         </div>
 
         <AccountSection />
+
+        <TagsManager />
 
         {account && (
           <div className="acct-section sync-section">

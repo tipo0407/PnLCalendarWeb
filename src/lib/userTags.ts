@@ -91,3 +91,17 @@ export function replaceAllUserTags(map: Record<string, TradeTags>) {
   cache = { ...map };
   persist();
 }
+
+/** Reassign every occurrence of one tag key to another (for merges), in-profile. */
+export function remapTag(kind: 'mistake' | 'emotion', fromKey: string, toKey: string) {
+  const c = load();
+  for (const k of Object.keys(c)) {
+    const arr = kind === 'mistake' ? c[k].mistakes : c[k].emotions;
+    if (arr.includes(fromKey)) {
+      const next = Array.from(new Set(arr.map((x) => (x === fromKey ? toKey : x))));
+      if (kind === 'mistake') c[k] = { ...c[k], mistakes: next };
+      else c[k] = { ...c[k], emotions: next };
+    }
+  }
+  persist();
+}
