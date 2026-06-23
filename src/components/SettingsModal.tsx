@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck } from 'lucide-react';
+import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck, CloudUpload, CloudDownload } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { getSettings, saveSettings, type Settings } from '../lib/settings';
-import { exportBackup, restoreBackup, clearAllData, storageUsageMB } from '../lib/backup';
+import { exportBackup, restoreBackup, clearAllData, storageUsageMB, buildBackup } from '../lib/backup';
 import { getErrors, clearErrors, type LoggedError } from '../lib/logger';
 import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } from '../lib/theme';
 import AccountSection from './AccountSection';
+import { useAccount } from '../lib/useAccount';
+import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced } from '../lib/cloudSync';
 
 interface Props {
   onClose: () => void;
@@ -25,7 +27,46 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [errors, setErrors] = useState<LoggedError[]>(() => getErrors());
   const [accent, setAccentId] = useState(() => getAccentId());
   const [contrast, setContrast] = useState(() => getHighContrast());
+  const account = useAccount();
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const lang = useLang();
+
+  async function cloudPush() {
+    setSyncing(true); setSyncMsg('Checking cloud…');
+    try {
+      const remote = await pullBackup();
+      if (isRemoteNewer(remote.updatedAt) && remote.blob) {
+        if (!window.confirm('The cloud copy is newer than your last sync. Overwrite it with this device’s data?')) {
+          setSyncMsg('Push cancelled.'); setSyncing(false); return;
+        }
+      }
+      const ts = await pushBackup(buildBackup(trades));
+      setSyncMsg(`Pushed to cloud at ${new Date(ts).toLocaleString()}.`);
+    } catch (e) {
+      setSyncMsg(e instanceof Error ? e.message : 'Push failed.');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function cloudPull() {
+    setSyncing(true); setSyncMsg('Pulling…');
+    try {
+      const { blob, updatedAt } = await pullBackup();
+      if (!blob) { setSyncMsg('Nothing stored in the cloud yet.'); setSyncing(false); return; }
+      if (!window.confirm('Replace this device’s data with the cloud copy?')) { setSyncMsg('Pull cancelled.'); setSyncing(false); return; }
+      const restored = restoreBackup(JSON.stringify(blob));
+      onReplaceTrades(restored);
+      setS({ ...getSettings() });
+      if (updatedAt) markSynced(updatedAt);
+      setSyncMsg(`Pulled ${restored.length} trades from cloud.`);
+    } catch (e) {
+      setSyncMsg(e instanceof Error ? e.message : 'Pull failed.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     storageUsageMB().then(setUsage);
@@ -176,6 +217,21 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         </div>
 
         <AccountSection />
+
+        {account && (
+          <div className="acct-section sync-section">
+            <div className="set-section-head"><CloudUpload size={14} /> Cloud sync</div>
+            <p className="set-data-note">
+              Back up this profile to your account, or restore it on another device.
+              {getLastSynced() && <> Last synced {new Date(getLastSynced()!).toLocaleString()}.</>}
+            </p>
+            <div className="set-data-actions">
+              <button className="set-data-btn" disabled={syncing} onClick={cloudPush}><CloudUpload size={14} /> Push to cloud</button>
+              <button className="set-data-btn" disabled={syncing} onClick={cloudPull}><CloudDownload size={14} /> Pull from cloud</button>
+            </div>
+            {syncMsg && <div className="set-data-msg">{syncMsg}</div>}
+          </div>
+        )}
 
         <div className="settings-data">
           <div className="set-section-head"><ShieldCheck size={14} /> {t('settings.dataPrivacy')}</div>
