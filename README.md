@@ -146,6 +146,24 @@ host that also proxies `/yahoo` (intraday candles) and `/gsheet`, serves the liv
 runs it; `server/install-autostart.ps1` registers it to auto-start at logon. Paths and the sheet
 id in `server/` are personal defaults — adjust them for your own setup.
 
+## Licensing & checkout (Pro)
+
+The app is local-first, so "Pro" is unlocked with a license key rather than a server session.
+`server/api.cjs` is a dependency-free service exposing:
+
+- `POST /api/checkout` — Stripe-ready stub. Returns a Checkout URL when `STRIPE_SECRET_KEY`
+  is configured; otherwise tells the client to use a license key.
+- `POST /api/license/verify` `{ key }` — validates an HMAC-signed key (constant-time);
+  the demo key `PNLCAL-PRO-DEMO` always passes. The client verifies online and falls back to
+  an offline format check, so activation works even without the API.
+- `POST /api/license/issue` `{ payload }` — **admin-only** (set `ADMIN_TOKEN`, send it as the
+  `x-admin-token` header). Mints a key bound to an order/email payload.
+
+**Post-payment flow:** Stripe Checkout → webhook → your handler calls `/api/license/issue` with
+the order id → email the returned key to the buyer → they paste it into Settings/Plans to
+activate. Issue keys offline with `npm run license:gen` (or `node server/api.cjs --gen <payload>`).
+Run the API standalone with `npm run api` (port 8788); `server/serve.cjs` also serves these routes.
+
 ## Tech stack
 
 - React 19 + TypeScript + Vite

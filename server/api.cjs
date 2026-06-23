@@ -94,6 +94,19 @@ async function handle(req, res) {
     return send(res, 200, { valid, plan: valid ? 'pro' : 'free' });
   }
 
+  // Admin-only key issuance. Intended to be called by a post-payment hook
+  // (e.g. a Stripe webhook handler) or an operator. Requires ADMIN_TOKEN.
+  //   curl -XPOST -H "x-admin-token: $ADMIN_TOKEN" -d '{"payload":"order_123"}' /api/license/issue
+  if (req.method === 'POST' && url === '/api/license/issue') {
+    const adminToken = process.env.ADMIN_TOKEN;
+    if (!adminToken) return send(res, 403, { error: 'issuance disabled (set ADMIN_TOKEN)' });
+    if (req.headers['x-admin-token'] !== adminToken) return send(res, 401, { error: 'unauthorized' });
+    const body = await readBody(req);
+    const raw = body && typeof body.payload === 'string' ? body.payload.replace(/[^A-Za-z0-9]/g, '') : undefined;
+    const key = generateKey(raw && raw.length >= 4 ? raw : undefined);
+    return send(res, 200, { key, plan: 'pro' });
+  }
+
   return send(res, 404, { error: 'not found' });
 }
 
