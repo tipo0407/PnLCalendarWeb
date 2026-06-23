@@ -6,6 +6,7 @@ import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
 import type { SheetData } from './lib/parseWorkbook';
 import { sampleTrades } from './data/sampleTrades';
+import { savePersistedTrades, loadPersistedTrades } from './lib/persist';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
 import DataSourceBar from './components/DataSourceBar';
 import ImportWizard from './components/ImportWizard';
@@ -24,7 +25,7 @@ type View = 'calendar' | 'atlas';
 type Theme = 'light' | 'dark';
 
 export default function App() {
-  const [trades, setTrades] = useState<TradeRecord[]>([]);
+  const [trades, setTrades] = useState<TradeRecord[]>(() => loadPersistedTrades() ?? []);
   const [holidays, setHolidays] = useState<HolidayMap>({});
   const [view, setView] = useState<View>('calendar');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -32,6 +33,11 @@ export default function App() {
     () => (localStorage.getItem(THEME_KEY) as Theme) || 'light'
   );
   const [viewMonth, setViewMonth] = useState<{ year: number; month: number }>(() => {
+    const p = loadPersistedTrades();
+    if (p && p.length > 0) {
+      const [y, m] = p[p.length - 1].date.split('-').map(Number);
+      return { year: y, month: m - 1 };
+    }
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
@@ -68,7 +74,9 @@ export default function App() {
         const buf = await resp.arrayBuffer();
         const loaded = parseWorkbook(buf);
         if (cancelled || loaded.length === 0) return;
+        setSampleMode(false);
         setTrades(loaded);
+        savePersistedTrades(loaded);
         const last = loaded[loaded.length - 1].date;
         const [yy, mm] = last.split('-').map(Number);
         setViewMonth({ year: yy, month: mm - 1 });
@@ -103,7 +111,7 @@ export default function App() {
   const dailyMap = useMemo(() => groupByDay(trades), [trades]);
   const summary = useMemo(() => computeSummary(trades), [trades]);
 
-  function handleLoaded(loaded: TradeRecord[]) {
+  function applyTrades(loaded: TradeRecord[]) {
     setSampleMode(false);
     setTrades(loaded);
     if (loaded.length > 0) {
@@ -111,6 +119,11 @@ export default function App() {
       const [y, m] = last.split('-').map(Number);
       setViewMonth({ year: y, month: m - 1 });
     }
+    savePersistedTrades(loaded);
+  }
+
+  function handleLoaded(loaded: TradeRecord[]) {
+    applyTrades(loaded);
   }
 
   function loadSample() {
