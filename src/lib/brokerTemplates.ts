@@ -61,6 +61,7 @@ export const BROKER_TEMPLATES: BrokerTemplate[] = [
       exitTime: ['Exit time'],
       profitLoss: ['Profit', 'Net profit', 'P/L'],
       runningPnl: ['Cum. net profit', 'Cumulative profit'],
+      account: ['Account'],
     },
   },
   {
@@ -133,6 +134,7 @@ export const BROKER_TEMPLATES: BrokerTemplate[] = [
       size: ['Fill Size', 'Qty'],
       entryPrice: ['Fill Price', 'Avg Fill Price'],
       profitLoss: ['P/L', 'Realized P/L'],
+      account: ['Account'],
     },
   },
   {

@@ -10,7 +10,7 @@ export interface SheetData {
 export type FieldKey =
   | 'date' | 'profitLoss' | 'entryTime' | 'exitTime' | 'duration' | 'tradeNumber'
   | 'direction' | 'symbol' | 'entryPrice' | 'exitPrice' | 'size'
-  | 'setup' | 'reasonEmotion' | 'runningPnl' | 'note';
+  | 'setup' | 'reasonEmotion' | 'runningPnl' | 'note' | 'account';
 
 export type FieldKind = 'date' | 'time' | 'number' | 'int' | 'text';
 
@@ -39,6 +39,7 @@ export const FIELDS: FieldDef[] = [
   { key: 'reasonEmotion', label: 'Reason & emotion', kind: 'text', aliases: ['reasonemotion', 'reasonandemotion', 'reasonmotion', 'reason', 'emotion', 'rationale', 'psychology'] },
   { key: 'runningPnl', label: 'Cumulative P&L', kind: 'number', aliases: ['apl', 'cumulative', 'cumpnl', 'runningpnl', 'equity', 'balance'] },
   { key: 'note', label: 'Note', kind: 'text', aliases: ['note', 'notes', 'comment', 'comments', 'remark', 'journal', 'lesson'] },
+  { key: 'account', label: 'Account', kind: 'text', aliases: ['account', 'accountname', 'acct', 'accountid', 'accountnumber'] },
 ];
 
 export type Mapping = Partial<Record<FieldKey, number>>;
@@ -214,6 +215,7 @@ export function parseSheet(sheet: SheetData, mapping: Mapping): ImportResult {
       reasonEmotion: toStr(cell(row, 'reasonEmotion')),
       runningPnl: toNumber(cell(row, 'runningPnl')) ?? 0,
       note: toStr(cell(row, 'note')),
+      account: toStr(cell(row, 'account')),
     });
   }
 

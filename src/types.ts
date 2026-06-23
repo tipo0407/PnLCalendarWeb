@@ -18,6 +18,8 @@ export interface TradeRecord {
   reasonEmotion: string;
   runningPnl: number;
   note: string;
+  /** Optional account/sub-account name for multi-account filtering. */
+  account?: string;
 }
 
 export interface DailyPnl {

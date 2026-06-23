@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
 import type { TradeRecord } from './types';
-import { groupByDay, computeSummary } from './lib/metrics';
+import { groupByDay, computeSummary, distinctAccounts } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
 import type { SheetData } from './lib/parseWorkbook';
 import { sampleTrades } from './data/sampleTrades';
@@ -151,8 +151,14 @@ export default function App() {
     return () => document.removeEventListener('pointermove', onMove);
   }, []);
 
-  const dailyMap = useMemo(() => groupByDay(trades), [trades]);
-  const summary = useMemo(() => computeSummary(trades), [trades]);
+  const accounts = useMemo(() => distinctAccounts(trades), [trades]);
+  const [account, setAccount] = useState<string>('All');
+  const filteredTrades = useMemo(
+    () => (account === 'All' ? trades : trades.filter((t) => (t.account ?? '') === account)),
+    [trades, account],
+  );
+  const dailyMap = useMemo(() => groupByDay(filteredTrades), [filteredTrades]);
+  const summary = useMemo(() => computeSummary(filteredTrades), [filteredTrades]);
 
   function applyTrades(loaded: TradeRecord[]) {
     setSampleMode(false);
@@ -231,6 +237,15 @@ export default function App() {
                 </button>
               ))}
             </nav>
+          )}
+
+          {trades.length > 0 && accounts.length > 1 && (
+            <label className="acct-filter" title="Filter by account">
+              <select value={account} onChange={(e) => setAccount(e.target.value)} aria-label="Account filter">
+                <option value="All">All accounts</option>
+                {accounts.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </label>
           )}
 
           <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
@@ -356,7 +371,7 @@ export default function App() {
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
               <Sidebar
-                trades={trades}
+                trades={filteredTrades}
                 summary={summary}
                 viewMonth={viewMonth}
                 onJumpMonth={(year, month) => setViewMonth({ year, month })}
@@ -389,7 +404,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TradeAtlas trades={trades} summary={summary} onOpenSettings={() => setShowSettings(true)} />
+              <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} />
             </motion.div>
           ) : (
             <motion.div
@@ -400,7 +415,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <WeeklyReview trades={trades} />
+              <WeeklyReview trades={filteredTrades} />
             </motion.div>
           )}
         </AnimatePresence>

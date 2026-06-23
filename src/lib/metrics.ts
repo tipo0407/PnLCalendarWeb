@@ -231,6 +231,17 @@ export function distinctSymbols(trades: TradeRecord[]): string[] {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s);
 }
 
+/** Distinct account names present in the data (non-empty), most-traded first. */
+export function distinctAccounts(trades: TradeRecord[]): string[] {
+  const counts = new Map<string, number>();
+  for (const t of trades) {
+    const a = (t.account ?? '').trim();
+    if (!a) continue;
+    counts.set(a, (counts.get(a) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([a]) => a);
+}
+
 export interface HourEdge {
   hour: number;
   key: string; // 12-hour label, e.g. "9a", "12p"
