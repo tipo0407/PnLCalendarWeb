@@ -1,0 +1,18 @@
+{
+  "name": "PnL Calendar — Trading Journal",
+  "short_name": "PnL Cal",
+  "description": "Local-first trading journal: P&L calendar, behavioral review, risk & R-multiple analytics. Your data stays in your browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
