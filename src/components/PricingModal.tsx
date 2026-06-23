@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, Sparkles } from 'lucide-react';
+import { X, Check, Sparkles, KeyRound, BadgeCheck } from 'lucide-react';
+import { useIsPro } from '../lib/usePlan';
+import { activatePro, deactivatePro, isValidKey, DEMO_KEY, planKey } from '../lib/plan';
+import { startCheckout, PRICE_IDS } from '../lib/checkout';
 
 interface Props {
   onClose: () => void;
@@ -71,6 +75,32 @@ const TIERS: Tier[] = [
 ];
 
 export default function PricingModal({ onClose }: Props) {
+  const pro = useIsPro();
+  const [keyInput, setKeyInput] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgKind, setMsgKind] = useState<'ok' | 'err' | 'info'>('info');
+
+  function activate() {
+    if (activatePro(keyInput)) {
+      setMsgKind('ok');
+      setMsg('Pro activated. Thanks for the support!');
+      setKeyInput('');
+    } else {
+      setMsgKind('err');
+      setMsg('That license key isn’t valid. Try the demo key to explore Pro.');
+    }
+  }
+
+  async function checkout() {
+    const res = await startCheckout(PRICE_IDS.proLifetime);
+    if (res.ok && res.url) {
+      window.location.href = res.url;
+    } else {
+      setMsgKind('info');
+      setMsg(res.message);
+    }
+  }
+
   return (
     <motion.div
       className="modal-overlay"
@@ -113,7 +143,11 @@ export default function PricingModal({ onClose }: Props) {
                   <li key={f}><Check size={14} /> {f}</li>
                 ))}
               </ul>
-              {t.href ? (
+              {pro && t.id === 'pro' ? (
+                <button className="tier-cta current" disabled><BadgeCheck size={15} /> Active</button>
+              ) : t.id === 'pro' ? (
+                <button className={`tier-cta ${t.featured ? 'primary' : ''}`} onClick={checkout}>{t.cta}</button>
+              ) : t.href ? (
                 <a className={`tier-cta ${t.featured ? 'primary' : ''}`} href={t.href}>{t.cta}</a>
               ) : (
                 <button className="tier-cta current" disabled>{t.cta}</button>
@@ -122,6 +156,30 @@ export default function PricingModal({ onClose }: Props) {
             </div>
           ))}
         </div>
+
+        <div className="pricing-activate">
+          {pro ? (
+            <div className="activate-active">
+              <span><BadgeCheck size={16} /> Pro is active{planKey() ? ` · key ${planKey()}` : ''}.</span>
+              <button className="activate-btn ghost" onClick={() => { deactivatePro(); setMsg(null); }}>Deactivate</button>
+            </div>
+          ) : (
+            <div className="activate-row">
+              <KeyRound size={16} />
+              <input
+                type="text"
+                className="activate-input"
+                placeholder={`License key (try ${DEMO_KEY})`}
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') activate(); }}
+              />
+              <button className="activate-btn" disabled={!isValidKey(keyInput)} onClick={activate}>Activate</button>
+            </div>
+          )}
+          {msg && <div className={`activate-msg ${msgKind}`}>{msg}</div>}
+        </div>
+
         <p className="pricing-foot">
           Pricing is indicative while in early access. A trading journal &amp; review tool — not investment advice.
         </p>
