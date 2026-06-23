@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { DailyPnl } from '../types';
-import { dayStreaks, monthProgress } from './goals';
+import { dayStreaks, monthProgress, monthBenchmark } from './goals';
 
 function day(date: string, pnl: number): DailyPnl {
   return { date, pnl, tradeCount: 1, wins: pnl > 0 ? 1 : 0, losses: pnl < 0 ? 1 : 0, trades: [] };
@@ -22,6 +22,22 @@ describe('dayStreaks', () => {
     const s = dayStreaks([day('2025-01-01', 10), day('2025-01-02', -5), day('2025-01-03', -8)]);
     expect(s.currentType).toBe('loss');
     expect(s.current).toBe(2);
+  });
+});
+
+describe('monthBenchmark', () => {
+  it('projects at pace and scores consistency', () => {
+    const days = [day('2025-06-02', 100), day('2025-06-03', 100), day('2025-06-04', -50)];
+    const b = monthBenchmark(days, 21);
+    // avg day = 50 -> projected 1050
+    expect(b.projected).toBeCloseTo(1050, 5);
+    // two equal green days -> top day share 0.5 -> consistency 50
+    expect(b.topDayShare).toBeCloseTo(0.5, 5);
+    expect(b.consistency).toBe(50);
+  });
+  it('is zero with no green days', () => {
+    const b = monthBenchmark([day('2025-06-02', -10)], 20);
+    expect(b.consistency).toBe(0);
   });
 });
 

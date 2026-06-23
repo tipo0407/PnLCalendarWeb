@@ -4,6 +4,7 @@ import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
+import { monthBenchmark } from '../lib/goals';
 import { dayDiscipline, disciplineColor } from '../lib/discipline';
 import MoneyCountUp from './CountUp';
 
@@ -37,7 +38,7 @@ export default function CalendarView({
   onNavigate,
   onSelectDay,
 }: Props) {
-  const { weeks, stats } = useMemo(() => {
+  const { weeks, monthDays, stats } = useMemo(() => {
     const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 
     // Collect month day records.
@@ -103,6 +104,7 @@ export default function CalendarView({
 
     return {
       weeks,
+      monthDays,
       stats: {
         total,
         trades,
@@ -117,6 +119,16 @@ export default function CalendarView({
       },
     };
   }, [dailyMap, year, month]);
+
+  const benchmark = useMemo(() => {
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    let businessDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const wd = new Date(Date.UTC(year, month, d)).getUTCDay();
+      if (wd !== 0 && wd !== 6) businessDays++;
+    }
+    return monthBenchmark(monthDays, businessDays);
+  }, [monthDays, year, month]);
 
   const monthMax = useMemo(() => {
     let max = 0;
@@ -179,6 +191,16 @@ export default function CalendarView({
             <span className="hstat-label">Worst Day</span>
             <span className="hstat-val neg">{stats.worst ? formatMoneySigned(stats.worst.pnl) : '—'}</span>
             <span className="hstat-sub">{stats.worst ? shortDate(stats.worst.date) : '—'}</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Projected</span>
+            <span className={`hstat-val ${benchmark.projected >= 0 ? 'pos' : 'neg'}`}>{stats.days ? formatMoneySigned(benchmark.projected) : '—'}</span>
+            <span className="hstat-sub">at current pace</span>
+          </div>
+          <div className="hstat">
+            <span className="hstat-label">Consistency</span>
+            <span className="hstat-val">{stats.days ? `${benchmark.consistency}` : '—'}<span className="hstat-unit">/100</span></span>
+            <span className="hstat-sub">{benchmark.topDayShare > 0 ? `top day ${(benchmark.topDayShare * 100).toFixed(0)}%` : 'spread of gains'}</span>
           </div>
         </div>
       </div>

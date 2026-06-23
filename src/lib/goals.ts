@@ -76,3 +76,27 @@ export function monthProgress(days: DailyPnl[], year: number, month: number, goa
     tradeDays,
   };
 }
+
+export interface MonthBenchmark {
+  /** Pace projection: avg day P&L × business days in the month. */
+  projected: number;
+  /** 0–100: how evenly profit is spread (100 = not reliant on the best day). */
+  consistency: number;
+  /** Share of green-day profit that comes from the single best day. */
+  topDayShare: number;
+}
+
+/** Pace projection and consistency score for a month's day records. */
+export function monthBenchmark(days: DailyPnl[], businessDays: number): MonthBenchmark {
+  const active = days.length;
+  const total = days.reduce((s, d) => s + d.pnl, 0);
+  const avgDay = active ? total / active : 0;
+  const greens = days.filter((d) => d.pnl > 0);
+  const sumGreen = greens.reduce((s, d) => s + d.pnl, 0);
+  const best = greens.reduce((m, d) => Math.max(m, d.pnl), 0);
+  const topDayShare = sumGreen > 0 ? best / sumGreen : 0;
+  let consistency = 0;
+  if (greens.length >= 2) consistency = Math.round((1 - topDayShare) * 100);
+  else if (greens.length === 1) consistency = 50;
+  return { projected: avgDay * businessDays, consistency, topDayShare };
+}
