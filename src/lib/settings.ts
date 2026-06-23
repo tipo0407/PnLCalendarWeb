@@ -1,4 +1,6 @@
-/** User preferences, persisted locally. Read synchronously across the app. */
+/** User preferences, persisted per profile. Read synchronously across the app. */
+
+import { profileKey, PROFILE_EVENT } from './profiles';
 
 export interface Settings {
   /** Currency symbol shown before money values. */
@@ -24,15 +26,24 @@ export const DEFAULT_SETTINGS: Settings = {
   errorLogging: false,
 };
 
-const KEY = 'pnlcalendar.settings.v1';
+const BASE_KEY = 'pnlcalendar.settings.v1';
+const keyName = () => profileKey(BASE_KEY);
 export const SETTINGS_EVENT = 'pnlcalendar:settings';
 
 let current: Settings | null = null;
 
+// Settings are per-profile; reset the cache when the active profile changes.
+if (typeof window !== 'undefined') {
+  window.addEventListener(PROFILE_EVENT, () => {
+    current = null;
+    window.dispatchEvent(new Event(SETTINGS_EVENT));
+  });
+}
+
 export function getSettings(): Settings {
   if (current) return current;
   try {
-    current = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(KEY) || '{}') as Partial<Settings>) };
+    current = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(keyName()) || '{}') as Partial<Settings>) };
   } catch {
     current = { ...DEFAULT_SETTINGS };
   }
@@ -42,7 +53,7 @@ export function getSettings(): Settings {
 export function saveSettings(patch: Partial<Settings>) {
   current = { ...getSettings(), ...patch };
   try {
-    localStorage.setItem(KEY, JSON.stringify(current));
+    localStorage.setItem(keyName(), JSON.stringify(current));
   } catch {
     /* ignore */
   }
@@ -57,7 +68,7 @@ export function currencySymbol(): string {
 export function replaceSettings(s: Partial<Settings>) {
   current = { ...DEFAULT_SETTINGS, ...s };
   try {
-    localStorage.setItem(KEY, JSON.stringify(current));
+    localStorage.setItem(keyName(), JSON.stringify(current));
   } catch {
     /* ignore */
   }
