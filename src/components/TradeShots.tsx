@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, Trash2, Maximize2 } from 'lucide-react';
+import { ImagePlus, Trash2, Maximize2, Plus } from 'lucide-react';
 import type { DailyPnl, TradeRecord } from '../types';
 import { formatMoneySigned } from '../lib/metrics';
 import { putShot, getShot, delShot, shotKey } from '../lib/screenshots';
+import { MISTAKE_TAGS } from '../lib/tags';
+import { EMOTIONS } from '../lib/emotions';
+import { tradeTagKey, getTradeTags, toggleTag, type TradeTags } from '../lib/userTags';
 
 function hhmm(secs: number): string {
   const h = Math.floor(secs / 3600);
@@ -104,10 +107,75 @@ export default function TradeShots({ daily }: Props) {
                   />
                 </label>
               )}
+              <TradeTagEditor trade={t} date={daily.date} />
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const MISTAKE_LABEL = new Map(MISTAKE_TAGS.map((m) => [m.key, m.label]));
+const EMOTION_LABEL = new Map(EMOTIONS.map((e) => [e.key, e.label]));
+
+/** Toggleable manual mistake/emotion tags for one trade, persisted locally. */
+function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
+  const key = tradeTagKey(date, trade.tradeNumber, trade.rowNumber);
+  const [tags, setTags] = useState<TradeTags>(() => getTradeTags(key));
+  const [open, setOpen] = useState(false);
+
+  function flip(kind: 'mistake' | 'emotion', tagKey: string) {
+    setTags(toggleTag(key, kind, tagKey));
+  }
+
+  const hasTags = tags.mistakes.length > 0 || tags.emotions.length > 0;
+
+  return (
+    <div className="shot-tags">
+      <div className="shot-tag-row">
+        {tags.mistakes.map((m) => (
+          <button key={`m-${m}`} className="utag mistake" onClick={() => flip('mistake', m)} title="Remove tag">
+            {MISTAKE_LABEL.get(m) ?? m}
+          </button>
+        ))}
+        {tags.emotions.map((e) => (
+          <button key={`e-${e}`} className="utag emotion" onClick={() => flip('emotion', e)} title="Remove tag">
+            {EMOTION_LABEL.get(e) ?? e}
+          </button>
+        ))}
+        <button className={`utag add ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)}>
+          <Plus size={11} /> {hasTags ? 'Tag' : 'Add tag'}
+        </button>
+      </div>
+      {open && (
+        <div className="shot-tag-picker">
+          <span className="tag-group-label">Mistakes</span>
+          <div className="tag-chips">
+            {MISTAKE_TAGS.map((m) => (
+              <button
+                key={m.key}
+                className={`chip ${tags.mistakes.includes(m.key) ? 'on mistake' : ''}`}
+                onClick={() => flip('mistake', m.key)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <span className="tag-group-label">Emotions</span>
+          <div className="tag-chips">
+            {EMOTIONS.map((e) => (
+              <button
+                key={e.key}
+                className={`chip ${tags.emotions.includes(e.key) ? 'on emotion' : ''}`}
+                onClick={() => flip('emotion', e.key)}
+              >
+                {e.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
