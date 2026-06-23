@@ -74,6 +74,25 @@ const EN: Record<string, string> = {
   'onb.tag': 'Tag a trade’s mistake or emotion',
   'onb.playbook': 'Add a note to one of your setups',
   'onb.allset': 'You’re all set — nice work.',
+  // Atlas panel titles
+  'panel.equity': 'Equity Curve',
+  'panel.dailyPnl': 'Daily P&L',
+  'panel.monthlyGoal': 'Monthly Goal Tracking',
+  'panel.setupEdge': 'Setup Edge',
+  'panel.dowEdge': 'Day of Week Edge',
+  'panel.holdEdge': 'Hold-Time Edge',
+  'panel.hourEdge': 'Hour of Day Edge',
+  'panel.distribution': 'P&L Distribution',
+  'panel.mistakeEdge': 'Mistake Edge',
+  'panel.emotionEdge': 'Emotion Edge',
+  'panel.risk': 'Risk & Drawdown',
+  'panel.playbook': 'Playbook',
+  'panel.rules': 'Rule Adherence',
+  'panel.tbt': 'Trade-by-Trade P&L',
+  'panel.allTrades': 'All Trades',
+  // Pricing
+  'pricing.title': 'Stop repeating the same trading mistake',
+  'pricing.sub': 'Free forever for the core journal. Upgrade when you want the behavioral edge.',
 };
 
 const ZH: Record<string, string> = {
@@ -140,6 +159,25 @@ const ZH: Record<string, string> = {
   'onb.tag': '为交易标注错误或情绪',
   'onb.playbook': '为某个套路添加笔记',
   'onb.allset': '全部完成 — 干得漂亮。',
+  // Atlas panel titles
+  'panel.equity': '资金曲线',
+  'panel.dailyPnl': '每日盈亏',
+  'panel.monthlyGoal': '月度目标追踪',
+  'panel.setupEdge': '套路优势',
+  'panel.dowEdge': '星期优势',
+  'panel.holdEdge': '持仓时长优势',
+  'panel.hourEdge': '时段优势',
+  'panel.distribution': '盈亏分布',
+  'panel.mistakeEdge': '错误优势',
+  'panel.emotionEdge': '情绪优势',
+  'panel.risk': '风险与回撤',
+  'panel.playbook': '交易手册',
+  'panel.rules': '规则遵守',
+  'panel.tbt': '逐笔盈亏',
+  'panel.allTrades': '全部交易',
+  // Pricing
+  'pricing.title': '停止重复同一个交易错误',
+  'pricing.sub': '核心日志永久免费。当你需要行为复盘优势时再升级。',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };
@@ -150,7 +188,17 @@ export function getLang(): Lang {
   if (lang) return lang;
   try {
     const stored = localStorage.getItem(KEY);
-    lang = stored === 'zh' ? 'zh' : 'en';
+    if (stored === 'zh' || stored === 'en') {
+      lang = stored;
+      return lang;
+    }
+  } catch {
+    /* ignore */
+  }
+  // Auto-detect from the browser on first run.
+  try {
+    const nav = typeof navigator !== 'undefined' ? (navigator.language || '') : '';
+    lang = /^zh/i.test(nav) ? 'zh' : 'en';
   } catch {
     lang = 'en';
   }

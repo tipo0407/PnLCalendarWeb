@@ -4,6 +4,8 @@ import { X, Check, Sparkles, KeyRound, BadgeCheck } from 'lucide-react';
 import { useIsPro } from '../lib/usePlan';
 import { deactivatePro, activateProOnline, isValidKey, DEMO_KEY, planKey } from '../lib/plan';
 import { startCheckout, PRICE_IDS } from '../lib/checkout';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   onClose: () => void;
@@ -76,6 +78,7 @@ const TIERS: Tier[] = [
 
 export default function PricingModal({ onClose }: Props) {
   const pro = useIsPro();
+  useLang(); // re-render on language change
   const [keyInput, setKeyInput] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [msgKind, setMsgKind] = useState<'ok' | 'err' | 'info'>('info');
@@ -130,8 +133,8 @@ export default function PricingModal({ onClose }: Props) {
         <button className="modal-close pricing-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         <div className="pricing-head">
           <span className="pricing-eyebrow"><Sparkles size={12} /> Plans</span>
-          <h2>Stop repeating the same trading mistake</h2>
-          <p>Free forever for the core journal. Upgrade when you want the behavioral edge.</p>
+          <h2>{t('pricing.title')}</h2>
+          <p>{t('pricing.sub')}</p>
         </div>
 
         <div className="pricing-grid">

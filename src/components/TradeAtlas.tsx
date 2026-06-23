@@ -170,7 +170,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
       </div>
 
       <div className="atlas-grid">
-        <Panel title="Equity Curve" subtitle={showTarget ? 'Cumulative result vs goal pace' : 'Cumulative result by trading day'} span={3}>
+        <Panel title={t('panel.equity')} subtitle={showTarget ? 'Cumulative result vs goal pace' : 'Cumulative result by trading day'} span={3}>
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={equityData} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <defs>
@@ -197,7 +197,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Monthly Goal Tracking"
+          title={t('panel.monthlyGoal')}
           subtitle={monthlyGoal > 0 ? 'Net P&L per month vs your goal' : 'Net P&L per month'}
           span={6}
           action={monthlyGoal <= 0 && onOpenSettings
@@ -223,7 +223,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Daily P&L" subtitle="Net result by trading day" span={3}>
+        <Panel title={t('panel.dailyPnl')} subtitle="Net result by trading day" span={3}>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={dailyBars} barCategoryGap="8%" margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -240,7 +240,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Setup Edge" subtitle="Top setup P&L distribution" span={3}>
+        <Panel title={t('panel.setupEdge')} subtitle="Top setup P&L distribution" span={3}>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={setupEdge} layout="vertical" margin={{ left: 6, right: 8, top: 4, bottom: 0 }}>
               <XAxis type="number" {...AXIS} />
@@ -291,7 +291,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Day of Week Edge" subtitle="Net P&L by weekday" span={6}>
+        <Panel title={t('panel.dowEdge')} subtitle="Net P&L by weekday" span={6}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dowEdge} barCategoryGap="28%">
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -315,7 +315,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Hold-Time Edge" subtitle="Net P&L by trade duration" span={6}>
+        <Panel title={t('panel.holdEdge')} subtitle="Net P&L by trade duration" span={6}>
           <ProGate feature="Hold-Time Edge">
             {holdEdge.length === 0 ? (
               <div className="atlas-empty">No trade durations found. Map a <b>Duration</b> column on import to see which hold-times pay.</div>
@@ -346,7 +346,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Hour of Day Edge"
+          title={t('panel.hourEdge')}
           subtitle="Avg P&L per trade by entry hour, filtered by future"
           span={4}
           action={
@@ -383,7 +383,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="P&L Distribution" subtitle="Histogram of trade outcomes" span={4}>
+        <Panel title={t('panel.distribution')} subtitle="Histogram of trade outcomes" span={4}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={histogram} barCategoryGap="22%">
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -419,7 +419,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Mistake Edge"
+          title={t('panel.mistakeEdge')}
           subtitle={`P&L by behavioral mistake auto-detected from your notes · ${taggedCount}/${trades.length} trades tagged`}
           span={6}
         >
@@ -454,7 +454,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Emotion Edge"
+          title={t('panel.emotionEdge')}
           subtitle="P&L by emotional state detected in your notes"
           span={6}
         >
@@ -490,7 +490,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Risk & Drawdown"
+          title={t('panel.risk')}
           subtitle={risk.hasAccount ? 'Underwater equity (% of account peak)' : 'Underwater equity (account currency)'}
           span={12}
           action={(!risk.hasAccount || !risk.hasRisk) && onOpenSettings
@@ -526,7 +526,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Playbook"
+          title={t('panel.playbook')}
           subtitle="Per-setup expectancy, plus an editable entry checklist and notes"
           span={12}
         >
@@ -536,14 +536,14 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         </Panel>
 
         <Panel
-          title="Rule Adherence"
+          title={t('panel.rules')}
           subtitle="Set your rules; see how often you broke them and what it cost"
           span={12}
         >
           <RulesPanel trades={trades} />
         </Panel>
 
-        <Panel title="Trade-by-Trade P&L" subtitle="Result of each individual trade" span={12}>
+        <Panel title={t('panel.tbt')} subtitle="Result of each individual trade" span={12}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={tradePnls}>
               <XAxis dataKey="i" {...AXIS} minTickGap={30} />
@@ -559,7 +559,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="All Trades" subtitle="Sortable, filterable trade log — click a row to open the day" span={12}>
+        <Panel title={t('panel.allTrades')} subtitle="Sortable, filterable trade log — click a row to open the day" span={12}>
           <TradeTable trades={trades} onSelectDay={onSelectDay ?? (() => {})} />
         </Panel>
       </div>
