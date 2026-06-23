@@ -16,6 +16,7 @@
 
 const http = require('node:http');
 const crypto = require('node:crypto');
+const auth = require('./auth.cjs');
 
 const SECRET = process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
 const PORT = Number(process.env.API_PORT || 8788);
@@ -113,6 +114,12 @@ async function handle(req, res) {
   }
   if (req.method === 'GET' && url === '/api/version') {
     return send(res, 200, { version: VERSION, node: process.version, commit: process.env.GIT_COMMIT || null });
+  }
+
+  // Account auth (/api/auth/*).
+  if (url.startsWith('/api/auth/')) {
+    const handled = await auth.route(req, res, { send, readBody });
+    if (handled) return;
   }
 
   if (req.method === 'POST' && url === '/api/checkout') {

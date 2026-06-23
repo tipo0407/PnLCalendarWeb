@@ -18,6 +18,10 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 
+# Local server data
+server/.users.json
+server/.blobs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

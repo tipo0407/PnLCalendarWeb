@@ -1,0 +1,97 @@
+'use strict';
+
+/*
+ * Minimal account auth for PnL Calendar's optional cloud features. No external
+ * deps: passwords are salted + scrypt-hashed, sessions are HMAC-signed bearer
+ * tokens. Users persist to a JSON file (USERS_FILE). This is a pragmatic stub —
+ * swap the file store for a real database before scaling.
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+const AUTH_SECRET = process.env.AUTH_SECRET || process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
+const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, '.users.json');
+const TOKEN_TTL = 30 * 24 * 3600; // 30 days
+
+function loadUsers() {
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { return {}; }
+}
+function saveUsers(users) {
+  try { fs.writeFileSync(USERS_FILE, JSON.stringify(users)); } catch { /* ignore */ }
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
+function signToken(email, ttl = TOKEN_TTL) {
+  const exp = Math.floor(Date.now() / 1000) + ttl;
+  const payload = Buffer.from(JSON.stringify({ email, exp })).toString('base64url');
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token) return null;
+  const [payload, sig] = String(token).split('.');
+  if (!payload || !sig) return null;
+  const expected = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+  if (expected.length !== sig.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (!data.exp || data.exp * 1000 < Date.now()) return null;
+    return { email: data.email };
+  } catch {
+    return null;
+  }
+}
+
+function bearer(req) {
+  const h = req.headers['authorization'] || '';
+  return h.startsWith('Bearer ') ? h.slice(7) : '';
+}
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** Handle /api/auth/* routes. Returns true if it handled the request. */
+async function route(req, res, { send, readBody }) {
+  const url = (req.url || '').split('?')[0];
+
+  if (req.method === 'POST' && url === '/api/auth/signup') {
+    const { email, password } = await readBody(req);
+    if (!EMAIL_RE.test(email || '')) return send(res, 400, { error: 'invalid email' }), true;
+    if (!password || String(password).length < 8) return send(res, 400, { error: 'password too short (min 8)' }), true;
+    const users = loadUsers();
+    const key = String(email).toLowerCase();
+    if (users[key]) return send(res, 409, { error: 'account already exists' }), true;
+    const salt = crypto.randomBytes(16).toString('hex');
+    users[key] = { salt, hash: hashPassword(password, salt), created: Date.now() };
+    saveUsers(users);
+    return send(res, 200, { token: signToken(key), email: key }), true;
+  }
+
+  if (req.method === 'POST' && url === '/api/auth/login') {
+    const { email, password } = await readBody(req);
+    const key = String(email || '').toLowerCase();
+    const user = loadUsers()[key];
+    const ok = user && crypto.timingSafeEqual(
+      Buffer.from(user.hash),
+      Buffer.from(hashPassword(password || '', user.salt)),
+    );
+    if (!ok) return send(res, 401, { error: 'invalid credentials' }), true;
+    return send(res, 200, { token: signToken(key), email: key }), true;
+  }
+
+  if (req.method === 'GET' && url === '/api/auth/me') {
+    const session = verifyToken(bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' }), true;
+    return send(res, 200, { email: session.email }), true;
+  }
+
+  return false;
+}
+
+module.exports = { route, verifyToken, signToken, bearer };
