@@ -11,6 +11,7 @@ const KEY = 'pnlcalendar.lang.v1';
 export const LANG_EVENT = 'pnlcalendar:lang';
 
 const EN: Record<string, string> = {
+  'tab.home': 'Home',
   'tab.calendar': 'Calendar',
   'tab.atlas': 'Trade Atlas',
   'tab.review': 'Review',
@@ -48,6 +49,7 @@ const EN: Record<string, string> = {
 };
 
 const ZH: Record<string, string> = {
+  'tab.home': '主页',
   'tab.calendar': '日历',
   'tab.atlas': '交易分析',
   'tab.review': '复盘',

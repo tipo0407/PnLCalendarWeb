@@ -16,11 +16,11 @@ test('landing → sample data → switch views', async ({ page }) => {
   // Load the bundled sample data.
   await page.getByRole('button', { name: /Explore with sample data/i }).click();
 
-  // View tabs appear and the calendar is the default.
-  await expect(page.getByRole('button', { name: /Calendar/i })).toBeVisible();
+  // View tabs appear (Home is the default landing view).
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toBeVisible();
 
-  // Switch to Trade Atlas.
-  await page.getByRole('button', { name: /Trade Atlas/i }).click();
+  // Switch to Trade Atlas via its tab.
+  await page.getByRole('button', { name: 'Trade Atlas', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Trade Atlas' })).toBeVisible();
 
   // Switch to the Weekly Review.
@@ -31,6 +31,7 @@ test('landing → sample data → switch views', async ({ page }) => {
 test('open a day detail modal from the calendar', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Explore with sample data/i }).click();
+  await page.getByRole('button', { name: /^Calendar$/i }).click();
 
   // Click the first calendar day that has trade data.
   const day = page.locator('.cal-cell.clickable').first();
@@ -83,5 +84,5 @@ test('import a CSV via the wizard and dedupe duplicate rows', async ({ page }) =
   await importBtn.click();
 
   // Calendar renders after import.
-  await expect(page.getByRole('button', { name: /Trade Atlas/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Trade Atlas', exact: true })).toBeVisible();
 });

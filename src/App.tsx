@@ -19,6 +19,7 @@ import WeeklyReview from './components/WeeklyReview';
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import OnboardingChecklist from './components/OnboardingChecklist';
+import Dashboard from './components/Dashboard';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
 import { SETTINGS_EVENT } from './lib/settings';
@@ -32,13 +33,13 @@ const STORAGE_KEY = 'pnlcalendar.gsheet';
 const THEME_KEY = 'pnlcalendar.theme';
 const SYNC_KEY = 'pnlcalendar.lastSync';
 
-type View = 'calendar' | 'atlas' | 'review';
+type View = 'home' | 'calendar' | 'atlas' | 'review';
 type Theme = 'light' | 'dark';
 
 export default function App() {
   const [trades, setTrades] = useState<TradeRecord[]>(() => loadPersistedTrades() ?? []);
   const [holidays, setHolidays] = useState<HolidayMap>({});
-  const [view, setView] = useState<View>('calendar');
+  const [view, setView] = useState<View>('home');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(THEME_KEY) as Theme) || 'light'
@@ -98,9 +99,10 @@ export default function App() {
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       const hasData = trades.length > 0;
       switch (e.key) {
-        case '1': if (hasData) setView('calendar'); break;
-        case '2': if (hasData) setView('atlas'); break;
-        case '3': if (hasData) setView('review'); break;
+        case '1': if (hasData) setView('home'); break;
+        case '2': if (hasData) setView('calendar'); break;
+        case '3': if (hasData) setView('atlas'); break;
+        case '4': if (hasData) setView('review'); break;
         case 't': case 'T': setTheme((t) => (t === 'dark' ? 'light' : 'dark')); break;
         case ',': setShowSettings(true); break;
         default: return;
@@ -255,7 +257,7 @@ export default function App() {
 
           {trades.length > 0 && (
             <nav className="view-tabs" aria-label="Views">
-              {(['calendar', 'atlas', 'review'] as const).map((v, i) => (
+              {(['home', 'calendar', 'atlas', 'review'] as const).map((v, i) => (
                 <button
                   key={v}
                   className={`tab-btn ${view === v ? 'active' : ''}`}
@@ -434,7 +436,25 @@ export default function App() {
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          {view === 'calendar' ? (
+          {view === 'home' ? (
+            <motion.div
+              key="home"
+              className="home-page"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Dashboard
+                trades={filteredTrades}
+                summary={summary}
+                onSetView={setView}
+                onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }}
+                onOpenSettings={() => setShowSettings(true)}
+                onOpenPricing={() => setShowPricing(true)}
+              />
+            </motion.div>
+          ) : view === 'calendar' ? (
             <motion.main
               key="calendar"
               className="layout"

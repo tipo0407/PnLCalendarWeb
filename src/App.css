@@ -394,6 +394,52 @@
 }
 .main-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
+/* ===== Dashboard (home) ===== */
+.home-page { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 22px 24px; }
+.dash { display: flex; flex-direction: column; gap: 18px; }
+.dash-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.dash-kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 5px; }
+.dash-kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); font-weight: 600; }
+.dash-kpi-value { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 7px; }
+.dash-kpi-value.pos { color: var(--pos); }
+.dash-kpi-value.neg { color: var(--neg); }
+.dash-kpi-sub { font-size: 12px; color: var(--muted); }
+.dash-month { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px 18px; box-shadow: var(--shadow-sm); }
+.dash-month-head { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
+.dash-month-head > svg { color: var(--accent); }
+.dash-month-net { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+.dash-link-sm { background: none; border: none; color: var(--accent); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.dash-month-bar { height: 8px; border-radius: 5px; background: var(--surface-2); overflow: hidden; margin: 11px 0 8px; }
+.dash-month-fill { height: 100%; border-radius: 5px; }
+.dash-month-fill.pos { background: linear-gradient(90deg, color-mix(in srgb, var(--pos) 70%, transparent), var(--pos)); }
+.dash-month-fill.neg { background: var(--neg); }
+.dash-month-sub { font-size: 12px; color: var(--muted); }
+.dash-month-sub b { font-variant-numeric: tabular-nums; }
+.dash-cols { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; align-items: start; }
+.dash-h { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.dash-quick, .dash-recent { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+.dash-quick-link { width: 100%; display: flex; align-items: center; gap: 12px; background: none; border: none; cursor: pointer; padding: 11px 8px; border-radius: 10px; text-align: left; color: var(--text); }
+.dash-quick-link:hover { background: var(--surface-2); }
+.dql-icon { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; }
+.dql-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.dql-title { font-size: 14px; font-weight: 600; }
+.dql-desc { font-size: 12px; color: var(--muted); }
+.dql-arrow { color: var(--muted); }
+.dash-quick-link:hover .dql-arrow { color: var(--accent); }
+.dash-recent-list { display: flex; flex-direction: column; }
+.dash-recent-empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
+.dash-recent-row { display: grid; grid-template-columns: 64px 56px 1fr auto; gap: 10px; align-items: center; width: 100%; background: none; border: none; border-top: 1px solid var(--border); cursor: pointer; padding: 10px 6px; text-align: left; color: var(--text); font-size: 13px; }
+.dash-recent-row:first-child { border-top: none; }
+.dash-recent-row:hover { background: var(--surface-2); }
+.dr-date { color: var(--text-2); }
+.dr-sym { font-weight: 600; }
+.dr-setup { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-pnl { font-variant-numeric: tabular-nums; font-weight: 700; }
+@media (max-width: 900px) {
+  .dash-kpis { grid-template-columns: repeat(2, 1fr); }
+  .dash-cols { grid-template-columns: 1fr; }
+}
+
 /* ===== Onboarding checklist ===== */
 .onboard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
 .onboard-head { display: flex; align-items: center; gap: 10px; }

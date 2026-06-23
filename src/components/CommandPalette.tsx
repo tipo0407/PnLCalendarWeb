@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Calendar, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, SunMoon, CornerDownLeft } from 'lucide-react';
+import { Search, Calendar, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, SunMoon, CornerDownLeft, LayoutDashboard } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 
-type ViewId = 'calendar' | 'atlas' | 'review';
+type ViewId = 'home' | 'calendar' | 'atlas' | 'review';
 
 interface Props {
   trades: TradeRecord[];
@@ -34,6 +34,7 @@ export default function CommandPalette({
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const actions: Item[] = useMemo(() => [
+    { id: 'go-home', icon: <LayoutDashboard size={15} />, label: 'Go to Home', group: 'Navigate', run: () => onSetView('home') },
     { id: 'go-cal', icon: <Calendar size={15} />, label: 'Go to Calendar', group: 'Navigate', run: () => onSetView('calendar') },
     { id: 'go-atlas', icon: <BarChart3 size={15} />, label: 'Go to Trade Atlas', group: 'Navigate', run: () => onSetView('atlas') },
     { id: 'go-review', icon: <ClipboardList size={15} />, label: 'Go to Weekly Review', group: 'Navigate', run: () => onSetView('review') },
