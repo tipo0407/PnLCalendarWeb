@@ -49,3 +49,14 @@ export function saveSettings(patch: Partial<Settings>) {
 export function currencySymbol(): string {
   return getSettings().currency || '$';
 }
+
+/** Replace all settings (used by backup restore / reset). */
+export function replaceSettings(s: Partial<Settings>) {
+  current = { ...DEFAULT_SETTINGS, ...s };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(current));
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new Event(SETTINGS_EVENT));
+}

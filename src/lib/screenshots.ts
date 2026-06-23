@@ -52,3 +52,15 @@ export async function delShot(key: string): Promise<void> {
 export function shotKey(date: string, tradeNumber: number, rowNumber: number): string {
   return `${date}#${tradeNumber || rowNumber}`;
 }
+
+/** Delete every stored screenshot (used by clear-all). */
+export async function clearAllShots(): Promise<void> {
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}

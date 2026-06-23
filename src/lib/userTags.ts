@@ -69,3 +69,9 @@ export function toggleTag(key: string, kind: 'mistake' | 'emotion', tagKey: stri
 export function hasAnyUserTags(): boolean {
   return Object.keys(load()).length > 0;
 }
+
+/** Replace the entire manual-tags store (used by backup restore / clear-all). */
+export function replaceAllUserTags(map: Record<string, TradeTags>) {
+  cache = { ...map };
+  persist();
+}

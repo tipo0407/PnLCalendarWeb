@@ -1,21 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck } from 'lucide-react';
+import type { TradeRecord } from '../types';
 import { getSettings, saveSettings, type Settings } from '../lib/settings';
+import { exportBackup, restoreBackup, clearAllData, storageUsageMB } from '../lib/backup';
 
 interface Props {
   onClose: () => void;
+  trades: TradeRecord[];
+  onReplaceTrades: (trades: TradeRecord[]) => void;
 }
 
 const CURRENCIES = ['$', '€', '£', '¥', '₹', 'A$', 'C$'];
 
-export default function SettingsModal({ onClose }: Props) {
+export default function SettingsModal({ onClose, trades, onReplaceTrades }: Props) {
   const [s, setS] = useState<Settings>(() => ({ ...getSettings() }));
+  const [usage, setUsage] = useState<number | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    storageUsageMB().then(setUsage);
+  }, []);
 
   function update(patch: Partial<Settings>) {
     const next = { ...s, ...patch };
     setS(next);
     saveSettings(patch);
+  }
+
+  function onImportFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const restored = restoreBackup(String(reader.result));
+        onReplaceTrades(restored);
+        setS({ ...getSettings() });
+        setMsg(`Restored ${restored.length} trades from backup.`);
+      } catch (e) {
+        setMsg(e instanceof Error ? e.message : 'Could not read that backup file.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function onClearAll() {
+    if (!window.confirm('Erase all local data (trades, tags, rules, screenshots, settings)? This cannot be undone.')) return;
+    await clearAllData();
+    onReplaceTrades([]);
+    setS({ ...getSettings() });
+    setMsg('All local data cleared.');
   }
 
   return (
@@ -97,6 +130,30 @@ export default function SettingsModal({ onClose }: Props) {
               />
             </div>
           </label>
+        </div>
+
+        <div className="settings-data">
+          <div className="set-section-head"><ShieldCheck size={14} /> Data &amp; privacy</div>
+          <p className="set-data-note">
+            Everything is stored locally in your browser{usage != null && <> · using <b>{usage.toFixed(1)} MB</b></>}.
+            Back it up or move it to another device with a JSON file.
+          </p>
+          <div className="set-data-actions">
+            <button className="set-data-btn" onClick={() => exportBackup(trades)}>
+              <Download size={14} /> Export backup
+            </button>
+            <label className="set-data-btn">
+              <Upload size={14} /> Import backup
+              <input
+                type="file" accept="application/json,.json"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onImportFile(f); e.target.value = ''; }}
+              />
+            </label>
+            <button className="set-data-btn danger" onClick={onClearAll}>
+              <Trash2 size={14} /> Clear all data
+            </button>
+          </div>
+          {msg && <div className="set-data-msg">{msg}</div>}
         </div>
 
         <div className="settings-foot">

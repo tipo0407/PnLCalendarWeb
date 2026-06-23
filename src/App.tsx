@@ -232,7 +232,7 @@ export default function App() {
       </header>
 
       <AnimatePresence>
-        {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} />}
+        {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} trades={trades} onReplaceTrades={applyTrades} />}
         {showPricing && <PricingModal key="pricing" onClose={() => setShowPricing(false)} />}
       </AnimatePresence>
 
