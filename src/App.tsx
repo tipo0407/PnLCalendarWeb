@@ -20,6 +20,7 @@ import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import OnboardingChecklist from './components/OnboardingChecklist';
 import ProfileSwitcher from './components/ProfileSwitcher';
+import CommandPalette from './components/CommandPalette';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { OPEN_PRICING_EVENT } from './lib/pricingBus';
@@ -55,6 +56,7 @@ export default function App() {
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   // Bumped on any settings change so money/labels re-render with new prefs.
   const [, setSettingsTick] = useState(0);
 
@@ -77,6 +79,12 @@ export default function App() {
   // Global keyboard shortcuts: 1/2/3 switch views, t toggles theme, , opens settings.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+K opens the command palette (works even while typing).
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setShowPalette((v) => !v);
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
@@ -304,6 +312,18 @@ export default function App() {
         {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} trades={trades} onReplaceTrades={applyTrades} />}
         {showPricing && <PricingModal key="pricing" onClose={() => setShowPricing(false)} />}
       </AnimatePresence>
+
+      {showPalette && (
+        <CommandPalette
+          trades={filteredTrades}
+          onClose={() => setShowPalette(false)}
+          onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }}
+          onSetView={setView}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenPricing={() => setShowPricing(true)}
+          onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        />
+      )}
 
       {trades.length === 0 ? (
         <div className="landing">

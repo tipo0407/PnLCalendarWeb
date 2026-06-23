@@ -55,3 +55,17 @@ test('activate Pro with the demo license key', async ({ page }) => {
 
   await expect(page.getByText(/Pro activated/i)).toBeVisible();
 });
+
+test('command palette (Cmd/Ctrl+K) navigates to a view', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Explore with sample data/i }).click();
+
+  await page.keyboard.press('Control+k');
+  const palette = page.getByRole('dialog', { name: /Command palette/i });
+  await expect(palette).toBeVisible();
+
+  await palette.getByPlaceholder(/Search trades/i).fill('atlas');
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByRole('heading', { name: 'Trade Atlas' })).toBeVisible();
+});
