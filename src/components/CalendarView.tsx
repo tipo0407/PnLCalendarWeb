@@ -1,4 +1,4 @@
-import { useMemo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { useMemo, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
@@ -153,6 +153,21 @@ export default function CalendarView({
   const today = new Date();
   const todayIso = iso(today.getFullYear(), today.getMonth(), today.getDate());
 
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Arrow-key navigation across trading days (Left/Right = ±1 day, Up/Down = ±1 week).
+  function onGridKey(e: ReactKeyboardEvent, date: string) {
+    const deltas: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 5, ArrowUp: -5 };
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDay(date); return; }
+    const delta = deltas[e.key];
+    if (delta === undefined) return;
+    const cells = Array.from(gridRef.current?.querySelectorAll<HTMLElement>('.cal-cell.clickable') ?? []);
+    const idx = cells.indexOf(e.currentTarget as HTMLElement);
+    if (idx < 0) return;
+    const next = Math.max(0, Math.min(cells.length - 1, idx + delta));
+    if (next !== idx) { e.preventDefault(); cells[next].focus(); }
+  }
+
   return (
     <>
       {/* Hero */}
@@ -212,7 +227,7 @@ export default function CalendarView({
       <div className="calendar-card">
         <div className="cal-heatmap">{heatmap}</div>
 
-        <div className="cal-grid">
+        <div className="cal-grid" ref={gridRef}>
           {WEEKDAYS.map((w) => (
             <div key={w} className="cal-weekday">{w}</div>
           ))}
@@ -239,12 +254,7 @@ export default function CalendarView({
                           role: 'button',
                           tabIndex: 0,
                           'aria-label': `${MONTH_NAMES[month]} ${d}, ${formatMoneySigned(day.pnl)}, ${day.tradeCount} trades`,
-                          onKeyDown: (e: ReactKeyboardEvent) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onSelectDay(date);
-                            }
-                          },
+                          onKeyDown: (e: ReactKeyboardEvent) => onGridKey(e, date),
                         }
                       : {})}
                   >
@@ -266,7 +276,7 @@ export default function CalendarView({
                         <span className={`cell-pnl ${day.pnl >= 0 ? 'pos' : 'neg'}`}>
                           {formatMoneySigned(day.pnl)}
                         </span>
-                        {day.trades.some((t) => t.note) && <span className="cell-note">note</span>}
+                        {day.trades.some((t) => t.note || t.reasonEmotion) && <span className="cell-note">note</span>}
                       </div>
                     ) : holiday ? (
                       <div className="cell-body">
