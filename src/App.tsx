@@ -17,6 +17,7 @@ import DayDetailModal from './components/DayDetailModal';
 import TradeAtlas from './components/TradeAtlas';
 import WeeklyReview from './components/WeeklyReview';
 import SettingsModal from './components/SettingsModal';
+import PricingModal from './components/PricingModal';
 import { SETTINGS_EVENT } from './lib/settings';
 import './App.css';
 
@@ -48,6 +49,7 @@ export default function App() {
   const [sampleMode, setSampleMode] = useState(false);
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
   // Bumped on any settings change so money/labels re-render with new prefs.
   const [, setSettingsTick] = useState(0);
 
@@ -201,6 +203,10 @@ export default function App() {
 
           <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
 
+          <button className="pro-pill" onClick={() => setShowPricing(true)} title="Plans & pricing">
+            <Sparkles size={13} /> Pro
+          </button>
+
           <button
             className="icon-btn"
             onClick={() => setShowSettings(true)}
@@ -227,6 +233,7 @@ export default function App() {
 
       <AnimatePresence>
         {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} />}
+        {showPricing && <PricingModal key="pricing" onClose={() => setShowPricing(false)} />}
       </AnimatePresence>
 
       {trades.length === 0 ? (
@@ -252,6 +259,9 @@ export default function App() {
               <span className="landing-cta-hint">
                 <UploadCloud size={14} /> or upload your <code>.xlsx</code> / CSV, or paste a Google Sheet link above
               </span>
+              <button className="landing-plans" onClick={() => setShowPricing(true)}>
+                <Sparkles size={14} /> See plans &amp; pricing
+              </button>
             </div>
 
             <div className="landing-features">
