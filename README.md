@@ -1,5 +1,7 @@
 # PnL Calendar — Web
 
+[![CI](https://github.com/tipo0407/PnLCalendarWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/tipo0407/PnLCalendarWeb/actions/workflows/ci.yml)
+
 A web version of the PnL Calendar trading journal, built with **React + TypeScript + Vite**.
 It reads your trading workbook in the browser and renders a monthly P&L calendar, a 12-month
 activity heatmap, a Portfolio Lens sidebar, and a Trade Atlas analytics dashboard.
