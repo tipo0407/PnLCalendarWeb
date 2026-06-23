@@ -70,6 +70,34 @@ function readBody(req) {
   });
 }
 
+function readRaw(req) {
+  return new Promise((resolve) => {
+    let data = '';
+    req.on('data', (c) => {
+      data += c;
+      if (data.length > 1e6) req.destroy();
+    });
+    req.on('end', () => resolve(data));
+  });
+}
+
+/**
+ * Verify a Stripe webhook signature (the `Stripe-Signature` header) against the
+ * raw body, following Stripe's scheme: signed_payload = `${t}.${rawBody}`,
+ * expected = HMAC_SHA256(secret, signed_payload), compared to the `v1` value.
+ */
+function verifyStripeSignature(rawBody, header, secret, toleranceSec = 300) {
+  if (!header || !secret) return false;
+  const parts = Object.fromEntries(String(header).split(',').map((kv) => kv.split('=')));
+  const ts = Number(parts.t);
+  const v1 = parts.v1;
+  if (!ts || !v1) return false;
+  if (Math.abs(Date.now() / 1000 - ts) > toleranceSec) return false;
+  const expected = crypto.createHmac('sha256', secret).update(`${ts}.${rawBody}`).digest('hex');
+  if (expected.length !== v1.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+
 /** Route a request; exported so it can be embedded in another server too. */
 async function handle(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -107,10 +135,32 @@ async function handle(req, res) {
     return send(res, 200, { key, plan: 'pro' });
   }
 
+  // Stripe webhook: on checkout.session.completed, mint a license key bound to
+  // the session/customer. Signature is verified when STRIPE_WEBHOOK_SECRET is set.
+  if (req.method === 'POST' && url === '/api/stripe/webhook') {
+    const rawBody = await readRaw(req);
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (secret && !verifyStripeSignature(rawBody, req.headers['stripe-signature'], secret)) {
+      return send(res, 400, { error: 'invalid signature' });
+    }
+    let event;
+    try { event = JSON.parse(rawBody || '{}'); } catch { return send(res, 400, { error: 'bad payload' }); }
+    if (event.type === 'checkout.session.completed') {
+      const session = (event.data && event.data.object) || {};
+      const bind = (session.customer_details && session.customer_details.email) || session.id || '';
+      const payload = String(bind).replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
+      const key = generateKey(payload.length >= 4 ? payload : undefined);
+      // In production: email `key` to the buyer / store it. Here we log + return it.
+      console.log(`[stripe] issued license ${key} for ${bind || 'unknown'}`);
+      return send(res, 200, { received: true, key });
+    }
+    return send(res, 200, { received: true });
+  }
+
   return send(res, 404, { error: 'not found' });
 }
 
-module.exports = { handle, verifyKey, generateKey, sigFor };
+module.exports = { handle, verifyKey, generateKey, sigFor, verifyStripeSignature };
 
 // CLI: key generator + standalone server.
 if (require.main === module) {
