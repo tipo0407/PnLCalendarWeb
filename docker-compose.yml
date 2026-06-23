@@ -1,0 +1,30 @@
+# Build and run the full app (frontend + license/checkout/auth/sync API) with
+# persistent account + cloud data. Configure secrets via a .env file (see
+# .env.example) or your orchestrator's secret store.
+
+services:
+  app:
+    build: .
+    ports:
+      - "4173:4173"
+    environment:
+      PORT: "4173"
+      LICENSE_SECRET: "${LICENSE_SECRET:-change-me}"
+      AUTH_SECRET: "${AUTH_SECRET:-change-me}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      GIT_COMMIT: "${GIT_COMMIT:-}"
+      USERS_FILE: "/data/users.json"
+      BLOB_DIR: "/data/blobs"
+    volumes:
+      - pnlcal-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4173/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pnlcal-data:

@@ -190,8 +190,21 @@ The image builds the frontend and serves it via `server/serve.cjs` on port 4173,
 | --- | --- |
 | `PORT` | Server port (default 4173) |
 | `LICENSE_SECRET` | HMAC secret for signing/verifying license keys |
+| `AUTH_SECRET` | HMAC secret for account auth tokens (falls back to `LICENSE_SECRET`) |
 | `ADMIN_TOKEN` | Enables `/api/license/issue`; sent as the `x-admin-token` header |
 | `STRIPE_SECRET_KEY` | When set, `/api/checkout` returns a real Checkout URL |
+| `STRIPE_WEBHOOK_SECRET` | When set, `/api/stripe/webhook` verifies signatures |
+| `USERS_FILE` / `BLOB_DIR` | Where accounts and cloud blobs persist |
+
+**docker-compose** (persists accounts + cloud data in a volume):
+
+```sh
+cp .env.example .env   # edit secrets
+docker compose up -d
+```
+
+The compose file mounts a `pnlcal-data` volume at `/data` for `USERS_FILE` and `BLOB_DIR`,
+and includes a `/api/health` healthcheck.
 
 Note: the Google-Sheet `/api/sync` refresh is Windows-only (it runs a `.bat`); it is inert in the
 Linux container and the app degrades gracefully (uploads and pasted Google Sheet links still work).
