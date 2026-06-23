@@ -1442,6 +1442,34 @@
 }
 .atlas-empty b { color: var(--text); }
 
+/* ===== Playbook ===== */
+.playbook { display: flex; flex-direction: column; }
+.pb-row {
+  display: grid; grid-template-columns: 2fr 0.8fr 0.8fr 1.1fr 1.2fr 0.7fr 28px;
+  align-items: center; gap: 8px; text-align: right;
+}
+.pb-row > .pb-c-setup { text-align: left; }
+.pb-head { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; padding: 6px 10px; }
+.pb-data {
+  width: 100%; background: none; border: none; cursor: pointer; padding: 11px 10px;
+  font-size: 13px; color: var(--text); border-top: 1px solid var(--border); font-variant-numeric: tabular-nums;
+}
+.pb-data:hover { background: var(--surface-2); }
+.pb-c-setup { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-caret { display: inline-flex; justify-content: flex-end; color: var(--muted); }
+.pb-group.open .pb-data { background: var(--surface-2); }
+.pb-editor { padding: 12px 14px 16px; background: var(--surface-2); display: flex; flex-direction: column; gap: 10px; border-top: 1px dashed var(--border); }
+.pb-edit-stats { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-2); }
+.pb-edit-stats span { display: inline-flex; align-items: center; gap: 5px; }
+.pb-edit-stats svg { color: var(--accent); }
+.pb-field { display: flex; flex-direction: column; gap: 5px; }
+.pb-field > span { font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+.pb-field textarea {
+  resize: vertical; background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 9px; padding: 9px 11px; font-size: 13px; line-height: 1.5; font-family: inherit;
+}
+.pb-field textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+
 .atlas-link {
   background: none; border: none; cursor: pointer;
   color: var(--accent); font-size: 12px; font-weight: 600; padding: 0;

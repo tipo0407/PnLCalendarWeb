@@ -17,6 +17,7 @@ import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
 import ProGate from './ProGate';
+import Playbook from './Playbook';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -414,6 +415,16 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               <Area type="monotone" dataKey={ddKey} stroke={NEG} strokeWidth={2} fill="url(#atlDdFill)" />
             </AreaChart>
           </ResponsiveContainer>
+          </ProGate>
+        </Panel>
+
+        <Panel
+          title="Playbook"
+          subtitle="Per-setup expectancy, plus an editable entry checklist and notes"
+          span={12}
+        >
+          <ProGate feature="Playbook">
+            <Playbook trades={trades} />
           </ProGate>
         </Panel>
 
