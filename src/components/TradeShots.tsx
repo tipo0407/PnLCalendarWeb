@@ -7,6 +7,7 @@ import { allMistakeTags } from '../lib/tags';
 import { allEmotions } from '../lib/emotions';
 import { tradeTagKey, getTradeTags, toggleTag, type TradeTags } from '../lib/userTags';
 import { addCustomTag, removeCustomTag, getCustomTags, CUSTOM_TAGS_EVENT } from '../lib/customTags';
+import { t } from '../lib/i18n';
 
 function hhmm(secs: number): string {
   const h = Math.floor(secs / 3600);
@@ -66,7 +67,7 @@ export default function TradeShots({ daily }: Props) {
 
   return (
     <div className="shots">
-      <div className="shots-head">Trades &amp; screenshots</div>
+      <div className="shots-head">{t('modal.tradesShots')}</div>
       <div className="shots-grid">
         {daily.trades.map((t) => {
           const key = shotKey(daily.date, t.tradeNumber, t.rowNumber);

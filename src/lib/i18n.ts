@@ -93,6 +93,33 @@ const EN: Record<string, string> = {
   // Pricing
   'pricing.title': 'Stop repeating the same trading mistake',
   'pricing.sub': 'Free forever for the core journal. Upgrade when you want the behavioral edge.',
+  // Day detail modal
+  'modal.dayPnl': 'Day P&L',
+  'modal.trades': 'Trades',
+  'modal.winLoss': 'Win / Loss',
+  'modal.discipline': 'Discipline',
+  'modal.tradesShots': 'Trades & screenshots',
+  // Import wizard
+  'iw.title': 'Import trades',
+  'iw.worksheet': 'Worksheet',
+  'iw.format': 'Format / broker',
+  'iw.autoDetect': 'Auto-detect columns',
+  'iw.mapColumns': 'Map your columns',
+  'iw.notSet': '— not set —',
+  'iw.rowsReady': 'rows ready',
+  'iw.skipped': 'skipped',
+  'iw.mapDate': 'Map a Date column to continue.',
+  'iw.preview': 'Preview',
+  'iw.cancel': 'Cancel',
+  'iw.import': 'Import',
+  'iw.tradesWord': 'trades',
+  // Settings data section
+  'settings.exportBackup': 'Export backup',
+  'settings.importBackup': 'Import backup',
+  'settings.clearAll': 'Clear all data',
+  'settings.diagnostics': 'Diagnostics (opt-in)',
+  'settings.done': 'Done',
+  'settings.savedLocal': 'Saved locally on this device.',
 };
 
 const ZH: Record<string, string> = {
@@ -178,6 +205,33 @@ const ZH: Record<string, string> = {
   // Pricing
   'pricing.title': '停止重复同一个交易错误',
   'pricing.sub': '核心日志永久免费。当你需要行为复盘优势时再升级。',
+  // Day detail modal
+  'modal.dayPnl': '当日盈亏',
+  'modal.trades': '交易数',
+  'modal.winLoss': '盈 / 亏',
+  'modal.discipline': '纪律',
+  'modal.tradesShots': '交易与截图',
+  // Import wizard
+  'iw.title': '导入交易',
+  'iw.worksheet': '工作表',
+  'iw.format': '格式 / 券商',
+  'iw.autoDetect': '自动识别列',
+  'iw.mapColumns': '映射列',
+  'iw.notSet': '— 未设置 —',
+  'iw.rowsReady': '行可导入',
+  'iw.skipped': '已跳过',
+  'iw.mapDate': '请映射日期列以继续。',
+  'iw.preview': '预览',
+  'iw.cancel': '取消',
+  'iw.import': '导入',
+  'iw.tradesWord': '笔交易',
+  // Settings data section
+  'settings.exportBackup': '导出备份',
+  'settings.importBackup': '导入备份',
+  'settings.clearAll': '清除所有数据',
+  'settings.diagnostics': '诊断（可选）',
+  'settings.done': '完成',
+  'settings.savedLocal': '已保存在本设备本地。',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };

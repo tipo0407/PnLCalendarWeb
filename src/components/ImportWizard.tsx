@@ -8,6 +8,8 @@ import {
 } from '../lib/parseWorkbook';
 import { BROKER_TEMPLATES, applyTemplate, detectTemplate } from '../lib/brokerTemplates';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   sheets: SheetData[];
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export default function ImportWizard({ sheets, onImport, onClose }: Props) {
+  useLang();
   const [sheetIdx, setSheetIdx] = useState(() => guessSheetIndex(sheets));
   // 'auto' = alias auto-mapping; otherwise a broker template id.
   const [templateId, setTemplateId] = useState<string>(() => {
@@ -47,7 +50,7 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
         <div className="iw-head">
           <div className="iw-title">
             <FileSpreadsheet size={18} />
-            <h2>Import trades</h2>
+            <h2>{t('iw.title')}</h2>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
@@ -55,7 +58,7 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
         <div className="iw-selects">
           {sheets.length > 1 && (
             <label className="iw-sheet">
-              <span>Worksheet</span>
+              <span>{t('iw.worksheet')}</span>
               <select value={sheetIdx} onChange={(e) => setSheetIdx(Number(e.target.value))}>
                 {sheets.map((s, i) => (
                   <option key={i} value={i}>{s.name || `Sheet ${i + 1}`}</option>
@@ -64,9 +67,9 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
             </label>
           )}
           <label className="iw-sheet">
-            <span>Format / broker</span>
+            <span>{t('iw.format')}</span>
             <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-              <option value="auto">Auto-detect columns</option>
+              <option value="auto">{t('iw.autoDetect')}</option>
               {BROKER_TEMPLATES.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}{t.hint ? ` — ${t.hint}` : ''}</option>
               ))}
@@ -110,7 +113,7 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
     <>
       <div className="iw-body">
         <div className="iw-map">
-          <div className="iw-map-head">Map your columns</div>
+          <div className="iw-map-head">{t('iw.mapColumns')}</div>
           <div className="iw-grid">
             {FIELDS.map((f) => (
               <div className="iw-row" key={f.key}>
@@ -122,7 +125,7 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
                   value={mapping[f.key] ?? -1}
                   onChange={(e) => setField(f.key, Number(e.target.value))}
                 >
-                  <option value={-1}>— not set —</option>
+                  <option value={-1}>{t('iw.notSet')}</option>
                   {options.map((o) => (
                     <option key={o.i} value={o.i}>{o.label}</option>
                   ))}
@@ -136,12 +139,12 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
           <div className={`iw-report ${result.skipped.length ? 'warn' : 'ok'}`}>
             {result.skipped.length === 0 ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             <span>
-              <b>{result.trades.length}</b> of {result.total} rows ready
-              {result.skipped.length > 0 && <> · <b>{result.skipped.length}</b> skipped</>}
+              <b>{result.trades.length}</b> / {result.total} {t('iw.rowsReady')}
+              {result.skipped.length > 0 && <> · <b>{result.skipped.length}</b> {t('iw.skipped')}</>}
             </span>
           </div>
           {mapping.date === undefined && (
-            <div className="iw-hint">Map a <b>Date</b> column to continue.</div>
+            <div className="iw-hint">{t('iw.mapDate')}</div>
           )}
           {result.skipped.length > 0 && (
             <div className="iw-skips">
@@ -152,7 +155,7 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
             </div>
           )}
 
-          <div className="iw-preview-head">Preview</div>
+          <div className="iw-preview-head">{t('iw.preview')}</div>
           <div className="iw-table-wrap">
             <table className="iw-table">
               <thead>
@@ -177,13 +180,13 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
       </div>
 
       <div className="iw-foot">
-        <button className="btn iw-cancel" onClick={onClose}>Cancel</button>
+        <button className="btn iw-cancel" onClick={onClose}>{t('iw.cancel')}</button>
         <button
           className="btn btn-upload iw-import"
           disabled={!canImport}
           onClick={() => onImport(result.trades)}
         >
-          Import {result.trades.length} trades
+          {t('iw.import')} {result.trades.length} {t('iw.tradesWord')}
         </button>
       </div>
     </>

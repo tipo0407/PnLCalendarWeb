@@ -4,6 +4,8 @@ import { X, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoneySigned, longDate } from '../lib/metrics';
 import { dayDiscipline, disciplineColor } from '../lib/discipline';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 import DayChart from './DayChart';
 import TradeShots from './TradeShots';
 
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
+  useLang();
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = `day-detail-${daily.date}`;
 
@@ -65,21 +68,21 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
 
         <div className="modal-stats">
           <div className="ms">
-            <span className="ms-label">Day P&amp;L</span>
+            <span className="ms-label">{t('modal.dayPnl')}</span>
             <span className={`ms-value ${daily.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(daily.pnl)}</span>
           </div>
           <div className="ms">
-            <span className="ms-label">Trades</span>
+            <span className="ms-label">{t('modal.trades')}</span>
             <span className="ms-value">{daily.tradeCount}</span>
           </div>
           <div className="ms">
-            <span className="ms-label">Win / Loss</span>
+            <span className="ms-label">{t('modal.winLoss')}</span>
             <span className="ms-value">
               <span className="pos">{daily.wins}</span> / <span className="neg">{daily.losses}</span>
             </span>
           </div>
           <div className="ms">
-            <span className="ms-label">Discipline</span>
+            <span className="ms-label">{t('modal.discipline')}</span>
             <span className="ms-value" style={{ color: disciplineColor(dayDiscipline(daily)) }}>
               {dayDiscipline(daily)}<span className="ms-unit">/100</span>
             </span>

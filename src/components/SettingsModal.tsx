@@ -182,17 +182,17 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           </p>
           <div className="set-data-actions">
             <button className="set-data-btn" onClick={() => exportBackup(trades)}>
-              <Download size={14} /> Export backup
+              <Download size={14} /> {t('settings.exportBackup')}
             </button>
             <label className="set-data-btn">
-              <Upload size={14} /> Import backup
+              <Upload size={14} /> {t('settings.importBackup')}
               <input
                 type="file" accept="application/json,.json"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onImportFile(f); e.target.value = ''; }}
               />
             </label>
             <button className="set-data-btn danger" onClick={onClearAll}>
-              <Trash2 size={14} /> Clear all data
+              <Trash2 size={14} /> {t('settings.clearAll')}
             </button>
           </div>
           {msg && <div className="set-data-msg">{msg}</div>}
@@ -204,7 +204,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
               onChange={(e) => update({ errorLogging: e.target.checked })}
             />
             <span>
-              <b>Diagnostics (opt-in)</b>
+              <b>{t('settings.diagnostics')}</b>
               <small>Record runtime errors locally so you can copy them when reporting a bug. Nothing is ever uploaded.</small>
             </span>
           </label>
@@ -231,8 +231,8 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         </div>
 
         <div className="settings-foot">
-          <span className="set-note">Saved locally on this device.</span>
-          <button className="btn btn-upload" onClick={onClose}>Done</button>
+          <span className="set-note">{t('settings.savedLocal')}</span>
+          <button className="btn btn-upload" onClick={onClose}>{t('settings.done')}</button>
         </div>
       </motion.div>
     </motion.div>
