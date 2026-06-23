@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Target } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import {
@@ -10,6 +10,8 @@ import {
   shortDate,
 } from '../lib/metrics';
 import { avgDiscipline } from '../lib/discipline';
+import { dayStreaks, disciplineStreak, monthProgress } from '../lib/goals';
+import { getSettings } from '../lib/settings';
 import MoneyCountUp from './CountUp';
 
 interface Props {
@@ -17,6 +19,7 @@ interface Props {
   summary: Summary;
   viewMonth: { year: number; month: number };
   onJumpMonth: (year: number, month: number) => void;
+  onOpenSettings?: () => void;
 }
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -49,8 +52,16 @@ function iso(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Props) {
+export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpenSettings }: Props) {
   const months = useMemo(() => monthlyBreakdown(trades), [trades]);
+  const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
+  const streaks = useMemo(() => dayStreaks(days), [days]);
+  const discStreak = useMemo(() => disciplineStreak(days), [days]);
+  const { monthlyGoal } = getSettings();
+  const progress = useMemo(
+    () => monthProgress(days, viewMonth.year, viewMonth.month, monthlyGoal),
+    [days, viewMonth.year, viewMonth.month, monthlyGoal],
+  );
 
   const bestWeek = useMemo(() => {
     const map = new Map<string, { sample: string; pnl: number }>();
@@ -103,6 +114,46 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Pro
           <span>{summary.tradeCount} trades total</span>
         </div>
         <span className="tc-since">{summary.daysSinceFirst} days since first trade</span>
+      </div>
+
+      <div className="lens-block">
+        <div className="goals-card">
+          <div className="goals-head">
+            <Target size={13} />
+            <span>{MONTH_SHORT[viewMonth.month]} {viewMonth.year} goal</span>
+            {monthlyGoal > 0
+              ? <span className={`goals-amt ${progress.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(progress.pnl)} / {formatMoney(monthlyGoal)}</span>
+              : <button className="goals-set" onClick={onOpenSettings}>Set goal</button>}
+          </div>
+          {monthlyGoal > 0 && (
+            <>
+              <div className="goals-bar">
+                <div
+                  className={`goals-fill ${progress.pnl >= 0 ? 'pos' : 'neg'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, progress.pct))}%` }}
+                />
+              </div>
+              <div className="goals-sub">
+                <span>{progress.pct >= 0 ? `${progress.pct.toFixed(0)}% of goal` : 'below zero'}</span>
+                <span><b className="pos">{progress.greenDays}</b>G · <b className="neg">{progress.redDays}</b>R</span>
+              </div>
+            </>
+          )}
+          <div className="streak-row">
+            <div className="streak-chip">
+              <Flame size={13} className={streaks.currentType === 'win' ? 'pos' : streaks.currentType === 'loss' ? 'neg' : ''} />
+              <span className="streak-val">
+                {streaks.current > 0
+                  ? `${streaks.current}-day ${streaks.currentType === 'win' ? 'win' : 'loss'} streak`
+                  : 'No active streak'}
+              </span>
+            </div>
+            <div className="streak-meta">
+              <span title="Best winning-day streak"><b className="pos">{streaks.bestWin}</b> best</span>
+              <span title="Consecutive disciplined days"><b className={discStreak >= 3 ? 'pos' : ''}>{discStreak}</b> disc.</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="lens-block">

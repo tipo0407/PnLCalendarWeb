@@ -564,6 +564,24 @@
 .tc-meta { display: flex; justify-content: space-between; font-size: 12px; opacity: 0.92; margin-top: 6px; }
 .tc-since { font-size: 11px; opacity: 0.82; margin-top: 2px; }
 
+/* Goals & streaks card */
+.goals-card { display: flex; flex-direction: column; gap: 9px; }
+.goals-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.goals-head svg { color: var(--accent); }
+.goals-amt { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12.5px; }
+.goals-set { margin-left: auto; background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; }
+.goals-set:hover { text-decoration: underline; }
+.goals-bar { height: 8px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.goals-fill { height: 100%; border-radius: 5px; transition: width .4s ease; }
+.goals-fill.pos { background: linear-gradient(90deg, color-mix(in srgb, var(--pos) 70%, transparent), var(--pos)); }
+.goals-fill.neg { background: var(--neg); }
+.goals-sub { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.goals-sub b { font-variant-numeric: tabular-nums; }
+.streak-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 3px; border-top: 1px solid var(--border); }
+.streak-chip { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.streak-meta { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
+.streak-meta b { font-variant-numeric: tabular-nums; }
+
 .lens-block { display: flex; flex-direction: column; gap: 14px; }
 .lens-section { font-size: 11px; letter-spacing: 1.2px; color: var(--muted); font-weight: 600; }
 

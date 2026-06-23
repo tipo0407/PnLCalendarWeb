@@ -85,6 +85,18 @@ export default function SettingsModal({ onClose }: Props) {
               />
             </div>
           </label>
+
+          <label className="set-row">
+            <span className="set-label">Monthly P&amp;L goal<small>Tracked on the calendar summary</small></span>
+            <div className="set-money">
+              <span>{s.currency}</span>
+              <input
+                type="number" min={0} step={100} value={s.monthlyGoal || ''}
+                placeholder="0"
+                onChange={(e) => update({ monthlyGoal: Number(e.target.value) || 0 })}
+              />
+            </div>
+          </label>
         </div>
 
         <div className="settings-foot">

@@ -318,6 +318,7 @@ export default function App() {
                 summary={summary}
                 viewMonth={viewMonth}
                 onJumpMonth={(year, month) => setViewMonth({ year, month })}
+                onOpenSettings={() => setShowSettings(true)}
               />
               <section className="main-col">
                 <CalendarView

@@ -9,6 +9,8 @@ export interface Settings {
   riskPerTrade: number;
   /** Week start: 0 = Sunday, 1 = Monday. */
   weekStart: 0 | 1;
+  /** Monthly net P&L goal (account currency). 0 = no goal. */
+  monthlyGoal: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -16,6 +18,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accountSize: 0,
   riskPerTrade: 0,
   weekStart: 1,
+  monthlyGoal: 0,
 };
 
 const KEY = 'pnlcalendar.settings.v1';
