@@ -11,6 +11,8 @@ export interface Settings {
   weekStart: 0 | 1;
   /** Monthly net P&L goal (account currency). 0 = no goal. */
   monthlyGoal: number;
+  /** Opt-in: capture runtime errors locally to help diagnose crashes. */
+  errorLogging: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -19,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   riskPerTrade: 0,
   weekStart: 1,
   monthlyGoal: 0,
+  errorLogging: false,
 };
 
 const KEY = 'pnlcalendar.settings.v1';
@@ -43,7 +46,7 @@ export function saveSettings(patch: Partial<Settings>) {
   } catch {
     /* ignore */
   }
-  window.dispatchEvent(new Event(SETTINGS_EVENT));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 
 export function currencySymbol(): string {
@@ -58,5 +61,5 @@ export function replaceSettings(s: Partial<Settings>) {
   } catch {
     /* ignore */
   }
-  window.dispatchEvent(new Event(SETTINGS_EVENT));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SETTINGS_EVENT));
 }

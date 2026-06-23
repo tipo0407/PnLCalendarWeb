@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { recordError } from '../lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -16,8 +17,9 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Keep a breadcrumb in the console; opt-in remote logging could hook in here.
+    // Keep a breadcrumb in the console; record locally when opt-in logging is on.
     console.error('PnL Calendar crashed:', error, info.componentStack);
+    recordError(error.message, 'render');
   }
 
   render() {

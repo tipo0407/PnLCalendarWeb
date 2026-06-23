@@ -4,6 +4,7 @@ import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck } from 'luc
 import type { TradeRecord } from '../types';
 import { getSettings, saveSettings, type Settings } from '../lib/settings';
 import { exportBackup, restoreBackup, clearAllData, storageUsageMB } from '../lib/backup';
+import { getErrors, clearErrors, type LoggedError } from '../lib/logger';
 import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 
@@ -19,6 +20,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [s, setS] = useState<Settings>(() => ({ ...getSettings() }));
   const [usage, setUsage] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [errors, setErrors] = useState<LoggedError[]>(() => getErrors());
   const lang = useLang();
 
   useEffect(() => {
@@ -165,6 +167,38 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
             </button>
           </div>
           {msg && <div className="set-data-msg">{msg}</div>}
+
+          <label className="set-toggle">
+            <input
+              type="checkbox"
+              checked={s.errorLogging}
+              onChange={(e) => update({ errorLogging: e.target.checked })}
+            />
+            <span>
+              <b>Diagnostics (opt-in)</b>
+              <small>Record runtime errors locally so you can copy them when reporting a bug. Nothing is ever uploaded.</small>
+            </span>
+          </label>
+          {s.errorLogging && (
+            <div className="set-errors">
+              <div className="set-errors-head">
+                <span>Recent errors ({errors.length})</span>
+                {errors.length > 0 && <button onClick={() => { clearErrors(); setErrors([]); }}>Clear</button>}
+              </div>
+              {errors.length === 0
+                ? <div className="set-errors-empty">None recorded. 🎉</div>
+                : <ul>{errors.slice(0, 5).map((er, i) => (
+                    <li key={i}><span className="se-time">{er.time.slice(5, 16).replace('T', ' ')}</span> {er.message}</li>
+                  ))}</ul>}
+            </div>
+          )}
+
+          <p className="set-privacy">
+            <b>Privacy.</b> PnL Calendar is local-first: your trades, notes, screenshots and
+            settings live in your browser only. There is no account and no analytics. Importing a
+            Google Sheet fetches it through a proxy you control; license checks send only the key
+            you enter. Use Export backup to move data between devices.
+          </p>
         </div>
 
         <div className="settings-foot">

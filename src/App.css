@@ -298,6 +298,19 @@
 .set-data-btn.danger:hover { border-color: var(--neg); color: var(--neg); }
 .set-data-btn input { display: none; }
 .set-data-msg { margin-top: 10px; font-size: 12.5px; color: var(--accent); }
+.set-toggle { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; cursor: pointer; }
+.set-toggle input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.set-toggle span { display: flex; flex-direction: column; gap: 2px; }
+.set-toggle b { font-size: 13.5px; }
+.set-toggle small { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.set-errors { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; }
+.set-errors-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.set-errors-head button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 11.5px; font-weight: 600; }
+.set-errors-empty { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.set-errors ul { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.set-errors li { font-size: 12px; color: var(--text-2); line-height: 1.45; word-break: break-word; }
+.se-time { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.set-privacy { margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--text-2); }
 
 /* ===== Empty state ===== */
 .empty-state { flex: 1; display: grid; place-items: center; }
