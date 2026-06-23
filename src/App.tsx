@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
+import { sampleTrades } from './data/sampleTrades';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
 import DataSourceBar from './components/DataSourceBar';
 import CalendarView from './components/CalendarView';
@@ -33,6 +34,7 @@ export default function App() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [syncing, setSyncing] = useState(false);
+  const [sampleMode, setSampleMode] = useState(false);
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
@@ -99,12 +101,21 @@ export default function App() {
   const summary = useMemo(() => computeSummary(trades), [trades]);
 
   function handleLoaded(loaded: TradeRecord[]) {
+    setSampleMode(false);
     setTrades(loaded);
     if (loaded.length > 0) {
       const last = loaded[loaded.length - 1].date;
       const [y, m] = last.split('-').map(Number);
       setViewMonth({ year: y, month: m - 1 });
     }
+  }
+
+  function loadSample() {
+    setTrades(sampleTrades);
+    const last = sampleTrades[sampleTrades.length - 1].date;
+    const [y, m] = last.split('-').map(Number);
+    setViewMonth({ year: y, month: m - 1 });
+    setSampleMode(true);
   }
 
   const selectedDaily = selectedDay ? dailyMap.get(selectedDay) ?? null : null;
@@ -127,6 +138,18 @@ export default function App() {
             </div>
           </div>
 
+          {sampleMode && (
+            <span className="sample-badge">
+              <Sparkles size={13} /> Sample data
+              <button
+                className="sample-clear"
+                onClick={() => { setTrades([]); setSampleMode(false); }}
+              >
+                Clear
+              </button>
+            </span>
+          )}
+
           {trades.length > 0 && (
             <nav className="view-tabs">
               {(['calendar', 'atlas'] as const).map((v) => (
@@ -148,7 +171,7 @@ export default function App() {
             </nav>
           )}
 
-          <DataSourceBar onLoaded={handleLoaded} storageKey={STORAGE_KEY} />
+          <DataSourceBar onLoaded={handleLoaded} storageKey={STORAGE_KEY} onSample={loadSample} />
 
           <button
             className="theme-toggle"
@@ -179,9 +202,12 @@ export default function App() {
               Upload your <code>Trading.xlsx</code>, or paste a Google Sheet link to load
               your trades.
             </p>
+            <button className="btn btn-sample" onClick={loadSample}>
+              <Sparkles size={16} /> Explore with sample data
+            </button>
             <p className="muted">
-              Data is read from the <strong>3rd worksheet</strong>, with the same column
-              names as the desktop app.
+              No upload needed — 300 fake trades across a year. Data is read from the
+              <strong> 3rd worksheet</strong>, with the same column names as the desktop app.
             </p>
           </motion.div>
         </div>

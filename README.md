@@ -102,15 +102,15 @@ Trades are sorted automatically by `Date`, then `EntryTime`, then `NoOfDay`.
 
 ### Try it without your own data
 
-A ready-made sample workbook is included at **[`samples/Trading.sample.xlsx`](./samples/Trading.sample.xlsx)**.
-It has two placeholder tabs followed by a **`Trades`** tab with the header row above and 10 fake
-trades (long/short, wins/losses, a same-candle scalp, notes in `Reason&Emotion`). Just click
-**Upload .xlsx** and pick it to explore the app.
+The fastest way: click **Sample** in the top bar (or **Explore with sample data** on the empty
+screen) to instantly load 300 fake trades — no upload, no network, all in your browser.
 
-You can regenerate it (e.g. to tweak the rows) with:
+The same dataset is also a workbook at **[`samples/Trading.sample.xlsx`](./samples/Trading.sample.xlsx)**
+(two placeholder tabs + a **`Trades`** tab) if you'd rather see the file format or upload it.
+Both are produced by:
 
 ```powershell
-node samples/generate-sample.cjs
+node samples/generate-sample.cjs   # writes the .xlsx and src/data/sampleTrades.ts
 ```
 
 To use a **Google Sheet** instead, copy that same structure into a sheet (any two tabs first,

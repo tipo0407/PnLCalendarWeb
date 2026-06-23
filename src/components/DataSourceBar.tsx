@@ -1,14 +1,15 @@
 import { useRef, useState } from 'react';
-import { Link2, RefreshCw, Upload } from 'lucide-react';
+import { Link2, RefreshCw, Upload, Sparkles } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { parseWorkbook, fetchGoogleSheet } from '../lib/parseWorkbook';
 
 interface Props {
   onLoaded: (trades: TradeRecord[]) => void;
   storageKey: string;
+  onSample?: () => void;
 }
 
-export default function DataSourceBar({ onLoaded, storageKey }: Props) {
+export default function DataSourceBar({ onLoaded, storageKey, onSample }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState<string>(() => localStorage.getItem(storageKey) ?? '');
   const [busy, setBusy] = useState(false);
@@ -71,6 +72,12 @@ export default function DataSourceBar({ onLoaded, storageKey }: Props) {
           <Upload size={15} />
           Upload .xlsx
         </button>
+        {onSample && (
+          <button className="btn btn-ghost-sample" onClick={onSample} disabled={busy} title="Load sample data">
+            <Sparkles size={15} />
+            Sample
+          </button>
+        )}
         <input
           ref={fileRef}
           type="file"
