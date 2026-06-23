@@ -153,3 +153,10 @@ id in `server/` are personal defaults — adjust them for your own setup.
 ## License
 
 [MIT](./LICENSE)
+
+> **Commercialization note (undecided).** If this becomes a paid product, the MIT license
+> lets anyone use, modify, sell, and re-license the code — and an already-published MIT
+> version can't be retroactively revoked. Before charging for it, decide whether to keep it
+> MIT (open-core), relicense future work as proprietary, or make the repo private. This is a
+> deliberate decision for the owner to make — the current LICENSE is intentionally left
+> unchanged until then.

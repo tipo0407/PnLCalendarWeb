@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
@@ -206,27 +206,77 @@ export default function App() {
       </header>
 
       {trades.length === 0 ? (
-        <div className="empty-state">
-          <motion.div
-            className="empty-card"
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        <div className="landing">
+          <motion.section
+            className="landing-hero"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="empty-mark"><UploadCloud size={30} strokeWidth={1.75} /></span>
-            <h2>No data yet</h2>
-            <p>
-              Upload your <code>Trading.xlsx</code>, or paste a Google Sheet link to load
-              your trades.
+            <span className="landing-eyebrow"><Lock size={12} /> Local-first · privacy-first</span>
+            <h2 className="landing-title">
+              Turn your trading spreadsheet into a<br />
+              <span className="grad">visual discipline journal</span>.
+            </h2>
+            <p className="landing-tagline">
+              Not to predict the market — to help you stop repeating the same trading mistake.
             </p>
-            <button className="btn btn-sample" onClick={loadSample}>
-              <Sparkles size={16} /> Explore with sample data
-            </button>
-            <p className="muted">
-              No upload needed — 300 fake trades across a year. Data is read from the
-              <strong> 3rd worksheet</strong>, with the same column names as the desktop app.
+            <div className="landing-cta">
+              <button className="btn btn-sample" onClick={loadSample}>
+                <Sparkles size={16} /> Explore with sample data
+              </button>
+              <span className="landing-cta-hint">
+                <UploadCloud size={14} /> or upload your <code>.xlsx</code> / CSV, or paste a Google Sheet link above
+              </span>
+            </div>
+
+            <div className="landing-features">
+              <div className="lf">
+                <span className="lf-icon"><CalendarRange size={18} /></span>
+                <h3>See your edge at a glance</h3>
+                <p>P&amp;L calendar, 12-month heatmap, equity curve, win rate, profit factor and expectancy.</p>
+              </div>
+              <div className="lf">
+                <span className="lf-icon"><Brain size={18} /></span>
+                <h3>Behavioral review, not just charts</h3>
+                <p>Auto-detected mistakes, emotion edge, a daily discipline score and rule-break tracking.</p>
+              </div>
+              <div className="lf">
+                <span className="lf-icon"><Target size={18} /></span>
+                <h3>Change one thing each week</h3>
+                <p>The weekly review finds your single biggest leak and exports a clean PDF report.</p>
+              </div>
+              <div className="lf">
+                <span className="lf-icon"><ShieldCheck size={18} /></span>
+                <h3>Your data stays with you</h3>
+                <p>Read in your browser. No broker credentials, no required cloud, no account.</p>
+              </div>
+            </div>
+
+            <div className="landing-fit">
+              <div className="fit-col good">
+                <h4>Built for</h4>
+                <ul>
+                  <li>Traders already journaling in Excel / Google Sheets</li>
+                  <li>Futures &amp; day-trading scalpers</li>
+                  <li>Prop-firm challenge takers who need discipline</li>
+                </ul>
+              </div>
+              <div className="fit-col bad">
+                <h4>Not for</h4>
+                <ul>
+                  <li>Fully automated broker sync</li>
+                  <li>Institutional-grade backtesting</li>
+                  <li>Complex multi-leg options analytics</li>
+                </ul>
+              </div>
+            </div>
+
+            <p className="landing-foot">
+              A trading journal &amp; review tool — not investment advice. Data is read from the
+              <strong> 3rd worksheet</strong> by default (or pick a sheet &amp; map columns on import).
             </p>
-          </motion.div>
+          </motion.section>
         </div>
       ) : (
         <AnimatePresence mode="wait">
