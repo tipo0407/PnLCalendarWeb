@@ -1,11 +1,14 @@
 import type { TradeRecord } from '../types';
+import { getActiveProfileId, profileTradesKey } from './profiles';
 
-const KEY = 'pnlcalendar.trades.v1';
+function key(): string {
+  return profileTradesKey(getActiveProfileId());
+}
 
 /** Persist the loaded trades locally so they survive a reload (local-first). */
 export function savePersistedTrades(trades: TradeRecord[]): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(trades));
+    localStorage.setItem(key(), JSON.stringify(trades));
   } catch {
     // Quota exceeded or storage unavailable — non-fatal.
   }
@@ -13,7 +16,7 @@ export function savePersistedTrades(trades: TradeRecord[]): void {
 
 export function loadPersistedTrades(): TradeRecord[] | null {
   try {
-    const s = localStorage.getItem(KEY);
+    const s = localStorage.getItem(key());
     if (!s) return null;
     const arr = JSON.parse(s);
     return Array.isArray(arr) ? (arr as TradeRecord[]) : null;
@@ -24,7 +27,7 @@ export function loadPersistedTrades(): TradeRecord[] | null {
 
 export function clearPersistedTrades(): void {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(key());
   } catch {
     // ignore
   }

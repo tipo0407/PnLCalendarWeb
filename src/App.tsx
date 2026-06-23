@@ -19,6 +19,7 @@ import WeeklyReview from './components/WeeklyReview';
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import OnboardingChecklist from './components/OnboardingChecklist';
+import ProfileSwitcher from './components/ProfileSwitcher';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { OPEN_PRICING_EVENT } from './lib/pricingBus';
@@ -181,6 +182,19 @@ export default function App() {
     applyTrades(loaded);
   }
 
+  function reloadProfile() {
+    setSampleMode(false);
+    setAccount('All');
+    const p = loadPersistedTrades();
+    if (p && p.length > 0) {
+      setTrades(p);
+      const [y, m] = p[p.length - 1].date.split('-').map(Number);
+      setViewMonth({ year: y, month: m - 1 });
+    } else {
+      setTrades([]);
+    }
+  }
+
   function loadSample() {
     setTrades(sampleTrades);
     const last = sampleTrades[sampleTrades.length - 1].date;
@@ -208,6 +222,8 @@ export default function App() {
               <span className="brand-sub">Trading performance journal</span>
             </div>
           </div>
+
+          <ProfileSwitcher onChange={reloadProfile} />
 
           {sampleMode && (
             <span className="sample-badge">
