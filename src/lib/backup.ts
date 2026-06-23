@@ -3,7 +3,7 @@ import { loadUserTags, replaceAllUserTags } from './userTags';
 import { loadRules, saveRules, DEFAULT_RULES } from './rules';
 import { getSettings, replaceSettings, DEFAULT_SETTINGS } from './settings';
 import { savePersistedTrades, clearPersistedTrades } from './persist';
-import { clearAllShots } from './screenshots';
+import { clearAllShots, exportAllShots, importAllShots } from './screenshots';
 import { exportPlaybook, importPlaybook, type PlaybookEntry } from './playbook';
 import { exportReviewed, importReviewed } from './reviewLog';
 import { getActiveProfile } from './profiles';
@@ -20,10 +20,13 @@ export interface Backup {
   settings: ReturnType<typeof getSettings>;
   playbook?: Record<string, PlaybookEntry>;
   reviewed?: string[];
+  shots?: Record<string, string>;
 }
 
-/** Build a full local backup of the active profile (data + preferences). */
-export function buildBackup(trades: TradeRecord[]): Backup {
+/** Build a full local backup of the active profile (data + preferences + shots). */
+export async function buildBackup(trades: TradeRecord[]): Promise<Backup> {
+  let shots: Record<string, string> = {};
+  try { shots = await exportAllShots(); } catch { /* screenshots optional */ }
   return {
     app: 'pnlcalendar',
     version: 2,
@@ -35,16 +38,18 @@ export function buildBackup(trades: TradeRecord[]): Backup {
     settings: getSettings(),
     playbook: exportPlaybook(),
     reviewed: exportReviewed(),
+    shots,
   };
 }
 
-export function exportBackup(trades: TradeRecord[]) {
+export async function exportBackup(trades: TradeRecord[]) {
   const stamp = new Date().toISOString().slice(0, 10);
-  downloadText(`pnlcalendar-backup-${stamp}.json`, JSON.stringify(buildBackup(trades), null, 2), 'application/json');
+  const backup = await buildBackup(trades);
+  downloadText(`pnlcalendar-backup-${stamp}.json`, JSON.stringify(backup, null, 2), 'application/json');
 }
 
 /** Restore a backup into local storage. Returns the trades to apply in the UI. */
-export function restoreBackup(json: string): TradeRecord[] {
+export async function restoreBackup(json: string): Promise<TradeRecord[]> {
   const data = JSON.parse(json) as Partial<Backup>;
   if (data.app !== 'pnlcalendar' || !Array.isArray(data.trades)) {
     throw new Error('Not a valid PnL Calendar backup file.');
@@ -54,6 +59,7 @@ export function restoreBackup(json: string): TradeRecord[] {
   if (data.settings) replaceSettings({ ...DEFAULT_SETTINGS, ...data.settings });
   if (data.playbook) importPlaybook(data.playbook);
   if (data.reviewed) importReviewed(data.reviewed);
+  if (data.shots) { try { await importAllShots(data.shots); } catch { /* skip */ } }
   savePersistedTrades(data.trades);
   return data.trades;
 }

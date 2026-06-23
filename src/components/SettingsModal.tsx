@@ -42,7 +42,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           setSyncMsg('Push cancelled.'); setSyncing(false); return;
         }
       }
-      const ts = await pushBackup(buildBackup(trades));
+      const ts = await pushBackup(await buildBackup(trades));
       setSyncMsg(`Pushed to cloud at ${new Date(ts).toLocaleString()}.`);
     } catch (e) {
       setSyncMsg(e instanceof Error ? e.message : 'Push failed.');
@@ -57,7 +57,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
       const { blob, updatedAt } = await pullBackup();
       if (!blob) { setSyncMsg('Nothing stored in the cloud yet.'); setSyncing(false); return; }
       if (!window.confirm('Replace this device’s data with the cloud copy?')) { setSyncMsg('Pull cancelled.'); setSyncing(false); return; }
-      const restored = restoreBackup(JSON.stringify(blob));
+      const restored = await restoreBackup(JSON.stringify(blob));
       onReplaceTrades(restored);
       setS({ ...getSettings() });
       if (updatedAt) markSynced(updatedAt);
@@ -81,9 +81,9 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
 
   function onImportFile(file: File) {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        const restored = restoreBackup(String(reader.result));
+        const restored = await restoreBackup(String(reader.result));
         onReplaceTrades(restored);
         setS({ ...getSettings() });
         setMsg(`Restored ${restored.length} trades from backup.`);
