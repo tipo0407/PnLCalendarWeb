@@ -21,6 +21,9 @@ const SECRET = process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
 const PORT = Number(process.env.API_PORT || 8788);
 // Demo key is always accepted so reviewers can try Pro without a real key.
 const DEMO_KEY = 'PNLCAL-PRO-DEMO';
+const START = Date.now();
+let VERSION = '0.0.0';
+try { VERSION = require('../package.json').version; } catch { /* ignore */ }
 
 function sigFor(payload) {
   return crypto.createHmac('sha256', SECRET).update(payload).digest('hex').slice(0, 8).toUpperCase();
@@ -50,7 +53,7 @@ function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Cache-Control': 'no-store',
   });
@@ -103,6 +106,14 @@ async function handle(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
 
   const url = (req.url || '').split('?')[0];
+
+  // Health & version (GET, unauthenticated).
+  if (req.method === 'GET' && url === '/api/health') {
+    return send(res, 200, { ok: true, uptime: Math.round((Date.now() - START) / 1000) });
+  }
+  if (req.method === 'GET' && url === '/api/version') {
+    return send(res, 200, { version: VERSION, node: process.version, commit: process.env.GIT_COMMIT || null });
+  }
 
   if (req.method === 'POST' && url === '/api/checkout') {
     const stripeReady = Boolean(process.env.STRIPE_SECRET_KEY);

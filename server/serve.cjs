@@ -102,8 +102,9 @@ function serveStatic(req, res) {
 
 const server = http.createServer((req, res) => {
   const url = req.url || '/';
-  // License / checkout API (handled by the shared dependency-free module).
-  if (url === '/api/checkout' || url.startsWith('/api/license') || url.startsWith('/api/stripe')) {
+  // License / checkout / ops API (handled by the shared dependency-free module).
+  if (url === '/api/checkout' || url.startsWith('/api/license') || url.startsWith('/api/stripe')
+      || url.startsWith('/api/health') || url.startsWith('/api/version')) {
     licenseApi.handle(req, res);
     return;
   }

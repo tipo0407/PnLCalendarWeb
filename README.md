@@ -196,6 +196,15 @@ The image builds the frontend and serves it via `server/serve.cjs` on port 4173,
 Note: the Google-Sheet `/api/sync` refresh is Windows-only (it runs a `.bat`); it is inert in the
 Linux container and the app degrades gracefully (uploads and pasted Google Sheet links still work).
 
+### Ops & monitoring
+
+The server exposes unauthenticated health endpoints for load balancers / uptime checks:
+
+- `GET /api/health` → `{ ok: true, uptime: <seconds> }`
+- `GET /api/version` → `{ version, node, commit }` (`commit` comes from the `GIT_COMMIT` env var)
+
+Point your monitor at `/api/health` and treat a non-200 or `ok:false` as unhealthy.
+
 ## Tech stack
 
 - React 19 + TypeScript + Vite
