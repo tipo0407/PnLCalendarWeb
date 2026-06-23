@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
@@ -19,6 +19,7 @@ import WeeklyReview from './components/WeeklyReview';
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import { SETTINGS_EVENT } from './lib/settings';
+import { useIsPro } from './lib/usePlan';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
@@ -47,6 +48,7 @@ export default function App() {
   });
   const [syncing, setSyncing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
+  const pro = useIsPro();
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
@@ -226,8 +228,8 @@ export default function App() {
 
           <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
 
-          <button className="pro-pill" onClick={() => setShowPricing(true)} title="Plans & pricing">
-            <Sparkles size={13} /> Pro
+          <button className={`pro-pill ${pro ? 'is-pro' : ''}`} onClick={() => setShowPricing(true)} title={pro ? 'Pro is active' : 'Plans & pricing'}>
+            {pro ? <Check size={13} /> : <Sparkles size={13} />} {pro ? 'Pro' : 'Pro'}
           </button>
 
           <button
