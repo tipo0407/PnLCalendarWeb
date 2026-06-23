@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Check, Sparkles, KeyRound, BadgeCheck } from 'lucide-react';
 import { useIsPro } from '../lib/usePlan';
-import { activatePro, deactivatePro, isValidKey, DEMO_KEY, planKey } from '../lib/plan';
+import { deactivatePro, activateProOnline, isValidKey, DEMO_KEY, planKey } from '../lib/plan';
 import { startCheckout, PRICE_IDS } from '../lib/checkout';
 
 interface Props {
@@ -79,9 +79,15 @@ export default function PricingModal({ onClose }: Props) {
   const [keyInput, setKeyInput] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [msgKind, setMsgKind] = useState<'ok' | 'err' | 'info'>('info');
+  const [busy, setBusy] = useState(false);
 
-  function activate() {
-    if (activatePro(keyInput)) {
+  async function activate() {
+    setBusy(true);
+    setMsgKind('info');
+    setMsg('Verifying…');
+    const ok = await activateProOnline(keyInput);
+    setBusy(false);
+    if (ok) {
       setMsgKind('ok');
       setMsg('Pro activated. Thanks for the support!');
       setKeyInput('');
@@ -174,7 +180,7 @@ export default function PricingModal({ onClose }: Props) {
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') activate(); }}
               />
-              <button className="activate-btn" disabled={!isValidKey(keyInput)} onClick={activate}>Activate</button>
+              <button className="activate-btn" disabled={busy || !isValidKey(keyInput)} onClick={activate}>{busy ? 'Verifying…' : 'Activate'}</button>
             </div>
           )}
           {msg && <div className={`activate-msg ${msgKind}`}>{msg}</div>}

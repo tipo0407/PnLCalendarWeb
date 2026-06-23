@@ -48,6 +48,8 @@ export default defineConfig({
   plugins: [react(), tradesFilePlugin()],
   server: {
     proxy: {
+      '/api/checkout': { target: 'http://localhost:8788', changeOrigin: true },
+      '/api/license': { target: 'http://localhost:8788', changeOrigin: true },
       '/gsheet': {
         target: 'https://docs.google.com',
         changeOrigin: true,

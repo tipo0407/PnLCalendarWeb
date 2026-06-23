@@ -70,3 +70,33 @@ export function deactivatePro() {
 export function planKey(): string | undefined {
   return load().key;
 }
+
+/**
+ * Verify a key against the backend (POST /api/license/verify). Falls back to the
+ * offline format check when the API is unreachable, so the app keeps working
+ * fully local-first.
+ */
+export async function verifyKeyOnline(key: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/license/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = (await res.json()) as { valid?: boolean };
+    return Boolean(data.valid);
+  } catch {
+    return isValidKey(key);
+  }
+}
+
+/** Verify (online, with offline fallback) and activate Pro on success. */
+export async function activateProOnline(key: string): Promise<boolean> {
+  const valid = await verifyKeyOnline(key);
+  if (valid) {
+    cache = { plan: 'pro', key: key.trim().toUpperCase(), since: new Date().toISOString() };
+    persist();
+  }
+  return valid;
+}

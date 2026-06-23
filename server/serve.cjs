@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
 const { URL } = require('url');
+const licenseApi = require('./api.cjs');
 
 const PORT = Number(process.env.PORT) || 4173;
 const DIST = path.join(__dirname, '..', 'dist');
@@ -101,6 +102,11 @@ function serveStatic(req, res) {
 
 const server = http.createServer((req, res) => {
   const url = req.url || '/';
+  // License / checkout API (handled by the shared dependency-free module).
+  if (url === '/api/checkout' || url.startsWith('/api/license')) {
+    licenseApi.handle(req, res);
+    return;
+  }
   // Trigger a Google Sheet sync (downloads via the logged-in browser session).
   if (url === '/api/sync') {
     if (syncing) {

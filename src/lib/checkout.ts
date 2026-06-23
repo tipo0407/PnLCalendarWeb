@@ -19,13 +19,18 @@ export const PRICE_IDS = {
 } as const;
 
 export async function startCheckout(priceId: string): Promise<CheckoutResult> {
-  // Future:
-  //   const res = await fetch('/api/checkout', { method: 'POST', body: JSON.stringify({ priceId }) });
-  //   const { url } = await res.json();
-  //   return { ok: true, url, message: 'Redirecting…' };
-  void priceId;
-  return {
-    ok: false,
-    message: 'Online checkout isn’t live yet. Enter a license key below — or use the demo key — to activate Pro.',
-  };
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId }),
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    return (await res.json()) as CheckoutResult;
+  } catch {
+    return {
+      ok: false,
+      message: 'Online checkout isn’t available right now. Enter a license key below — or use the demo key — to activate Pro.',
+    };
+  }
 }
