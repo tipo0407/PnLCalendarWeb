@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoneySigned, longDate } from '../lib/metrics';
+import { dayDiscipline, disciplineColor } from '../lib/discipline';
 import DayChart from './DayChart';
 
 interface Props {
@@ -74,6 +75,12 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
             <span className="ms-label">Win / Loss</span>
             <span className="ms-value">
               <span className="pos">{daily.wins}</span> / <span className="neg">{daily.losses}</span>
+            </span>
+          </div>
+          <div className="ms">
+            <span className="ms-label">Discipline</span>
+            <span className="ms-value" style={{ color: disciplineColor(dayDiscipline(daily)) }}>
+              {dayDiscipline(daily)}<span className="ms-unit">/100</span>
             </span>
           </div>
         </div>

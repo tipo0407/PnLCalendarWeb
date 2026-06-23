@@ -1213,3 +1213,6 @@
   line-height: 1.7;
 }
 .atlas-empty b { color: var(--text); }
+.cell-day-wrap { display: inline-flex; align-items: center; gap: 6px; }
+.cell-disc { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--card) 70%, transparent); }
+.ms-unit { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 1px; }

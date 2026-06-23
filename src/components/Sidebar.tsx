@@ -9,6 +9,7 @@ import {
   formatMoneySigned,
   shortDate,
 } from '../lib/metrics';
+import { avgDiscipline } from '../lib/discipline';
 import MoneyCountUp from './CountUp';
 
 interface Props {
@@ -67,6 +68,7 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Pro
   const maxMonthAbs = Math.max(1, ...months.map((m) => Math.abs(m.pnl)));
   const winRate = summary.winRateDays;
   const positive = summary.totalPnl >= 0;
+  const disc = useMemo(() => avgDiscipline([...groupByDay(trades).values()]), [trades]);
 
   return (
     <aside className="sidebar">
@@ -181,6 +183,12 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Pro
           />
           <Insight label="Expectancy" value={formatMoneySigned(summary.expectancy)} cls={summary.expectancy >= 0 ? 'pos' : 'neg'} />
           <Insight label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
+          <Insight
+            label="Discipline"
+            value={`${disc}`}
+            sub="/100 avg"
+            cls={disc >= 80 ? 'pos' : disc < 60 ? 'neg' : ''}
+          />
         </div>
       </div>
     </aside>

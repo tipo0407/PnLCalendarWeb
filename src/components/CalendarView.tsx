@@ -4,6 +4,7 @@ import type { DailyPnl } from '../types';
 import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
+import { dayDiscipline, disciplineColor } from '../lib/discipline';
 import MoneyCountUp from './CountUp';
 
 interface Props {
@@ -223,7 +224,16 @@ export default function CalendarView({
                       : {})}
                   >
                     <div className="cell-top">
-                      <span className="cell-day">{d}</span>
+                      <span className="cell-day-wrap">
+                        <span className="cell-day">{d}</span>
+                        {day && (
+                          <span
+                            className="cell-disc"
+                            style={{ background: disciplineColor(dayDiscipline(day)) }}
+                            title={`Discipline ${dayDiscipline(day)}/100`}
+                          />
+                        )}
+                      </span>
                       {day && <span className="cell-trades">{day.tradeCount} trades</span>}
                     </div>
                     {day ? (
