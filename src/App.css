@@ -1335,6 +1335,26 @@
   line-height: 1.7;
 }
 .atlas-empty b { color: var(--text); }
+
+.atlas-link {
+  background: none; border: none; cursor: pointer;
+  color: var(--accent); font-size: 12px; font-weight: 600; padding: 0;
+}
+.atlas-link:hover { text-decoration: underline; }
+.risk-tiles {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.risk-tile {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.risk-tile-label { font-size: 11px; color: var(--text-2); font-weight: 600; }
+.risk-tile-value { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.risk-tile-value small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.risk-tile-value.pos { color: var(--pos); }
+.risk-tile-value.neg { color: var(--neg); }
+@media (max-width: 900px) { .risk-tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 520px) { .risk-tiles { grid-template-columns: repeat(2, 1fr); } }
 .cell-day-wrap { display: inline-flex; align-items: center; gap: 6px; }
 .cell-disc { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--card) 70%, transparent); }
 .ms-unit { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 1px; }

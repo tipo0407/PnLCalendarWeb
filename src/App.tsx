@@ -346,7 +346,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TradeAtlas trades={trades} summary={summary} />
+              <TradeAtlas trades={trades} summary={summary} onOpenSettings={() => setShowSettings(true)} />
             </motion.div>
           ) : (
             <motion.div

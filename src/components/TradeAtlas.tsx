@@ -12,6 +12,8 @@ import { useThemeColors } from '../lib/useThemeColors';
 import { useUserTags } from '../lib/useUserTags';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
+import { riskStats, drawdownSeries } from '../lib/risk';
+import { getSettings } from '../lib/settings';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -31,6 +33,7 @@ import {
 interface Props {
   trades: TradeRecord[];
   summary: Summary;
+  onOpenSettings?: () => void;
 }
 
 const AXIS = { stroke: '#9aa6ba', fontSize: 11, tickLine: false, axisLine: false };
@@ -42,7 +45,7 @@ const TOOLTIP = {
   cursor: { fill: 'rgba(120,140,170,0.10)' },
 };
 
-export default function TradeAtlas({ trades, summary }: Props) {
+export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
   const theme = useThemeColors();
   const POS = theme.pos;
   const NEG = theme.neg;
@@ -78,6 +81,11 @@ export default function TradeAtlas({ trades, summary }: Props) {
   const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
   const taggedCount = useMemo(() => taggedTradeCount(trades, userTags), [trades, userTags]);
   const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
+
+  const { accountSize, riskPerTrade } = getSettings();
+  const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
+  const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
+  const ddKey = risk.hasAccount ? 'drawdownPct' : 'drawdown';
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
@@ -349,6 +357,40 @@ export default function TradeAtlas({ trades, summary }: Props) {
         </Panel>
 
         <Panel
+          title="Risk & Drawdown"
+          subtitle={risk.hasAccount ? 'Underwater equity (% of account peak)' : 'Underwater equity (account currency)'}
+          span={12}
+          action={(!risk.hasAccount || !risk.hasRisk) && onOpenSettings
+            ? <button className="atlas-link" onClick={onOpenSettings}>Set account &amp; risk →</button>
+            : undefined}
+        >
+          <div className="risk-tiles">
+            <RiskTile label="Max Drawdown" value={formatMoney(risk.maxDrawdown)} sub={risk.hasAccount ? `${risk.maxDrawdownPct.toFixed(1)}%` : undefined} cls="neg" />
+            <RiskTile label="Current Drawdown" value={formatMoney(risk.currentDrawdown)} cls={risk.currentDrawdown < 0 ? 'neg' : 'pos'} />
+            <RiskTile label="Return on Account" value={risk.hasAccount ? `${risk.returnPct >= 0 ? '+' : ''}${risk.returnPct.toFixed(1)}%` : '—'} cls={risk.returnPct >= 0 ? 'pos' : 'neg'} />
+            <RiskTile label="Avg R / trade" value={risk.hasRisk ? `${risk.avgR >= 0 ? '+' : ''}${risk.avgR.toFixed(2)}R` : '—'} cls={risk.avgR >= 0 ? 'pos' : 'neg'} />
+            <RiskTile label="Total R" value={risk.hasRisk ? `${risk.totalR >= 0 ? '+' : ''}${risk.totalR.toFixed(1)}R` : '—'} cls={risk.totalR >= 0 ? 'pos' : 'neg'} />
+            <RiskTile label="Best / Worst R" value={risk.hasRisk ? `${risk.bestR.toFixed(1)} / ${risk.worstR.toFixed(1)}` : '—'} />
+          </div>
+          <ResponsiveContainer width="100%" height={150}>
+            <AreaChart data={ddSeries} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="atlDdFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor={NEG} stopOpacity={0.05} />
+                  <stop offset="1" stopColor={NEG} stopOpacity={0.35} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+              <XAxis dataKey="date" {...AXIS} minTickGap={50} tickFormatter={(d) => shortDate(String(d))} />
+              <YAxis {...AXIS} width={50} tickFormatter={(v) => risk.hasAccount ? `${Number(v).toFixed(0)}%` : compactMoney(Number(v))} />
+              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [risk.hasAccount ? `${Number(v).toFixed(1)}%` : formatMoney(Number(v)), 'Drawdown']} />
+              <ReferenceLine y={0} stroke="var(--border-strong)" />
+              <Area type="monotone" dataKey={ddKey} stroke={NEG} strokeWidth={2} fill="url(#atlDdFill)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        <Panel
           title="Rule Adherence"
           subtitle="Set your rules; see how often you broke them and what it cost"
           span={12}
@@ -372,6 +414,15 @@ export default function TradeAtlas({ trades, summary }: Props) {
           </ResponsiveContainer>
         </Panel>
       </div>
+    </div>
+  );
+}
+
+function RiskTile({ label, value, sub, cls }: { label: string; value: string; sub?: string; cls?: string }) {
+  return (
+    <div className="risk-tile">
+      <span className="risk-tile-label">{label}</span>
+      <span className={`risk-tile-value ${cls ?? ''}`}>{value}{sub && <small> · {sub}</small>}</span>
     </div>
   );
 }
