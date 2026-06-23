@@ -1,5 +1,7 @@
 /* Tiny dependency-free IndexedDB store for per-trade screenshot blobs. */
 
+import { getActiveProfileId, DEFAULT_PROFILE } from './profiles';
+
 const DB_NAME = 'pnlcalendar';
 const STORE = 'screenshots';
 
@@ -48,9 +50,11 @@ export async function delShot(key: string): Promise<void> {
   db.close();
 }
 
-/** Stable key for a trade's screenshot. */
+/** Stable key for a trade's screenshot (namespaced by active profile). */
 export function shotKey(date: string, tradeNumber: number, rowNumber: number): string {
-  return `${date}#${tradeNumber || rowNumber}`;
+  const id = getActiveProfileId();
+  const prefix = id === DEFAULT_PROFILE.id ? '' : `${id}::`;
+  return `${prefix}${date}#${tradeNumber || rowNumber}`;
 }
 
 /** Delete every stored screenshot (used by clear-all). */

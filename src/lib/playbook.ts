@@ -1,4 +1,5 @@
 import type { TradeRecord } from '../types';
+import { profileKey, PROFILE_EVENT } from './profiles';
 
 export interface SetupStat {
   setup: string;
@@ -52,15 +53,23 @@ export interface PlaybookEntry {
   note: string;
 }
 
-const KEY = 'pnlcalendar.playbook.v1';
+const BASE_KEY = 'pnlcalendar.playbook.v1';
+const keyName = () => profileKey(BASE_KEY);
 export const PLAYBOOK_EVENT = 'pnlcalendar:playbook';
 
 let cache: Record<string, PlaybookEntry> | null = null;
 
+if (typeof window !== 'undefined') {
+  window.addEventListener(PROFILE_EVENT, () => {
+    cache = null;
+    window.dispatchEvent(new Event(PLAYBOOK_EVENT));
+  });
+}
+
 function load(): Record<string, PlaybookEntry> {
   if (cache) return cache;
   try {
-    cache = JSON.parse(localStorage.getItem(KEY) || '{}') as Record<string, PlaybookEntry>;
+    cache = JSON.parse(localStorage.getItem(keyName()) || '{}') as Record<string, PlaybookEntry>;
   } catch {
     cache = {};
   }
@@ -77,7 +86,7 @@ export function setPlaybookEntry(setup: string, entry: PlaybookEntry) {
   if (entry.checklist.length === 0 && !entry.note.trim()) delete c[setup];
   else c[setup] = entry;
   try {
-    localStorage.setItem(KEY, JSON.stringify(c));
+    localStorage.setItem(keyName(), JSON.stringify(c));
   } catch {
     /* ignore */
   }

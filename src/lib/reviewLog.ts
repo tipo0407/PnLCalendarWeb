@@ -1,14 +1,24 @@
-/** Tracks which weeks the trader has marked "reviewed", persisted locally. */
+/** Tracks which weeks the trader has marked "reviewed", persisted per profile. */
 
-const KEY = 'pnlcalendar.reviewed.v1';
+import { profileKey, PROFILE_EVENT } from './profiles';
+
+const BASE_KEY = 'pnlcalendar.reviewed.v1';
+const keyName = () => profileKey(BASE_KEY);
 export const REVIEW_LOG_EVENT = 'pnlcalendar:reviewlog';
 
 let cache: Set<string> | null = null;
 
+if (typeof window !== 'undefined') {
+  window.addEventListener(PROFILE_EVENT, () => {
+    cache = null;
+    window.dispatchEvent(new Event(REVIEW_LOG_EVENT));
+  });
+}
+
 function load(): Set<string> {
   if (cache) return cache;
   try {
-    const arr = JSON.parse(localStorage.getItem(KEY) || '[]') as string[];
+    const arr = JSON.parse(localStorage.getItem(keyName()) || '[]') as string[];
     cache = new Set(Array.isArray(arr) ? arr : []);
   } catch {
     cache = new Set();
@@ -17,7 +27,7 @@ function load(): Set<string> {
 }
 
 function persist() {
-  try { localStorage.setItem(KEY, JSON.stringify([...(cache ?? [])])); } catch { /* ignore */ }
+  try { localStorage.setItem(keyName(), JSON.stringify([...(cache ?? [])])); } catch { /* ignore */ }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(REVIEW_LOG_EVENT));
 }
 

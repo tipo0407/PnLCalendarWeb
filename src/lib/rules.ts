@@ -1,5 +1,6 @@
 import type { TradeRecord } from '../types';
 import { groupByDay } from './metrics';
+import { profileKey } from './profiles';
 
 export interface Rules {
   maxDailyLoss: number;   // stop for the day after losing this much ($)
@@ -15,11 +16,12 @@ export const DEFAULT_RULES: Rules = {
   windowEnd: 13,
 };
 
-const KEY = 'pnlcalendar.rules.v1';
+const BASE_KEY = 'pnlcalendar.rules.v1';
+const keyName = () => profileKey(BASE_KEY);
 
 export function loadRules(): Rules {
   try {
-    const s = localStorage.getItem(KEY);
+    const s = localStorage.getItem(keyName());
     if (s) return { ...DEFAULT_RULES, ...JSON.parse(s) };
   } catch {
     // ignore
@@ -29,7 +31,7 @@ export function loadRules(): Rules {
 
 export function saveRules(r: Rules): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(r));
+    localStorage.setItem(keyName(), JSON.stringify(r));
   } catch {
     // ignore
   }

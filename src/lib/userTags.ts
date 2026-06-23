@@ -10,7 +10,15 @@ export interface TradeTags {
   emotions: string[];
 }
 
-const KEY = 'pnlcalendar.usertags.v1';
+import { profileKey, PROFILE_EVENT } from './profiles';
+
+export interface TradeTags {
+  mistakes: string[];
+  emotions: string[];
+}
+
+const BASE_KEY = 'pnlcalendar.usertags.v1';
+const keyName = () => profileKey(BASE_KEY);
 export const USER_TAGS_EVENT = 'pnlcalendar:usertags';
 
 export function tradeTagKey(date: string, tradeNumber: number, rowNumber: number): string {
@@ -19,10 +27,18 @@ export function tradeTagKey(date: string, tradeNumber: number, rowNumber: number
 
 let cache: Record<string, TradeTags> | null = null;
 
+// Reset the cache when the active profile changes so each profile is isolated.
+if (typeof window !== 'undefined') {
+  window.addEventListener(PROFILE_EVENT, () => {
+    cache = null;
+    window.dispatchEvent(new Event(USER_TAGS_EVENT));
+  });
+}
+
 function load(): Record<string, TradeTags> {
   if (cache) return cache;
   try {
-    cache = JSON.parse(localStorage.getItem(KEY) || '{}') as Record<string, TradeTags>;
+    cache = JSON.parse(localStorage.getItem(keyName()) || '{}') as Record<string, TradeTags>;
   } catch {
     cache = {};
   }
@@ -31,11 +47,11 @@ function load(): Record<string, TradeTags> {
 
 function persist() {
   try {
-    localStorage.setItem(KEY, JSON.stringify(cache ?? {}));
+    localStorage.setItem(keyName(), JSON.stringify(cache ?? {}));
   } catch {
     /* ignore quota / privacy-mode errors */
   }
-  window.dispatchEvent(new Event(USER_TAGS_EVENT));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(USER_TAGS_EVENT));
 }
 
 /** A shallow copy of the whole store (key -> tags). */

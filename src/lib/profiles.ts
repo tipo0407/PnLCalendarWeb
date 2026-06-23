@@ -102,3 +102,9 @@ const TRADES_BASE = 'pnlcalendar.trades.v1';
 export function profileTradesKey(id: string): string {
   return id === DEFAULT_PROFILE.id ? TRADES_BASE : `${TRADES_BASE}::${id}`;
 }
+
+/** Namespace any base storage key by the active profile (default keeps base). */
+export function profileKey(base: string): string {
+  const id = getActiveProfileId();
+  return id === DEFAULT_PROFILE.id ? base : `${base}::${id}`;
+}
