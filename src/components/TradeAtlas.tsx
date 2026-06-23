@@ -10,6 +10,7 @@ import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
+import { emotionEdge } from '../lib/emotions';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -74,6 +75,7 @@ export default function TradeAtlas({ trades, summary }: Props) {
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
   const mistakes = useMemo(() => tagEdge(trades), [trades]);
   const taggedCount = useMemo(() => taggedTradeCount(trades), [trades]);
+  const emotions = useMemo(() => emotionEdge(trades), [trades]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
@@ -311,9 +313,43 @@ export default function TradeAtlas({ trades, summary }: Props) {
         </Panel>
 
         <Panel
+          title="Emotion Edge"
+          subtitle="P&L by emotional state detected in your notes"
+          span={6}
+        >
+          {emotions.length === 0 ? (
+            <div className="atlas-empty">
+              No emotions detected yet. Jot how you felt in <b>Reason&amp;Emotion</b>
+              (e.g. “confident”, “fearful”, “greedy”, “手痒”, “犹豫”) to see which states pay.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(150, emotions.length * 34)}>
+              <BarChart data={emotions} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 0 }}>
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => compactMoney(Number(v))} />
+                <YAxis type="category" dataKey="label" {...AXIS} width={110} />
+                <Tooltip
+                  {...TOOLTIP}
+                  formatter={(v) => [formatMoneySigned(Number(v)), 'Impact']}
+                  labelFormatter={(l) => {
+                    const m = emotions.find((x) => x.label === String(l));
+                    return m ? `${l} · ${m.count} trades · ${(m.winRate * 100).toFixed(0)}% win` : String(l);
+                  }}
+                />
+                <ReferenceLine x={0} stroke="var(--border-strong)" />
+                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16}>
+                  {emotions.map((d, i) => (
+                    <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Panel>
+
+        <Panel
           title="Rule Adherence"
           subtitle="Set your rules; see how often you broke them and what it cost"
-          span={6}
+          span={12}
         >
           <RulesPanel trades={trades} />
         </Panel>
