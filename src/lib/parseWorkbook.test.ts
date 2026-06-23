@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  parseDateCell, parseTimeCell, autoMap, parseSheet, guessSheetIndex,
+  parseDateCell, parseTimeCell, autoMap, parseSheet, guessSheetIndex, dedupeTrades,
   type SheetData,
 } from './parseWorkbook';
 
@@ -84,5 +84,35 @@ describe('guessSheetIndex', () => {
       { name: 'Trades', rows: [['Date', 'PL', 'Symbol']] },
     ];
     expect(guessSheetIndex(sheets)).toBe(1);
+  });
+});
+
+describe('parseSheet dedupe', () => {
+  it('drops exact-duplicate rows on import', () => {
+    const sheet: SheetData = {
+      name: 'Trades',
+      rows: [
+        ['Date', 'Symbol', 'Direction', 'P&L'],
+        ['2025-03-03', 'MES', 'Long', 120],
+        ['2025-03-03', 'MES', 'Short', -40],
+        ['2025-03-04', 'MNQ', 'Long', 75],
+        ['2025-03-03', 'MES', 'Long', 120], // duplicate of row 1
+      ],
+    };
+    const mapping = autoMap(sheet.rows[0]);
+    const result = parseSheet(sheet, mapping);
+    expect(result.total).toBe(4);       // 4 data rows seen
+    expect(result.trades).toHaveLength(3); // 1 duplicate removed
+  });
+});
+
+describe('dedupeTrades', () => {
+  it('keeps the first of identical trades', () => {
+    const mk = (pnl: number) => ({
+      rowNumber: 0, date: '2025-03-03', entryTime: null, exitTime: null, tradeNumber: 0,
+      duration: null, direction: 'LONG', symbol: 'MES', entryPrice: 0, exitPrice: 0, size: 1,
+      profitLoss: pnl, setup: '', reasonEmotion: '', runningPnl: 0, note: '',
+    });
+    expect(dedupeTrades([mk(10), mk(10), mk(20)])).toHaveLength(2);
   });
 });

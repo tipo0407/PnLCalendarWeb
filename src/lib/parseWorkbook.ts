@@ -226,7 +226,25 @@ export function parseSheet(sheet: SheetData, mapping: Mapping): ImportResult {
     return a.tradeNumber - b.tradeNumber;
   });
 
-  return { trades, skipped, total };
+  return { trades: dedupeTrades(trades), skipped, total };
+}
+
+/** Signature used to detect duplicate trade rows. */
+function tradeSignature(t: TradeRecord): string {
+  return [t.date, t.entryTime ?? '', t.exitTime ?? '', t.symbol, t.tradeNumber, t.profitLoss, t.size].join('|');
+}
+
+/** Drop exact-duplicate trades (same date/time/symbol/#/P&L/size), keeping the first. */
+export function dedupeTrades(trades: TradeRecord[]): TradeRecord[] {
+  const seen = new Set<string>();
+  const out: TradeRecord[] = [];
+  for (const t of trades) {
+    const sig = tradeSignature(t);
+    if (seen.has(sig)) continue;
+    seen.add(sig);
+    out.push(t);
+  }
+  return out;
 }
 
 /**

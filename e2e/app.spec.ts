@@ -69,3 +69,19 @@ test('command palette (Cmd/Ctrl+K) navigates to a view', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Trade Atlas' })).toBeVisible();
 });
+
+test('import a CSV via the wizard and dedupe duplicate rows', async ({ page }) => {
+  await page.goto('/');
+
+  // Upload the CSV fixture (4 rows, one exact duplicate -> 3 unique trades).
+  await page.setInputFiles('input[type="file"]', 'e2e/fixtures/trades.csv');
+
+  // The import wizard appears; the duplicate row is dropped.
+  await expect(page.getByRole('heading', { name: /Import trades/i })).toBeVisible();
+  const importBtn = page.getByRole('button', { name: /Import 3 trades/i });
+  await expect(importBtn).toBeVisible();
+  await importBtn.click();
+
+  // Calendar renders after import.
+  await expect(page.getByRole('button', { name: /Trade Atlas/i })).toBeVisible();
+});
