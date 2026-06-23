@@ -3,13 +3,14 @@ import { motion } from 'framer-motion';
 import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck, CloudUpload, CloudDownload } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { getSettings, saveSettings, type Settings } from '../lib/settings';
-import { exportBackup, restoreBackup, clearAllData, storageUsageMB, buildBackup } from '../lib/backup';
+import { exportBackup, restoreBackup, clearAllData, storageUsageMB, buildBackup, mergeBackups, type Backup } from '../lib/backup';
 import { getErrors, clearErrors, type LoggedError } from '../lib/logger';
 import { setLang, t, type Lang } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } from '../lib/theme';
 import AccountSection from './AccountSection';
 import TagsManager from './TagsManager';
+import SyncConflictModal from './SyncConflictModal';
 import { useAccount } from '../lib/useAccount';
 import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced, getAutoSync, setAutoSync } from '../lib/cloudSync';
 
@@ -32,6 +33,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [auto, setAuto] = useState(() => getAutoSync());
+  const [conflict, setConflict] = useState<{ local: Backup; cloud: Backup; updatedAt: string | null } | null>(null);
   const lang = useLang();
 
   async function cloudPush() {
@@ -39,9 +41,9 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
     try {
       const remote = await pullBackup();
       if (isRemoteNewer(remote.updatedAt) && remote.blob) {
-        if (!window.confirm('The cloud copy is newer than your last sync. Overwrite it with this device’s data?')) {
-          setSyncMsg('Push cancelled.'); setSyncing(false); return;
-        }
+        // Surface a conflict resolver instead of a blunt overwrite.
+        setConflict({ local: await buildBackup(trades), cloud: remote.blob, updatedAt: remote.updatedAt });
+        setSyncMsg(null); setSyncing(false); return;
       }
       const ts = await pushBackup(await buildBackup(trades));
       setSyncMsg(`Pushed to cloud at ${new Date(ts).toLocaleString()}.`);
@@ -57,14 +59,52 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
     try {
       const { blob, updatedAt } = await pullBackup();
       if (!blob) { setSyncMsg('Nothing stored in the cloud yet.'); setSyncing(false); return; }
-      if (!window.confirm('Replace this device’s data with the cloud copy?')) { setSyncMsg('Pull cancelled.'); setSyncing(false); return; }
-      const restored = await restoreBackup(JSON.stringify(blob));
-      onReplaceTrades(restored);
-      setS({ ...getSettings() });
-      if (updatedAt) markSynced(updatedAt);
-      setSyncMsg(`Pulled ${restored.length} trades from cloud.`);
+      if (trades.length > 0 && isRemoteNewer(updatedAt)) {
+        setConflict({ local: await buildBackup(trades), cloud: blob, updatedAt });
+        setSyncMsg(null); setSyncing(false); return;
+      }
+      await applyCloud(blob, updatedAt);
+      setSyncMsg(`Pulled ${blob.trades.length} trades from cloud.`);
     } catch (e) {
       setSyncMsg(e instanceof Error ? e.message : 'Pull failed.');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function applyCloud(blob: Backup, updatedAt: string | null) {
+    const restored = await restoreBackup(JSON.stringify(blob));
+    onReplaceTrades(restored);
+    setS({ ...getSettings() });
+    if (updatedAt) markSynced(updatedAt);
+  }
+
+  async function resolveKeepLocal() {
+    if (!conflict) return;
+    setConflict(null); setSyncing(true);
+    try { const ts = await pushBackup(conflict.local); setSyncMsg(`Kept this device; pushed at ${new Date(ts).toLocaleString()}.`); }
+    catch (e) { setSyncMsg(e instanceof Error ? e.message : 'Push failed.'); }
+    finally { setSyncing(false); }
+  }
+
+  async function resolveKeepCloud() {
+    if (!conflict) return;
+    const c = conflict; setConflict(null); setSyncing(true);
+    try { await applyCloud(c.cloud, c.updatedAt); setSyncMsg(`Kept cloud; restored ${c.cloud.trades.length} trades.`); }
+    catch (e) { setSyncMsg(e instanceof Error ? e.message : 'Pull failed.'); }
+    finally { setSyncing(false); }
+  }
+
+  async function resolveMerge() {
+    if (!conflict) return;
+    const c = conflict; setConflict(null); setSyncing(true);
+    try {
+      const merged = mergeBackups(c.local, c.cloud);
+      await applyCloud(merged, null);
+      const ts = await pushBackup(merged);
+      setSyncMsg(`Merged into ${merged.trades.length} trades; synced at ${new Date(ts).toLocaleString()}.`);
+    } catch (e) {
+      setSyncMsg(e instanceof Error ? e.message : 'Merge failed.');
     } finally {
       setSyncing(false);
     }
@@ -302,6 +342,18 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           <button className="btn btn-upload" onClick={onClose}>{t('settings.done')}</button>
         </div>
       </motion.div>
+
+      {conflict && (
+        <SyncConflictModal
+          local={conflict.local}
+          cloud={conflict.cloud}
+          cloudUpdatedAt={conflict.updatedAt}
+          onKeepLocal={resolveKeepLocal}
+          onKeepCloud={resolveKeepCloud}
+          onMerge={resolveMerge}
+          onClose={() => setConflict(null)}
+        />
+      )}
     </motion.div>
   );
 }

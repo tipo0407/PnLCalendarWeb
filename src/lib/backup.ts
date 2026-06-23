@@ -4,6 +4,7 @@ import { loadRules, saveRules, DEFAULT_RULES } from './rules';
 import { getSettings, replaceSettings, DEFAULT_SETTINGS } from './settings';
 import { savePersistedTrades, clearPersistedTrades } from './persist';
 import { clearAllShots, exportAllShots, importAllShots } from './screenshots';
+import { dedupeTrades } from './parseWorkbook';
 import { exportPlaybook, importPlaybook, type PlaybookEntry } from './playbook';
 import { exportReviewed, importReviewed } from './reviewLog';
 import { getActiveProfile } from './profiles';
@@ -62,6 +63,26 @@ export async function restoreBackup(json: string): Promise<TradeRecord[]> {
   if (data.shots) { try { await importAllShots(data.shots); } catch { /* skip */ } }
   savePersistedTrades(data.trades);
   return data.trades;
+}
+
+/**
+ * Merge two backups: union+dedupe trades, union tag/playbook/shots maps and the
+ * reviewed list, and keep local rules/settings. Local wins on per-key conflicts.
+ */
+export function mergeBackups(local: Backup, cloud: Backup): Backup {
+  const trades = dedupeTrades([...cloud.trades, ...local.trades]).sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return (a.entryTime ?? 0) - (b.entryTime ?? 0);
+  });
+  return {
+    ...local,
+    exportedAt: new Date().toISOString(),
+    trades,
+    userTags: { ...(cloud.userTags || {}), ...(local.userTags || {}) },
+    playbook: { ...(cloud.playbook || {}), ...(local.playbook || {}) },
+    reviewed: Array.from(new Set([...(cloud.reviewed || []), ...(local.reviewed || [])])),
+    shots: { ...(cloud.shots || {}), ...(local.shots || {}) },
+  };
 }
 
 /** Wipe all locally stored app data. */
