@@ -3,6 +3,7 @@ import { Download, Printer } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
+  ComposedChart, Line,
   BarChart, Bar,
   PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid,
@@ -26,6 +27,7 @@ import {
   distinctSymbols,
   movingWinRate,
   pnlHistogram,
+  monthlyBreakdown,
   dayOfWeekEdge,
   holdTimeEdge,
   groupByDay,
@@ -68,8 +70,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
   const POS = theme.pos;
   const NEG = theme.neg;
   const ACC = theme.accent;
-  const equity = useMemo(() => dailyEquityCurve(trades), [trades]);
-  const dailyBars = useMemo(
+  const equity = useMemo(() => dailyEquityCurve(trades), [trades]);  const dailyBars = useMemo(
     () =>
       [...groupByDay(trades).values()]
         .sort((a, b) => (a.date < b.date ? -1 : 1))
@@ -102,10 +103,25 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
   const taggedCount = useMemo(() => taggedTradeCount(trades, userTags), [trades, userTags]);
   const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
 
-  const { accountSize, riskPerTrade } = getSettings();
+  const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
   const ddKey = risk.hasAccount ? 'drawdownPct' : 'drawdown';
+
+  const showTarget = monthlyGoal > 0;
+  const equityData = useMemo(() => {
+    if (!showTarget) return equity;
+    const dailyTarget = monthlyGoal / 21; // ~business days per month
+    return equity.map((p, i) => ({ ...p, target: (i + 1) * dailyTarget }));
+  }, [equity, showTarget, monthlyGoal]);
+
+  const monthlyGoalData = useMemo(() => {
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return monthlyBreakdown(trades).map((m) => ({
+      label: `${MON[m.month]} '${String(m.year).slice(2)}`,
+      pnl: m.pnl,
+    }));
+  }, [trades]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
@@ -149,9 +165,9 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
       </div>
 
       <div className="atlas-grid">
-        <Panel title="Equity Curve" subtitle="Cumulative result by trading day" span={3}>
+        <Panel title="Equity Curve" subtitle={showTarget ? 'Cumulative result vs goal pace' : 'Cumulative result by trading day'} span={3}>
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={equity} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+            <ComposedChart data={equityData} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="atlEqStroke" x1="0" y1="0" x2="0" y2="1">
                   <stop offset={eqZero} stopColor={POS} />
@@ -167,10 +183,38 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="date" {...AXIS} minTickGap={50} tickFormatter={(d) => shortDate(String(d))} />
               <YAxis {...AXIS} width={50} tickFormatter={(v) => compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [formatMoneySigned(Number(v)), 'Cumulative']} />
+              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v, n) => [formatMoneySigned(Number(v)), n === 'target' ? 'Goal pace' : 'Cumulative']} />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
               <Area type="monotone" dataKey="cumulative" stroke="url(#atlEqStroke)" strokeWidth={2.5} fill="url(#atlEqFill)" />
-            </AreaChart>
+              {showTarget && <Line type="monotone" dataKey="target" stroke={ACC} strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </Panel>
+
+        <Panel
+          title="Monthly Goal Tracking"
+          subtitle={monthlyGoal > 0 ? 'Net P&L per month vs your goal' : 'Net P&L per month'}
+          span={6}
+          action={monthlyGoal <= 0 && onOpenSettings
+            ? <button className="atlas-link" onClick={onOpenSettings}>Set a monthly goal →</button>
+            : undefined}
+        >
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthlyGoalData} barCategoryGap="22%">
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+              <XAxis dataKey="label" {...AXIS} minTickGap={10} />
+              <YAxis {...AXIS} width={50} tickFormatter={(v) => compactMoney(Number(v))} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), 'Net']} />
+              <ReferenceLine y={0} stroke="var(--border-strong)" />
+              {monthlyGoal > 0 && (
+                <ReferenceLine y={monthlyGoal} stroke={ACC} strokeDasharray="5 4" label={{ value: 'Goal', position: 'insideTopRight', fill: ACC, fontSize: 11 }} />
+              )}
+              <Bar dataKey="pnl" radius={[3, 3, 0, 0]} maxBarSize={46}>
+                {monthlyGoalData.map((d, i) => (
+                  <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </Panel>
 
