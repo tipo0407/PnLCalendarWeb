@@ -4,6 +4,8 @@ import { X, SlidersHorizontal, Download, Upload, Trash2, ShieldCheck } from 'luc
 import type { TradeRecord } from '../types';
 import { getSettings, saveSettings, type Settings } from '../lib/settings';
 import { exportBackup, restoreBackup, clearAllData, storageUsageMB } from '../lib/backup';
+import { setLang, t, type Lang } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   onClose: () => void;
@@ -17,6 +19,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [s, setS] = useState<Settings>(() => ({ ...getSettings() }));
   const [usage, setUsage] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const lang = useLang();
 
   useEffect(() => {
     storageUsageMB().then(setUsage);
@@ -74,21 +77,29 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         <div className="iw-head">
           <div className="iw-title">
             <SlidersHorizontal size={18} />
-            <h2>Settings</h2>
+            <h2>{t('settings.title')}</h2>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
 
         <div className="settings-body">
           <label className="set-row">
-            <span className="set-label">Currency<small>Symbol shown on all amounts</small></span>
+            <span className="set-label">{t('settings.language')}<small>UI language</small></span>
+            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t('settings.language')}>
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+
+          <label className="set-row">
+            <span className="set-label">{t('settings.currency')}<small>Symbol shown on all amounts</small></span>
             <select value={s.currency} onChange={(e) => update({ currency: e.target.value })}>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
 
           <label className="set-row">
-            <span className="set-label">Week starts on<small>Used for the weekly review</small></span>
+            <span className="set-label">{t('settings.weekStart')}<small>Used for the weekly review</small></span>
             <select value={s.weekStart} onChange={(e) => update({ weekStart: Number(e.target.value) as 0 | 1 })}>
               <option value={1}>Monday</option>
               <option value={0}>Sunday</option>
@@ -96,7 +107,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           </label>
 
           <label className="set-row">
-            <span className="set-label">Account size<small>Starting balance for drawdown %</small></span>
+            <span className="set-label">{t('settings.accountSize')}<small>Starting balance for drawdown %</small></span>
             <div className="set-money">
               <span>{s.currency}</span>
               <input
@@ -108,7 +119,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           </label>
 
           <label className="set-row">
-            <span className="set-label">Risk per trade<small>Used to express results in R-multiples</small></span>
+            <span className="set-label">{t('settings.risk')}<small>Used to express results in R-multiples</small></span>
             <div className="set-money">
               <span>{s.currency}</span>
               <input
@@ -120,7 +131,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
           </label>
 
           <label className="set-row">
-            <span className="set-label">Monthly P&amp;L goal<small>Tracked on the calendar summary</small></span>
+            <span className="set-label">{t('settings.goal')}<small>Tracked on the calendar summary</small></span>
             <div className="set-money">
               <span>{s.currency}</span>
               <input
@@ -133,7 +144,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         </div>
 
         <div className="settings-data">
-          <div className="set-section-head"><ShieldCheck size={14} /> Data &amp; privacy</div>
+          <div className="set-section-head"><ShieldCheck size={14} /> {t('settings.dataPrivacy')}</div>
           <p className="set-data-note">
             Everything is stored locally in your browser{usage != null && <> · using <b>{usage.toFixed(1)} MB</b></>}.
             Back it up or move it to another device with a JSON file.

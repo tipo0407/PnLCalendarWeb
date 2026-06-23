@@ -24,6 +24,8 @@ import CommandPalette from './components/CommandPalette';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { OPEN_PRICING_EVENT } from './lib/pricingBus';
+import { t, getLang } from './lib/i18n';
+import { useLang } from './lib/useLang';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
@@ -53,6 +55,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
   const pro = useIsPro();
+  useLang(); // re-render on language change
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
@@ -74,6 +77,11 @@ export default function App() {
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
+  }, []);
+
+  // Reflect the persisted language on <html lang> at startup.
+  useEffect(() => {
+    document.documentElement.lang = getLang();
   }, []);
 
   // Global keyboard shortcuts: 1/2/3 switch views, t toggles theme, , opens settings.
@@ -227,7 +235,7 @@ export default function App() {
             <span className="brand-mark"><CandlestickChart size={20} strokeWidth={2.25} /></span>
             <div className="brand-text">
               <h1>PnL Calendar</h1>
-              <span className="brand-sub">Trading performance journal</span>
+              <span className="brand-sub">{t('brand.sub')}</span>
             </div>
           </div>
 
@@ -252,7 +260,7 @@ export default function App() {
                   key={v}
                   className={`tab-btn ${view === v ? 'active' : ''}`}
                   onClick={() => setView(v)}
-                  title={`${v === 'calendar' ? 'Calendar' : v === 'atlas' ? 'Trade Atlas' : 'Review'} (${i + 1})`}
+                  title={`${t(`tab.${v}`)} (${i + 1})`}
                   aria-keyshortcuts={String(i + 1)}
                   aria-current={view === v ? 'page' : undefined}
                 >
@@ -263,7 +271,7 @@ export default function App() {
                       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                     />
                   )}
-                  <span className="tab-label">{v === 'calendar' ? 'Calendar' : v === 'atlas' ? 'Trade Atlas' : 'Review'}</span>
+                  <span className="tab-label">{t(`tab.${v}`)}</span>
                 </button>
               ))}
             </nav>
