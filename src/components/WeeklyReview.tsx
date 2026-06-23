@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Target, Printer } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Target, Printer, CheckCircle2, Circle, Flame } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import {
   computeSummary, groupByDay, edgeByField, hourEdgeBySymbol, formatMoneySigned,
@@ -10,11 +10,19 @@ import { useUserTags } from '../lib/useUserTags';
 import { avgDiscipline } from '../lib/discipline';
 import { evaluateRules, loadRules } from '../lib/rules';
 import { groupByWeek, weekLabel } from '../lib/review';
+import { isReviewed, setReviewed, reviewStreak, REVIEW_LOG_EVENT } from '../lib/reviewLog';
 
 export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   const weeks = useMemo(() => groupByWeek(trades), [trades]);
   const userTags = useUserTags();
   const [idx, setIdx] = useState(0);
+  const [, bumpLog] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => bumpLog((n) => n + 1);
+    window.addEventListener(REVIEW_LOG_EVENT, refresh);
+    return () => window.removeEventListener(REVIEW_LOG_EVENT, refresh);
+  }, []);
 
   if (weeks.length === 0) {
     return <div className="review"><div className="review-empty">No trades to review yet.</div></div>;
@@ -23,6 +31,8 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   const clamped = Math.min(idx, weeks.length - 1);
   const week = weeks[clamped];
   const wt = week.trades;
+  const streak = reviewStreak(weeks.map((w) => w.key));
+  const reviewed = isReviewed(week.key);
 
   const s = computeSummary(wt);
   const days = [...groupByDay(wt).values()];
@@ -63,57 +73,85 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   }
 
   return (
-    <div className="review">
-      <div className="review-nav">
-        <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older week"><ChevronLeft size={16} /></button>
-        <div className="review-week">
-          <span className="review-eyebrow">WEEKLY REVIEW</span>
-          <h2>{weekLabel(week.key)}</h2>
+    <div className="review-layout">
+      <aside className="review-rail">
+        <div className="review-rail-head">
+          <span>History</span>
+          {streak > 0 && <span className="review-streak" title="Consecutive reviewed weeks"><Flame size={12} /> {streak}</span>}
         </div>
-        <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer week"><ChevronRight size={16} /></button>
-        <button className="review-export" onClick={exportPdf} title="Export this week as PDF"><Printer size={14} /> Export PDF</button>
-      </div>
-
-      <div className="review-kpis">
-        <Kpi label="Net P&L" value={formatMoneySigned(s.totalPnl)} cls={s.totalPnl >= 0 ? 'pos' : 'neg'} />
-        <Kpi label="Trades" value={String(s.tradeCount)} />
-        <Kpi label="Win rate" value={`${(s.winRateTrades * 100).toFixed(0)}%`} />
-        <Kpi label="Discipline" value={`${disc}/100`} cls={disc >= 80 ? 'pos' : disc < 60 ? 'neg' : ''} />
-      </div>
-
-      <div className="review-cols">
-        <div className="review-card good">
-          <h3>What worked</h3>
-          <ul>
-            {s.bestDay && <li><b className="pos">{formatMoneySigned(s.bestDay.pnl)}</b> best day</li>}
-            {winners.length > 0
-              ? winners.map((w) => <li key={w.key}><b className="pos">{formatMoneySigned(w.pnl)}</b> from {w.key}</li>)
-              : <li className="muted">No standout winning setups.</li>}
-            {bestEmotion && bestEmotion.pnl > 0 && <li>Best while <b>{bestEmotion.label.toLowerCase()}</b> ({formatMoneySigned(bestEmotion.pnl)})</li>}
-          </ul>
+        <div className="review-rail-list">
+          {weeks.map((w, i) => {
+            const net = w.trades.reduce((sum, t) => sum + t.profitLoss, 0);
+            return (
+              <button
+                key={w.key}
+                className={`review-rail-item ${i === clamped ? 'active' : ''}`}
+                onClick={() => setIdx(i)}
+              >
+                <span className="rri-check">{isReviewed(w.key) ? <CheckCircle2 size={13} /> : <Circle size={13} />}</span>
+                <span className="rri-label">{weekLabel(w.key).replace(/, \d{4}$/, '')}</span>
+                <span className={`rri-net ${net >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(net)}</span>
+              </button>
+            );
+          })}
         </div>
-        <div className="review-card bad">
-          <h3>What hurt</h3>
-          <ul>
-            {s.worstDay && <li><b className="neg">{formatMoneySigned(s.worstDay.pnl)}</b> worst day</li>}
-            {worstMistake && <li><b className="neg">{formatMoneySigned(worstMistake.pnl)}</b> from {worstMistake.label}</li>}
-            {worstSetup && <li><b className="neg">{formatMoneySigned(worstSetup.pnl)}</b> from {worstSetup.key}</li>}
-            {worstHour && <li><b className="neg">{formatMoneySigned(worstHour.pnl)}</b> at {worstHour.key}</li>}
-            {worstRule && <li>{worstRule.count}× {worstRule.label.toLowerCase()} ({formatMoneySigned(worstRule.impact)})</li>}
-            {!worstMistake && !worstSetup && !worstHour && !worstRule && !s.worstDay && <li className="muted">Clean week — nothing flagged.</li>}
-          </ul>
-        </div>
-      </div>
+      </aside>
 
-      {recommendation && (
-        <div className="review-action">
-          <span className="ra-icon"><Target size={18} /></span>
-          <div>
-            <span className="ra-label">Change one thing next week</span>
-            <span className="ra-text">{recommendation.charAt(0).toUpperCase() + recommendation.slice(1)}.</span>
+      <div className="review">
+        <div className="review-nav">
+          <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older week"><ChevronLeft size={16} /></button>
+          <div className="review-week">
+            <span className="review-eyebrow">WEEKLY REVIEW</span>
+            <h2>{weekLabel(week.key)}</h2>
+          </div>
+          <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer week"><ChevronRight size={16} /></button>
+          <button className={`review-reviewed ${reviewed ? 'on' : ''}`} onClick={() => setReviewed(week.key, !reviewed)} title="Mark this week reviewed">
+            {reviewed ? <CheckCircle2 size={14} /> : <Circle size={14} />} {reviewed ? 'Reviewed' : 'Mark reviewed'}
+          </button>
+          <button className="review-export" onClick={exportPdf} title="Export this week as PDF"><Printer size={14} /> Export PDF</button>
+        </div>
+
+        <div className="review-kpis">
+          <Kpi label="Net P&L" value={formatMoneySigned(s.totalPnl)} cls={s.totalPnl >= 0 ? 'pos' : 'neg'} />
+          <Kpi label="Trades" value={String(s.tradeCount)} />
+          <Kpi label="Win rate" value={`${(s.winRateTrades * 100).toFixed(0)}%`} />
+          <Kpi label="Discipline" value={`${disc}/100`} cls={disc >= 80 ? 'pos' : disc < 60 ? 'neg' : ''} />
+        </div>
+
+        <div className="review-cols">
+          <div className="review-card good">
+            <h3>What worked</h3>
+            <ul>
+              {s.bestDay && <li><b className="pos">{formatMoneySigned(s.bestDay.pnl)}</b> best day</li>}
+              {winners.length > 0
+                ? winners.map((w) => <li key={w.key}><b className="pos">{formatMoneySigned(w.pnl)}</b> from {w.key}</li>)
+                : <li className="muted">No standout winning setups.</li>}
+              {bestEmotion && bestEmotion.pnl > 0 && <li>Best while <b>{bestEmotion.label.toLowerCase()}</b> ({formatMoneySigned(bestEmotion.pnl)})</li>}
+            </ul>
+          </div>
+          <div className="review-card bad">
+            <h3>What hurt</h3>
+            <ul>
+              {s.worstDay && <li><b className="neg">{formatMoneySigned(s.worstDay.pnl)}</b> worst day</li>}
+              {worstMistake && <li><b className="neg">{formatMoneySigned(worstMistake.pnl)}</b> from {worstMistake.label}</li>}
+              {worstSetup && <li><b className="neg">{formatMoneySigned(worstSetup.pnl)}</b> from {worstSetup.key}</li>}
+              {worstHour && <li><b className="neg">{formatMoneySigned(worstHour.pnl)}</b> at {worstHour.key}</li>}
+              {worstRule && <li>{worstRule.count}× {worstRule.label.toLowerCase()} ({formatMoneySigned(worstRule.impact)})</li>}
+              {!worstMistake && !worstSetup && !worstHour && !worstRule && !s.worstDay && <li className="muted">Clean week — nothing flagged.</li>}
+            </ul>
           </div>
         </div>
-      )}
+
+        {recommendation && (
+          <div className="review-action">
+            <span className="ra-icon"><Target size={18} /></span>
+            <div>
+              <span className="ra-label">Change one thing next week</span>
+              <span className="ra-text">{recommendation.charAt(0).toUpperCase() + recommendation.slice(1)}.</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
