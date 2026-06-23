@@ -7,6 +7,18 @@ activity heatmap, a Portfolio Lens sidebar, and a Trade Atlas analytics dashboar
 The companion desktop app (WPF) lives in `../PnLCalendar`. The web app reuses the same data
 convention: it reads **only the 3rd worksheet**, with the same column names as the desktop app.
 
+## Screenshots
+
+> Rendered from the bundled [`samples/Trading.sample.xlsx`](./samples/Trading.sample.xlsx) (300 fake trades across a year).
+
+**Calendar** (light theme)
+
+![Calendar view](./docs/calendar-light.png)
+
+**Trade Atlas** (dark theme)
+
+![Trade Atlas view](./docs/atlas-dark.png)
+
 ## Features
 
 - **Calendar** — pastel P&L cells, trade counts, market-holiday badges, weekly totals, and
