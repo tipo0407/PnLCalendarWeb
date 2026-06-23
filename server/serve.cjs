@@ -9,12 +9,14 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('child_process');
 const { URL } = require('url');
 
 const PORT = Number(process.env.PORT) || 4173;
 const DIST = path.join(__dirname, '..', 'dist');
 // The live trades workbook (defaults to ../../Trading.xlsx, i.e. the GHCPProject root).
 const TRADES_FILE = process.env.TRADES_FILE || path.join(__dirname, '..', '..', 'Trading.xlsx');
+let syncing = false;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -99,6 +101,23 @@ function serveStatic(req, res) {
 
 const server = http.createServer((req, res) => {
   const url = req.url || '/';
+  // Trigger a Google Sheet sync (downloads via the logged-in browser session).
+  if (url === '/api/sync') {
+    if (syncing) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, already: true }));
+    }
+    syncing = true;
+    const bat = path.join(__dirname, 'sync-sheet.bat');
+    execFile('cmd.exe', ['/c', bat, TRADES_FILE], { windowsHide: true, timeout: 60000 }, (err) => {
+      syncing = false;
+      if (!res.headersSent) {
+        res.writeHead(err ? 500 : 200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: !err, error: err ? String(err.message || err) : undefined }));
+      }
+    });
+    return;
+  }
   // Auto-load endpoint: stream the live trades workbook.
   if (url === '/data/trades.xlsx') {
     fs.stat(TRADES_FILE, (err, st) => {

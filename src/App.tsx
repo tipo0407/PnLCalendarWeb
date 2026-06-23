@@ -15,6 +15,7 @@ import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
 const THEME_KEY = 'pnlcalendar.theme';
+const SYNC_KEY = 'pnlcalendar.lastSync';
 
 type View = 'calendar' | 'atlas';
 type Theme = 'light' | 'dark';
@@ -31,15 +32,31 @@ export default function App() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
   }, []);
 
   // Auto-load the live trades workbook served at /data/trades.xlsx (no manual upload needed).
+  // On the first page load each day, first trigger a Google Sheet sync so the data is current.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
+      const lastSync = localStorage.getItem(SYNC_KEY);
+      if (lastSync !== today) {
+        localStorage.setItem(SYNC_KEY, today); // optimistic: avoid duplicate syncs on quick reloads
+        setSyncing(true);
+        try {
+          const r = await fetch('/api/sync', { method: 'POST' });
+          if (!r.ok) throw new Error('sync failed');
+        } catch {
+          localStorage.removeItem(SYNC_KEY); // let it retry on the next load
+        } finally {
+          if (!cancelled) setSyncing(false);
+        }
+      }
       try {
         const resp = await fetch('/data/trades.xlsx', { cache: 'no-store' });
         if (!resp.ok) return;
@@ -94,6 +111,12 @@ export default function App() {
 
   return (
     <div className="app">
+      {syncing && (
+        <div className="sync-toast" role="status" aria-live="polite">
+          <span className="sync-spinner" />
+          Syncing latest from Google Sheet…
+        </div>
+      )}
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
