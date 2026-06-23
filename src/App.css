@@ -1440,6 +1440,28 @@
   color: var(--accent); font-size: 12px; font-weight: 600; padding: 0;
 }
 .atlas-link:hover { text-decoration: underline; }
+
+/* ===== Pro gate (soft feature lock) ===== */
+.pro-gate { position: relative; min-height: 120px; }
+.pro-gate-preview { filter: blur(5px) saturate(0.7); opacity: 0.5; pointer-events: none; user-select: none; }
+.pro-gate-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px; text-align: center;
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+  border-radius: 10px; padding: 16px;
+}
+.pro-gate-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; }
+.pro-gate-title { margin: 8px 0 0; font-size: 15px; font-weight: 700; color: var(--text); }
+.pro-gate-sub { margin: 0; font-size: 13px; color: var(--text-2); }
+.pro-gate-actions { display: flex; gap: 8px; margin-top: 10px; }
+.pro-gate-cta {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 8px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+}
+.pro-gate-cta:hover { border-color: var(--accent); color: var(--accent); }
+.pro-gate-cta.primary { background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #fff; border: none; }
+.pro-gate-cta.primary:hover { filter: brightness(1.06); color: #fff; }
 .risk-tiles {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px;
 }

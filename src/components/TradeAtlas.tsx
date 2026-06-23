@@ -16,6 +16,7 @@ import { emotionEdge } from '../lib/emotions';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
+import ProGate from './ProGate';
 import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
@@ -349,6 +350,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
           subtitle="P&L by emotional state detected in your notes"
           span={6}
         >
+          <ProGate feature="Emotion Edge">
           {emotions.length === 0 ? (
             <div className="atlas-empty">
               No emotions detected yet. Jot how you felt in <b>Reason&amp;Emotion</b>
@@ -376,6 +378,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               </BarChart>
             </ResponsiveContainer>
           )}
+          </ProGate>
         </Panel>
 
         <Panel
@@ -386,6 +389,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
             ? <button className="atlas-link" onClick={onOpenSettings}>Set account &amp; risk →</button>
             : undefined}
         >
+          <ProGate feature="Risk & Drawdown">
           <div className="risk-tiles">
             <RiskTile label="Max Drawdown" value={formatMoney(risk.maxDrawdown)} sub={risk.hasAccount ? `${risk.maxDrawdownPct.toFixed(1)}%` : undefined} cls="neg" />
             <RiskTile label="Current Drawdown" value={formatMoney(risk.currentDrawdown)} cls={risk.currentDrawdown < 0 ? 'neg' : 'pos'} />
@@ -410,6 +414,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings }: Props) {
               <Area type="monotone" dataKey={ddKey} stroke={NEG} strokeWidth={2} fill="url(#atlDdFill)" />
             </AreaChart>
           </ResponsiveContainer>
+          </ProGate>
         </Panel>
 
         <Panel

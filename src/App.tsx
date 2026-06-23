@@ -20,6 +20,7 @@ import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
+import { OPEN_PRICING_EVENT } from './lib/pricingBus';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
@@ -59,6 +60,12 @@ export default function App() {
     const bump = () => setSettingsTick((n) => n + 1);
     window.addEventListener(SETTINGS_EVENT, bump);
     return () => window.removeEventListener(SETTINGS_EVENT, bump);
+  }, []);
+
+  useEffect(() => {
+    const open = () => setShowPricing(true);
+    window.addEventListener(OPEN_PRICING_EVENT, open);
+    return () => window.removeEventListener(OPEN_PRICING_EVENT, open);
   }, []);
 
   useEffect(() => {
