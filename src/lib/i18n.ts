@@ -46,6 +46,34 @@ const EN: Record<string, string> = {
   'atlas.avgTrade': 'Avg Trade',
   'atlas.profitFactor': 'Profit Factor',
   'atlas.maxDD': 'Max Drawdown',
+  // Calendar hero
+  'cal.avgDay': 'Avg / Day',
+  'cal.winRate': 'Win Rate',
+  'cal.winStreak': 'Win Streak',
+  'cal.bestDay': 'Best Day',
+  'cal.worstDay': 'Worst Day',
+  'cal.projected': 'Projected',
+  'cal.consistency': 'Consistency',
+  // Dashboard
+  'dash.netPnl': 'Net P&L',
+  'dash.winRate': 'Win rate',
+  'dash.profitFactor': 'Profit factor',
+  'dash.dayStreak': 'Day streak',
+  'dash.jumpTo': 'Jump to',
+  'dash.recent': 'Recent trades',
+  'dash.qCalendar': 'Calendar',
+  'dash.qAtlas': 'Trade Atlas',
+  'dash.qReview': 'Weekly Review',
+  'dash.qSettings': 'Settings',
+  'dash.qPlans': 'Plans & pricing',
+  // Onboarding
+  'onb.title': 'Get the most out of your journal',
+  'onb.import': 'Import your trades',
+  'onb.risk': 'Set account size & risk',
+  'onb.goal': 'Set a monthly P&L goal',
+  'onb.tag': 'Tag a trade’s mistake or emotion',
+  'onb.playbook': 'Add a note to one of your setups',
+  'onb.allset': 'You’re all set — nice work.',
 };
 
 const ZH: Record<string, string> = {
@@ -84,6 +112,34 @@ const ZH: Record<string, string> = {
   'atlas.avgTrade': '每笔均值',
   'atlas.profitFactor': '盈亏比',
   'atlas.maxDD': '最大回撤',
+  // Calendar hero
+  'cal.avgDay': '日均',
+  'cal.winRate': '胜率',
+  'cal.winStreak': '连胜',
+  'cal.bestDay': '最佳单日',
+  'cal.worstDay': '最差单日',
+  'cal.projected': '预计',
+  'cal.consistency': '稳定度',
+  // Dashboard
+  'dash.netPnl': '净盈亏',
+  'dash.winRate': '胜率',
+  'dash.profitFactor': '盈亏比',
+  'dash.dayStreak': '连续天数',
+  'dash.jumpTo': '快速前往',
+  'dash.recent': '最近交易',
+  'dash.qCalendar': '日历',
+  'dash.qAtlas': '交易分析',
+  'dash.qReview': '每周复盘',
+  'dash.qSettings': '设置',
+  'dash.qPlans': '套餐与价格',
+  // Onboarding
+  'onb.title': '充分利用你的交易日志',
+  'onb.import': '导入你的交易',
+  'onb.risk': '设置账户规模与风险',
+  'onb.goal': '设置每月盈亏目标',
+  'onb.tag': '为交易标注错误或情绪',
+  'onb.playbook': '为某个套路添加笔记',
+  'onb.allset': '全部完成 — 干得漂亮。',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };

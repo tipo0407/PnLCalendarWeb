@@ -5,6 +5,8 @@ import type { HolidayMap } from '../lib/holidays';
 import type { Summary } from '../lib/metrics';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 import { monthBenchmark } from '../lib/goals';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 import { dayDiscipline, disciplineColor } from '../lib/discipline';
 import MoneyCountUp from './CountUp';
 
@@ -38,6 +40,7 @@ export default function CalendarView({
   onNavigate,
   onSelectDay,
 }: Props) {
+  useLang(); // re-render on language change
   const { weeks, monthDays, stats } = useMemo(() => {
     const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 
@@ -168,37 +171,37 @@ export default function CalendarView({
 
         <div className="hero-stats">
           <div className="hstat">
-            <span className="hstat-label">Avg / Day</span>
+            <span className="hstat-label">{t('cal.avgDay')}</span>
             <span className="hstat-val">{formatMoneySigned(stats.avgDay)}</span>
             <span className="hstat-sub">over {stats.days} days</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Win Rate</span>
+            <span className="hstat-label">{t('cal.winRate')}</span>
             <span className="hstat-val">{(stats.winRate * 100).toFixed(0)}%</span>
             <span className="hstat-sub">{stats.winDays}W · {stats.lossDays}L</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Win Streak</span>
+            <span className="hstat-label">{t('cal.winStreak')}</span>
             <span className="hstat-val">{stats.streak}</span>
             <span className="hstat-sub">{stats.streak === 1 ? 'day' : 'days'}</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Best Day</span>
+            <span className="hstat-label">{t('cal.bestDay')}</span>
             <span className="hstat-val pos">{stats.best ? formatMoneySigned(stats.best.pnl) : '—'}</span>
             <span className="hstat-sub">{stats.best ? shortDate(stats.best.date) : '—'}</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Worst Day</span>
+            <span className="hstat-label">{t('cal.worstDay')}</span>
             <span className="hstat-val neg">{stats.worst ? formatMoneySigned(stats.worst.pnl) : '—'}</span>
             <span className="hstat-sub">{stats.worst ? shortDate(stats.worst.date) : '—'}</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Projected</span>
+            <span className="hstat-label">{t('cal.projected')}</span>
             <span className={`hstat-val ${benchmark.projected >= 0 ? 'pos' : 'neg'}`}>{stats.days ? formatMoneySigned(benchmark.projected) : '—'}</span>
             <span className="hstat-sub">at current pace</span>
           </div>
           <div className="hstat">
-            <span className="hstat-label">Consistency</span>
+            <span className="hstat-label">{t('cal.consistency')}</span>
             <span className="hstat-val">{stats.days ? `${benchmark.consistency}` : '—'}<span className="hstat-unit">/100</span></span>
             <span className="hstat-sub">{benchmark.topDayShare > 0 ? `top day ${(benchmark.topDayShare * 100).toFixed(0)}%` : 'spread of gains'}</span>
           </div>

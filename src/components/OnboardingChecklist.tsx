@@ -3,6 +3,8 @@ import { CheckCircle2, Circle, X, Rocket } from 'lucide-react';
 import { getSettings, SETTINGS_EVENT } from '../lib/settings';
 import { hasAnyUserTags, USER_TAGS_EVENT } from '../lib/userTags';
 import { getPlaybookEntry, PLAYBOOK_EVENT } from '../lib/playbook';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 const DISMISS_KEY = 'pnlcalendar.onboard.dismissed';
 
@@ -20,6 +22,7 @@ interface Step {
 }
 
 export default function OnboardingChecklist({ hasTrades, setups, onOpenSettings }: Props) {
+  useLang(); // re-render on language change
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === '1');
   const [, bump] = useState(0);
 
@@ -38,11 +41,11 @@ export default function OnboardingChecklist({ hasTrades, setups, onOpenSettings 
   });
 
   const steps: Step[] = [
-    { id: 'import', label: 'Import your trades', done: hasTrades },
-    { id: 'risk', label: 'Set account size & risk', done: s.accountSize > 0 || s.riskPerTrade > 0, action: { text: 'Open Settings', run: onOpenSettings } },
-    { id: 'goal', label: 'Set a monthly P&L goal', done: s.monthlyGoal > 0, action: { text: 'Set goal', run: onOpenSettings } },
-    { id: 'tag', label: 'Tag a trade’s mistake or emotion', done: hasAnyUserTags() },
-    { id: 'playbook', label: 'Add a note to one of your setups', done: playbookStarted },
+    { id: 'import', label: t('onb.import'), done: hasTrades },
+    { id: 'risk', label: t('onb.risk'), done: s.accountSize > 0 || s.riskPerTrade > 0, action: { text: 'Open Settings', run: onOpenSettings } },
+    { id: 'goal', label: t('onb.goal'), done: s.monthlyGoal > 0, action: { text: 'Set goal', run: onOpenSettings } },
+    { id: 'tag', label: t('onb.tag'), done: hasAnyUserTags() },
+    { id: 'playbook', label: t('onb.playbook'), done: playbookStarted },
   ];
 
   const completed = steps.filter((x) => x.done).length;
@@ -56,7 +59,7 @@ export default function OnboardingChecklist({ hasTrades, setups, onOpenSettings 
   return (
     <div className="onboard">
       <div className="onboard-head">
-        <span className="onboard-title"><Rocket size={15} /> Get the most out of your journal</span>
+        <span className="onboard-title"><Rocket size={15} /> {t('onb.title')}</span>
         <span className="onboard-progress">{completed}/{steps.length}</span>
         <button className="onboard-close" onClick={dismiss} aria-label="Dismiss checklist"><X size={15} /></button>
       </div>
@@ -72,7 +75,7 @@ export default function OnboardingChecklist({ hasTrades, setups, onOpenSettings 
           </li>
         ))}
       </ul>
-      {allDone && <div className="onboard-done">You’re all set — nice work. <button onClick={dismiss}>Hide</button></div>}
+      {allDone && <div className="onboard-done">{t('onb.allset')} <button onClick={dismiss}>Hide</button></div>}
     </div>
   );
 }

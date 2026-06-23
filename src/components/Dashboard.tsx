@@ -7,6 +7,8 @@ import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { dayStreaks, monthProgress } from '../lib/goals';
 import { getSettings } from '../lib/settings';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 type ViewId = 'home' | 'calendar' | 'atlas' | 'review';
 
@@ -20,6 +22,7 @@ interface Props {
 }
 
 export default function Dashboard({ trades, summary, onSetView, onSelectDay, onOpenSettings, onOpenPricing }: Props) {
+  useLang(); // re-render on language change
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streak = useMemo(() => dayStreaks(days), [days]);
 
@@ -43,11 +46,11 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   return (
     <div className="dash">
       <div className="dash-kpis">
-        <KpiBig label="Net P&L" value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} sub={`${summary.tradeCount} trades`} />
-        <KpiBig label="Win rate" value={`${(summary.winRateTrades * 100).toFixed(0)}%`} sub={`${summary.winTrades}W · ${summary.lossTrades}L`} />
-        <KpiBig label="Profit factor" value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} sub={`expectancy ${formatMoneySigned(summary.expectancy)}`} />
+        <KpiBig label={t('dash.netPnl')} value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} sub={`${summary.tradeCount} trades`} />
+        <KpiBig label={t('dash.winRate')} value={`${(summary.winRateTrades * 100).toFixed(0)}%`} sub={`${summary.winTrades}W · ${summary.lossTrades}L`} />
+        <KpiBig label={t('dash.profitFactor')} value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} sub={`expectancy ${formatMoneySigned(summary.expectancy)}`} />
         <KpiBig
-          label="Day streak"
+          label={t('dash.dayStreak')}
           value={streak.current > 0 ? `${streak.current}` : '—'}
           icon={<Flame size={16} className={streak.currentType === 'win' ? 'pos' : streak.currentType === 'loss' ? 'neg' : ''} />}
           sub={streak.current > 0 ? `${streak.currentType === 'win' ? 'winning' : 'losing'} days` : 'no active streak'}
@@ -75,16 +78,16 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
 
       <div className="dash-cols">
         <div className="dash-quick">
-          <h3 className="dash-h">Jump to</h3>
-          <QuickLink icon={<CalendarRange size={17} />} title="Calendar" desc="Monthly P&L grid & heatmap" onClick={() => onSetView('calendar')} />
-          <QuickLink icon={<BarChart3 size={17} />} title="Trade Atlas" desc="Equity, edges, risk & playbook" onClick={() => onSetView('atlas')} />
-          <QuickLink icon={<ClipboardList size={17} />} title="Weekly Review" desc="What worked, what hurt" onClick={() => onSetView('review')} />
-          <QuickLink icon={<SlidersHorizontal size={17} />} title="Settings" desc="Currency, goals, account, data" onClick={onOpenSettings} />
-          <QuickLink icon={<Sparkles size={17} />} title="Plans & pricing" desc="Unlock Pro analytics" onClick={onOpenPricing} />
+          <h3 className="dash-h">{t('dash.jumpTo')}</h3>
+          <QuickLink icon={<CalendarRange size={17} />} title={t('dash.qCalendar')} desc="Monthly P&L grid & heatmap" onClick={() => onSetView('calendar')} />
+          <QuickLink icon={<BarChart3 size={17} />} title={t('dash.qAtlas')} desc="Equity, edges, risk & playbook" onClick={() => onSetView('atlas')} />
+          <QuickLink icon={<ClipboardList size={17} />} title={t('dash.qReview')} desc="What worked, what hurt" onClick={() => onSetView('review')} />
+          <QuickLink icon={<SlidersHorizontal size={17} />} title={t('dash.qSettings')} desc="Currency, goals, account, data" onClick={onOpenSettings} />
+          <QuickLink icon={<Sparkles size={17} />} title={t('dash.qPlans')} desc="Unlock Pro analytics" onClick={onOpenPricing} />
         </div>
 
         <div className="dash-recent">
-          <h3 className="dash-h">Recent trades</h3>
+          <h3 className="dash-h">{t('dash.recent')}</h3>
           <div className="dash-recent-list">
             {recent.length === 0 && <div className="dash-recent-empty">No trades yet.</div>}
             {recent.map((tr, i) => (
