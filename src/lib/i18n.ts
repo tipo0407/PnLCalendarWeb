@@ -236,6 +236,16 @@ const ZH: Record<string, string> = {
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };
 
+/** Exposed for tests/tooling: the raw dictionary for a language. */
+export function getDict(l: Lang): Record<string, string> {
+  return DICT[l];
+}
+
+const warned = new Set<string>();
+function isDev(): boolean {
+  try { return Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV); } catch { return false; }
+}
+
 let lang: Lang | null = null;
 
 export function getLang(): Lang {
@@ -266,7 +276,18 @@ export function setLang(next: Lang) {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(LANG_EVENT));
 }
 
-export function t(key: string): string {
+export function t(key: string, params?: Record<string, string | number>): string {
   const l = getLang();
-  return DICT[l][key] ?? EN[key] ?? key;
+  let str = DICT[l][key];
+  if (str === undefined) {
+    if (EN[key] === undefined && isDev() && !warned.has(key)) {
+      warned.add(key);
+      console.warn(`[i18n] missing key: ${key}`);
+    }
+    str = EN[key] ?? key;
+  }
+  if (params) {
+    str = str.replace(/\{(\w+)\}/g, (m, name) => (name in params ? String(params[name]) : m));
+  }
+  return str;
 }
