@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "serve": "node server/serve.cjs",
+    "api": "node server/api.cjs",
+    "license:gen": "node server/api.cjs --gen",
     "autostart:install": "powershell -ExecutionPolicy Bypass -File server/install-autostart.ps1",
     "autostart:uninstall": "powershell -ExecutionPolicy Bypass -File server/install-autostart.ps1 -Uninstall"
   },
