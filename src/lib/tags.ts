@@ -1,5 +1,6 @@
 import type { TradeRecord } from '../types';
 import { tradeTagKey, type TradeTags } from './userTags';
+import { getCustomTags } from './customTags';
 
 export interface MistakeTag {
   key: string;
@@ -33,6 +34,11 @@ function tradeText(t: TradeRecord): string {
   return `${t.reasonEmotion} ${t.note} ${t.setup}`.toLowerCase();
 }
 
+/** Built-in mistake tags plus any user-defined custom ones (no keywords). */
+export function allMistakeTags(): MistakeTag[] {
+  return [...MISTAKE_TAGS, ...getCustomTags().mistakes.map((d) => ({ ...d, keywords: [] }))];
+}
+
 /** Mistake tag keys for a single trade: auto-detected text ∪ manual overrides. */
 export function detectTags(t: TradeRecord, userTags?: Record<string, TradeTags>): string[] {
   const text = tradeText(t);
@@ -61,7 +67,7 @@ export interface TagEdge {
 /** Aggregate P&L / win-rate per mistake tag across all trades. */
 export function tagEdge(trades: TradeRecord[], userTags?: Record<string, TradeTags>): TagEdge[] {
   const byKey = new Map<string, TagEdge>();
-  for (const tag of MISTAKE_TAGS) {
+  for (const tag of allMistakeTags()) {
     byKey.set(tag.key, { key: tag.key, label: tag.label, count: 0, pnl: 0, wins: 0, winRate: 0 });
   }
   for (const t of trades) {

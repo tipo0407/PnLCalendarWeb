@@ -930,6 +930,12 @@
 .chip.on { font-weight: 600; border-color: transparent; }
 .chip.on.mistake { background: var(--neg-soft); color: var(--neg); }
 .chip.on.emotion { background: var(--accent-soft); color: var(--accent); }
+.chip-wrap { display: inline-flex; align-items: center; }
+.chip-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0 4px; margin-left: -2px; }
+.chip-del:hover { color: var(--neg); }
+.tag-add { margin: 4px 0 2px; }
+.tag-add input { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 6px 8px; font-size: 12px; }
+.tag-add input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
 
 /* ===== Day intraday chart ===== */
 .day-chart {

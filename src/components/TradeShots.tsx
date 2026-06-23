@@ -3,9 +3,10 @@ import { ImagePlus, Trash2, Maximize2, Plus } from 'lucide-react';
 import type { DailyPnl, TradeRecord } from '../types';
 import { formatMoneySigned } from '../lib/metrics';
 import { putShot, getShot, delShot, shotKey } from '../lib/screenshots';
-import { MISTAKE_TAGS } from '../lib/tags';
-import { EMOTIONS } from '../lib/emotions';
+import { allMistakeTags } from '../lib/tags';
+import { allEmotions } from '../lib/emotions';
 import { tradeTagKey, getTradeTags, toggleTag, type TradeTags } from '../lib/userTags';
+import { addCustomTag, removeCustomTag, getCustomTags, CUSTOM_TAGS_EVENT } from '../lib/customTags';
 
 function hhmm(secs: number): string {
   const h = Math.floor(secs / 3600);
@@ -116,17 +117,36 @@ export default function TradeShots({ daily }: Props) {
   );
 }
 
-const MISTAKE_LABEL = new Map(MISTAKE_TAGS.map((m) => [m.key, m.label]));
-const EMOTION_LABEL = new Map(EMOTIONS.map((e) => [e.key, e.label]));
-
 /** Toggleable manual mistake/emotion tags for one trade, persisted locally. */
 function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
   const key = tradeTagKey(date, trade.tradeNumber, trade.rowNumber);
   const [tags, setTags] = useState<TradeTags>(() => getTradeTags(key));
   const [open, setOpen] = useState(false);
+  const [, bump] = useState(0);
+  const [newMistake, setNewMistake] = useState('');
+  const [newEmotion, setNewEmotion] = useState('');
+
+  useEffect(() => {
+    const refresh = () => bump((n) => n + 1);
+    window.addEventListener(CUSTOM_TAGS_EVENT, refresh);
+    return () => window.removeEventListener(CUSTOM_TAGS_EVENT, refresh);
+  }, []);
+
+  const mistakeDefs = allMistakeTags();
+  const emotionDefs = allEmotions();
+  const mistakeLabel = new Map(mistakeDefs.map((m) => [m.key, m.label]));
+  const emotionLabel = new Map(emotionDefs.map((e) => [e.key, e.label]));
+  const customKeys = new Set([...getCustomTags().mistakes, ...getCustomTags().emotions].map((d) => d.key));
 
   function flip(kind: 'mistake' | 'emotion', tagKey: string) {
     setTags(toggleTag(key, kind, tagKey));
+  }
+
+  function addCustom(kind: 'mistake' | 'emotion', label: string) {
+    if (!label.trim()) return;
+    const def = addCustomTag(kind, label);
+    setTags(toggleTag(key, kind, def.key));
+    if (kind === 'mistake') setNewMistake(''); else setNewEmotion('');
   }
 
   const hasTags = tags.mistakes.length > 0 || tags.emotions.length > 0;
@@ -136,12 +156,12 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
       <div className="shot-tag-row">
         {tags.mistakes.map((m) => (
           <button key={`m-${m}`} className="utag mistake" onClick={() => flip('mistake', m)} title="Remove tag">
-            {MISTAKE_LABEL.get(m) ?? m}
+            {mistakeLabel.get(m) ?? m}
           </button>
         ))}
         {tags.emotions.map((e) => (
           <button key={`e-${e}`} className="utag emotion" onClick={() => flip('emotion', e)} title="Remove tag">
-            {EMOTION_LABEL.get(e) ?? e}
+            {emotionLabel.get(e) ?? e}
           </button>
         ))}
         <button className={`utag add ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)}>
@@ -152,27 +172,51 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
         <div className="shot-tag-picker">
           <span className="tag-group-label">Mistakes</span>
           <div className="tag-chips">
-            {MISTAKE_TAGS.map((m) => (
-              <button
-                key={m.key}
-                className={`chip ${tags.mistakes.includes(m.key) ? 'on mistake' : ''}`}
-                onClick={() => flip('mistake', m.key)}
-              >
-                {m.label}
-              </button>
+            {mistakeDefs.map((m) => (
+              <span key={m.key} className="chip-wrap">
+                <button
+                  className={`chip ${tags.mistakes.includes(m.key) ? 'on mistake' : ''}`}
+                  onClick={() => flip('mistake', m.key)}
+                >
+                  {m.label}
+                </button>
+                {customKeys.has(m.key) && (
+                  <button className="chip-del" title="Delete custom tag" onClick={() => removeCustomTag('mistake', m.key)}>×</button>
+                )}
+              </span>
             ))}
+          </div>
+          <div className="tag-add">
+            <input
+              value={newMistake}
+              placeholder="+ custom mistake"
+              onChange={(e) => setNewMistake(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addCustom('mistake', newMistake); }}
+            />
           </div>
           <span className="tag-group-label">Emotions</span>
           <div className="tag-chips">
-            {EMOTIONS.map((e) => (
-              <button
-                key={e.key}
-                className={`chip ${tags.emotions.includes(e.key) ? 'on emotion' : ''}`}
-                onClick={() => flip('emotion', e.key)}
-              >
-                {e.label}
-              </button>
+            {emotionDefs.map((e) => (
+              <span key={e.key} className="chip-wrap">
+                <button
+                  className={`chip ${tags.emotions.includes(e.key) ? 'on emotion' : ''}`}
+                  onClick={() => flip('emotion', e.key)}
+                >
+                  {e.label}
+                </button>
+                {customKeys.has(e.key) && (
+                  <button className="chip-del" title="Delete custom tag" onClick={() => removeCustomTag('emotion', e.key)}>×</button>
+                )}
+              </span>
             ))}
+          </div>
+          <div className="tag-add">
+            <input
+              value={newEmotion}
+              placeholder="+ custom emotion"
+              onChange={(e) => setNewEmotion(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addCustom('emotion', newEmotion); }}
+            />
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import type { TradeRecord } from '../types';
 import { tradeTagKey, type TradeTags } from './userTags';
+import { getCustomTags } from './customTags';
 
 export interface EmotionDef {
   key: string;
@@ -23,6 +24,11 @@ export const EMOTIONS: EmotionDef[] = [
 
 function tradeText(t: TradeRecord): string {
   return `${t.reasonEmotion} ${t.note}`.toLowerCase();
+}
+
+/** Built-in emotions plus any user-defined custom ones (no keywords). */
+export function allEmotions(): EmotionDef[] {
+  return [...EMOTIONS, ...getCustomTags().emotions.map((d) => ({ ...d, keywords: [] }))];
 }
 
 export function detectEmotions(t: TradeRecord, userTags?: Record<string, TradeTags>): string[] {
@@ -51,7 +57,7 @@ export interface EmotionEdge {
 
 export function emotionEdge(trades: TradeRecord[], userTags?: Record<string, TradeTags>): EmotionEdge[] {
   const byKey = new Map<string, EmotionEdge>();
-  for (const e of EMOTIONS) {
+  for (const e of allEmotions()) {
     byKey.set(e.key, { key: e.key, label: e.label, count: 0, pnl: 0, wins: 0, winRate: 0 });
   }
   for (const t of trades) {
