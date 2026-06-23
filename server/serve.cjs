@@ -104,7 +104,8 @@ const server = http.createServer((req, res) => {
   const url = req.url || '/';
   // License / checkout / ops API (handled by the shared dependency-free module).
   if (url === '/api/checkout' || url.startsWith('/api/license') || url.startsWith('/api/stripe')
-      || url.startsWith('/api/health') || url.startsWith('/api/version') || url.startsWith('/api/auth')) {
+      || url.startsWith('/api/health') || url.startsWith('/api/version') || url.startsWith('/api/auth')
+      || url.startsWith('/api/sync/')) {
     licenseApi.handle(req, res);
     return;
   }

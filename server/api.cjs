@@ -17,6 +17,7 @@
 const http = require('node:http');
 const crypto = require('node:crypto');
 const auth = require('./auth.cjs');
+const sync = require('./sync.cjs');
 
 const SECRET = process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
 const PORT = Number(process.env.API_PORT || 8788);
@@ -119,6 +120,12 @@ async function handle(req, res) {
   // Account auth (/api/auth/*).
   if (url.startsWith('/api/auth/')) {
     const handled = await auth.route(req, res, { send, readBody });
+    if (handled) return;
+  }
+
+  // Cloud sync (/api/sync/*) — token-scoped.
+  if (url.startsWith('/api/sync/')) {
+    const handled = await sync.route(req, res, { send });
     if (handled) return;
   }
 
