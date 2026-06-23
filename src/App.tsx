@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, lazy, Suspense, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
 import type { TradeRecord } from './types';
@@ -25,6 +25,9 @@ import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
+import { useAccount } from './lib/useAccount';
+import { getAutoSync, AUTOSYNC_EVENT, pushBackup } from './lib/cloudSync';
+import { buildBackup } from './lib/backup';
 import { OPEN_PRICING_EVENT } from './lib/pricingBus';
 import { t, getLang } from './lib/i18n';
 import { useLang } from './lib/useLang';
@@ -57,6 +60,10 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
   const pro = useIsPro();
+  const cloudAccount = useAccount();
+  const [autoSyncOn, setAutoSyncOn] = useState(() => getAutoSync());
+  const [cloudStatus, setCloudStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const cloudTimer = useRef<number | null>(null);
   useLang(); // re-render on language change
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -76,6 +83,29 @@ export default function App() {
     window.addEventListener(OPEN_PRICING_EVENT, open);
     return () => window.removeEventListener(OPEN_PRICING_EVENT, open);
   }, []);
+
+  // Track the auto-sync preference toggle.
+  useEffect(() => {
+    const refresh = () => setAutoSyncOn(getAutoSync());
+    window.addEventListener(AUTOSYNC_EVENT, refresh);
+    return () => window.removeEventListener(AUTOSYNC_EVENT, refresh);
+  }, []);
+
+  // Debounced background cloud push when signed in with auto-sync on.
+  useEffect(() => {
+    if (!cloudAccount || !autoSyncOn || sampleMode || trades.length === 0) return;
+    if (cloudTimer.current) clearTimeout(cloudTimer.current);
+    cloudTimer.current = window.setTimeout(async () => {
+      try {
+        setCloudStatus('syncing');
+        await pushBackup(await buildBackup(trades));
+        setCloudStatus('synced');
+      } catch {
+        setCloudStatus('error');
+      }
+    }, 3000);
+    return () => { if (cloudTimer.current) clearTimeout(cloudTimer.current); };
+  }, [trades, cloudAccount, autoSyncOn, sampleMode]);
 
   useEffect(() => {
     loadHolidays().then(setHolidays);
@@ -243,6 +273,12 @@ export default function App() {
           </div>
 
           <ProfileSwitcher onChange={reloadProfile} />
+
+          {cloudAccount && autoSyncOn && (
+            <span className={`cloud-pill ${cloudStatus}`} title="Auto cloud sync">
+              {cloudStatus === 'syncing' ? 'Syncing…' : cloudStatus === 'error' ? 'Sync error' : cloudStatus === 'synced' ? 'Synced' : 'Auto-sync'}
+            </span>
+          )}
 
           {sampleMode && (
             <span className="sample-badge">

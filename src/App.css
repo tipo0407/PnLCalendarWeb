@@ -142,6 +142,11 @@
 .acct-filter select:hover { border-color: var(--accent); }
 .acct-filter select:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
 
+.cloud-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); background: var(--card); white-space: nowrap; }
+.cloud-pill.syncing { color: var(--accent); border-color: transparent; background: var(--accent-soft); }
+.cloud-pill.synced { color: var(--pos); border-color: transparent; background: var(--pos-soft); }
+.cloud-pill.error { color: var(--neg); border-color: transparent; background: var(--neg-soft); }
+
 /* ===== Profile switcher ===== */
 .profile-switch { position: relative; }
 .profile-btn {

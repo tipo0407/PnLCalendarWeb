@@ -4,6 +4,17 @@ import { authHeader } from './account';
 import type { Backup } from './backup';
 
 const LAST_KEY = 'pnlcalendar.cloudSync.v1';
+const AUTO_KEY = 'pnlcalendar.autoSync.v1';
+export const AUTOSYNC_EVENT = 'pnlcalendar:autosync';
+
+export function getAutoSync(): boolean {
+  try { return localStorage.getItem(AUTO_KEY) === '1'; } catch { return false; }
+}
+
+export function setAutoSync(on: boolean) {
+  try { localStorage.setItem(AUTO_KEY, on ? '1' : '0'); } catch { /* ignore */ }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTOSYNC_EVENT));
+}
 
 export function getLastSynced(): string | null {
   try { return localStorage.getItem(LAST_KEY); } catch { return null; }

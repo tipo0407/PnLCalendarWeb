@@ -11,7 +11,7 @@ import { ACCENTS, getAccentId, setAccent, getHighContrast, setHighContrast } fro
 import AccountSection from './AccountSection';
 import TagsManager from './TagsManager';
 import { useAccount } from '../lib/useAccount';
-import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced } from '../lib/cloudSync';
+import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced, getAutoSync, setAutoSync } from '../lib/cloudSync';
 
 interface Props {
   onClose: () => void;
@@ -31,6 +31,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const account = useAccount();
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [auto, setAuto] = useState(() => getAutoSync());
   const lang = useLang();
 
   async function cloudPush() {
@@ -232,6 +233,10 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
               <button className="set-data-btn" disabled={syncing} onClick={cloudPush}><CloudUpload size={14} /> Push to cloud</button>
               <button className="set-data-btn" disabled={syncing} onClick={cloudPull}><CloudDownload size={14} /> Pull from cloud</button>
             </div>
+            <label className="set-toggle" style={{ marginTop: 12 }}>
+              <input type="checkbox" checked={auto} onChange={(e) => { setAutoSync(e.target.checked); setAuto(e.target.checked); }} />
+              <span><b>Auto-sync</b><small>Push changes to the cloud automatically (debounced).</small></span>
+            </label>
             {syncMsg && <div className="set-data-msg">{syncMsg}</div>}
           </div>
         )}
