@@ -16,6 +16,7 @@ process.env.USERS_FILE = path.join(tmp, 'users.json');
 process.env.BLOB_DIR = path.join(tmp, 'blobs');
 process.env.AUTH_SECRET = 'test-secret';
 process.env.LICENSE_SECRET = 'test-secret';
+process.env.AUTH_RATE_MAX = '10000'; // don't rate-limit the test suite's shared IP
 
 const api = require('./api.cjs');
 const auth = require('./auth.cjs');
@@ -107,4 +108,35 @@ test('health and version endpoints', async () => {
   assert.equal((await h.json()).ok, true);
   const v = await get('/api/version');
   assert.equal(v.status, 200);
+});
+
+test('change password requires the current one', async () => {
+  const su = await post('/api/auth/signup', { email: 'pw@example.com', password: 'originalpw' });
+  const { token } = await su.json();
+  const h = { Authorization: `Bearer ${token}` };
+
+  const bad = await post('/api/auth/change-password', { currentPassword: 'wrong', newPassword: 'newpassword' }, h);
+  assert.equal(bad.status, 401);
+
+  const ok = await post('/api/auth/change-password', { currentPassword: 'originalpw', newPassword: 'newpassword' }, h);
+  assert.equal(ok.status, 200);
+
+  // Old password no longer works; new one does.
+  assert.equal((await post('/api/auth/login', { email: 'pw@example.com', password: 'originalpw' })).status, 401);
+  assert.equal((await post('/api/auth/login', { email: 'pw@example.com', password: 'newpassword' })).status, 200);
+});
+
+test('password reset via token', async () => {
+  await post('/api/auth/signup', { email: 'reset@example.com', password: 'originalpw' });
+  const reqReset = await post('/api/auth/request-reset', { email: 'reset@example.com' });
+  const { resetToken } = await reqReset.json();
+  assert.ok(resetToken);
+
+  const reset = await post('/api/auth/reset', { token: resetToken, newPassword: 'brandnewpw' });
+  assert.equal(reset.status, 200);
+  assert.equal((await post('/api/auth/login', { email: 'reset@example.com', password: 'brandnewpw' })).status, 200);
+
+  // A reset token cannot be used as an auth token.
+  const me = await get('/api/auth/me', { Authorization: `Bearer ${resetToken}` });
+  assert.equal(me.status, 401);
 });

@@ -15,7 +15,7 @@ const rl = require('./ratelimit.cjs');
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
 const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, '.users.json');
 const TOKEN_TTL = 30 * 24 * 3600; // 30 days
-const MAX_PER_MIN = 20;           // auth requests per IP per minute
+const MAX_PER_MIN = Number(process.env.AUTH_RATE_MAX || 20); // auth requests per IP per minute
 const MAX_FAILS = 5;              // failed logins before lockout
 const LOCK_MS = 15 * 60 * 1000;   // lockout window
 
@@ -30,14 +30,14 @@ function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 }
 
-function signToken(email, ttl = TOKEN_TTL) {
+function signToken(email, ttl = TOKEN_TTL, purpose = 'auth') {
   const exp = Math.floor(Date.now() / 1000) + ttl;
-  const payload = Buffer.from(JSON.stringify({ email, exp })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ email, exp, purpose })).toString('base64url');
   const sig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
 
-function verifyToken(token) {
+function verifyToken(token, expectedPurpose = 'auth') {
   if (!token) return null;
   const [payload, sig] = String(token).split('.');
   if (!payload || !sig) return null;
@@ -47,6 +47,7 @@ function verifyToken(token) {
   try {
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
     if (!data.exp || data.exp * 1000 < Date.now()) return null;
+    if ((data.purpose || 'auth') !== expectedPurpose) return null;
     return { email: data.email };
   } catch {
     return null;
@@ -107,6 +108,48 @@ async function route(req, res, { send, readBody }) {
     const session = verifyToken(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     return send(res, 200, { email: session.email }), true;
+  }
+
+  if (req.method === 'POST' && url === '/api/auth/change-password') {
+    const session = verifyToken(bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' }), true;
+    const { currentPassword, newPassword } = await readBody(req);
+    if (!newPassword || String(newPassword).length < 8) return send(res, 400, { error: 'new password too short (min 8)' }), true;
+    const users = loadUsers();
+    const user = users[session.email];
+    const ok = user && crypto.timingSafeEqual(
+      Buffer.from(user.hash),
+      Buffer.from(hashPassword(currentPassword || '', user.salt)),
+    );
+    if (!ok) return send(res, 401, { error: 'current password is incorrect' }), true;
+    const salt = crypto.randomBytes(16).toString('hex');
+    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt) };
+    saveUsers(users);
+    return send(res, 200, { ok: true }), true;
+  }
+
+  if (req.method === 'POST' && url === '/api/auth/request-reset') {
+    const { email } = await readBody(req);
+    const key = String(email || '').toLowerCase();
+    const exists = Boolean(loadUsers()[key]);
+    // Always 200 to avoid user enumeration; a real deployment emails the token.
+    const body = { ok: true };
+    if (exists) body.resetToken = signToken(key, 3600, 'reset');
+    return send(res, 200, body), true;
+  }
+
+  if (req.method === 'POST' && url === '/api/auth/reset') {
+    const { token, newPassword } = await readBody(req);
+    const session = verifyToken(token, 'reset');
+    if (!session) return send(res, 401, { error: 'invalid or expired reset token' }), true;
+    if (!newPassword || String(newPassword).length < 8) return send(res, 400, { error: 'new password too short (min 8)' }), true;
+    const users = loadUsers();
+    const user = users[session.email];
+    if (!user) return send(res, 404, { error: 'account not found' }), true;
+    const salt = crypto.randomBytes(16).toString('hex');
+    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt) };
+    saveUsers(users);
+    return send(res, 200, { ok: true }), true;
   }
 
   return false;

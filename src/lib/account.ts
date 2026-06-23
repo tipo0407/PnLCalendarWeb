@@ -82,3 +82,22 @@ export function authHeader(): Record<string, string> {
   const a = getAccount();
   return a ? { Authorization: `Bearer ${a.token}` } : {};
 }
+
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  } catch {
+    throw new Error('Cloud service is unreachable.');
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+}

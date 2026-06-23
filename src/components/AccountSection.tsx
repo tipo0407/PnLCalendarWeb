@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { UserCircle2, LogOut } from 'lucide-react';
-import { signup, login, logout } from '../lib/account';
+import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
+import { signup, login, logout, changePassword, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
 
 /** Optional cloud account sign-in / sign-up, shown inside Settings. */
@@ -32,24 +32,67 @@ export default function AccountSection() {
           <span>Signed in as <b>{account.email}</b></span>
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
+        <ChangePassword />
         <p className="set-data-note">Cloud is optional — your data stays local unless you sync it.</p>
       </div>
     );
   }
 
+  const emailValid = EMAIL_RE.test(email);
   return (
     <div className="acct-section">
       <div className="set-section-head"><UserCircle2 size={14} /> Account <span className="acct-optional">optional</span></div>
       <p className="set-data-note">Create a free account to enable opt-in cloud backup &amp; sync across devices.</p>
       <div className="acct-form">
         <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        {email.length > 0 && !emailValid && <span className="acct-hint">Enter a valid email address.</span>}
         <input type="password" placeholder="Password (min 8)" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         <div className="acct-actions">
-          <button className="set-data-btn" disabled={busy} onClick={() => run(() => login(email, password))}>Sign in</button>
-          <button className="set-data-btn" disabled={busy} onClick={() => run(() => signup(email, password))}>Create account</button>
+          <button className="set-data-btn" disabled={busy || !emailValid || password.length < 8} onClick={() => run(() => login(email, password))}>Sign in</button>
+          <button className="set-data-btn" disabled={busy || !emailValid || password.length < 8} onClick={() => run(() => signup(email, password))}>Create account</button>
         </div>
       </div>
       {err && <div className="acct-err">{err}</div>}
+    </div>
+  );
+}
+
+function ChangePassword() {
+  const [open, setOpen] = useState(false);
+  const [cur, setCur] = useState('');
+  const [next, setNext] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true); setMsg(null);
+    try {
+      await changePassword(cur, next);
+      setMsg('Password changed.'); setCur(''); setNext(''); setOpen(false);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <div className="acct-changepw">
+        <button className="acct-link" onClick={() => setOpen(true)}><KeyRound size={13} /> Change password</button>
+        {msg && <span className="acct-msg">{msg}</span>}
+      </div>
+    );
+  }
+  return (
+    <div className="acct-form acct-changepw-form">
+      <input type="password" placeholder="Current password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
+      <input type="password" placeholder="New password (min 8)" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+      <div className="acct-actions">
+        <button className="set-data-btn" disabled={busy || next.length < 8} onClick={submit}>Save</button>
+        <button className="set-data-btn" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+      {msg && <div className="acct-err">{msg}</div>}
     </div>
   );
 }
