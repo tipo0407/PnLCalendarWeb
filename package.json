@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:server": "node --test server/api.test.cjs",
     "e2e": "playwright test",
     "serve": "node server/serve.cjs",
     "api": "node server/api.cjs",
