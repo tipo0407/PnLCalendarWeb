@@ -1312,3 +1312,36 @@
   .review-kpis { grid-template-columns: repeat(2, 1fr); }
   .review-cols { grid-template-columns: 1fr; }
 }
+
+.review-export {
+  display: inline-flex; align-items: center; gap: 6px;
+  position: absolute; right: 0; top: 0;
+  padding: 7px 12px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: var(--shadow-sm); transition: border-color .15s, color .15s, background .15s;
+}
+.review-export:hover { border-color: var(--accent); color: var(--accent); }
+.review-nav { position: relative; }
+
+/* ===== Print: scoped weekly-report export ===== */
+@media print {
+  body.printing-review .topbar,
+  body.printing-review .view-tabs,
+  body.printing-review .app-aside,
+  body.printing-review .sidebar,
+  body.printing-review .aurora,
+  body.printing-review .review-nav .edge-nav,
+  body.printing-review .review-export { display: none !important; }
+  body.printing-review { background: #fff !important; }
+  body.printing-review .app, body.printing-review .main-col,
+  body.printing-review .review-page { background: #fff !important; box-shadow: none !important; }
+  body.printing-review .review { color: #111; max-width: 720px; margin: 0 auto; }
+  body.printing-review .review-card,
+  body.printing-review .review-kpi { box-shadow: none !important; border-color: #ccc !important; break-inside: avoid; }
+  body.printing-review .review-action {
+    color: #fff !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  @page { margin: 14mm; }
+}

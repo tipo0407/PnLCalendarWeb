@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Target, Printer } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import {
   computeSummary, groupByDay, edgeByField, hourEdgeBySymbol, formatMoneySigned,
@@ -48,6 +48,18 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
 
   const winners = setups.slice().reverse().filter((x) => x.pnl > 0).slice(0, 3);
 
+  function exportPdf() {
+    document.body.classList.add('printing-review');
+    const cleanup = () => {
+      document.body.classList.remove('printing-review');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    // Fallback in case afterprint doesn't fire.
+    setTimeout(cleanup, 1000);
+  }
+
   return (
     <div className="review">
       <div className="review-nav">
@@ -57,6 +69,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
           <h2>{weekLabel(week.key)}</h2>
         </div>
         <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer week"><ChevronRight size={16} /></button>
+        <button className="review-export" onClick={exportPdf} title="Export this week as PDF"><Printer size={14} /> Export PDF</button>
       </div>
 
       <div className="review-kpis">
