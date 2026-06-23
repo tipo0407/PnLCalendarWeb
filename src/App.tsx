@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
 import type { TradeRecord } from './types';
@@ -14,8 +14,9 @@ import CalendarView from './components/CalendarView';
 import Heatmap from './components/Heatmap';
 import Sidebar from './components/Sidebar';
 import DayDetailModal from './components/DayDetailModal';
-import TradeAtlas from './components/TradeAtlas';
-import WeeklyReview from './components/WeeklyReview';
+// Code-split the chart-heavy views (recharts) out of the initial bundle.
+const TradeAtlas = lazy(() => import('./components/TradeAtlas'));
+const WeeklyReview = lazy(() => import('./components/WeeklyReview'));
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import OnboardingChecklist from './components/OnboardingChecklist';
@@ -502,7 +503,9 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }} />
+              <Suspense fallback={<div className="lazy-fallback">Loading…</div>}>
+                <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }} />
+              </Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -513,7 +516,9 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <WeeklyReview trades={filteredTrades} />
+              <Suspense fallback={<div className="lazy-fallback">Loading…</div>}>
+                <WeeklyReview trades={filteredTrades} />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

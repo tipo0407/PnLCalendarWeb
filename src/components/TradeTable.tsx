@@ -12,7 +12,7 @@ function hhmm(secs: number | null): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-const MAX_ROWS = 200;
+const MAX_ROWS = 1000;
 
 export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecord[]; onSelectDay: (date: string) => void }) {
   const [sortKey, setSortKey] = useState<SortKey>('date');

@@ -419,6 +419,7 @@
   margin: 0 auto;
 }
 .main-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.lazy-fallback { max-width: var(--maxw); margin: 0 auto; padding: 60px 24px; text-align: center; color: var(--muted); font-size: 14px; }
 
 /* ===== Dashboard (home) ===== */
 .home-page { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 22px 24px; }
@@ -1661,7 +1662,7 @@
 .tt-num { text-align: right; font-variant-numeric: tabular-nums; }
 .tt-strong { font-weight: 600; }
 .tt-dim { color: var(--text-2); }
-.ttable-row { cursor: pointer; }
+.ttable-row { cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 38px; }
 .ttable-row:hover td { background: var(--surface-2); }
 .ttable-empty { text-align: center; color: var(--muted); padding: 22px; }
 .ttable-grid tfoot td { padding: 10px 12px; border-top: 2px solid var(--border-strong); font-weight: 700; background: var(--surface-2); position: sticky; bottom: 0; }
