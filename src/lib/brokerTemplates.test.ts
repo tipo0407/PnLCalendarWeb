@@ -21,6 +21,21 @@ describe('brokerTemplates', () => {
     expect(map.symbol).toBe(headers.indexOf('symbol'));
   });
 
+  it('detects Webull, Rithmic and generic-long exports', () => {
+    const wb = ['Symbol', 'Side', 'Filled', 'Avg Price', 'Filled Time', 'Realized P&L'];
+    expect(detectTemplate(wb)?.id).toBe('webull');
+
+    const ri = ['Account', 'Symbol', 'Buy/Sell', 'Fill Size', 'Fill Price', 'Update Time'];
+    expect(detectTemplate(ri)?.id).toBe('rithmic');
+
+    const gl = ['Trade Date', 'Symbol', 'Direction', 'Quantity', 'Entry Price', 'Exit Price', 'Profit/Loss'];
+    const tpl = detectTemplate(gl);
+    expect(tpl?.id).toBe('generic-long');
+    const map = applyTemplate(gl, tpl!);
+    expect(map.entryPrice).toBe(gl.indexOf('Entry Price'));
+    expect(map.profitLoss).toBe(gl.indexOf('Profit/Loss'));
+  });
+
   it('returns null when no broker signature matches', () => {
     expect(detectTemplate(['Date', 'Symbol', 'P&L'])).toBeNull();
   });
