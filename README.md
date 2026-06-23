@@ -90,10 +90,20 @@ Trades are sorted automatically by `Date`, then `EntryTime`, then `NoOfDay`.
 
 ### Try it without your own data
 
-To follow along, create a Google Sheet (or Excel file) with **any two tabs first**, then a
-**third tab** containing the header row above plus a few sample trades. Either upload it with
-**Upload .xlsx**, or share it as "Anyone with the link can view" and paste the link, then
-**Sync**.
+A ready-made sample workbook is included at **[`samples/Trading.sample.xlsx`](./samples/Trading.sample.xlsx)**.
+It has two placeholder tabs followed by a **`Trades`** tab with the header row above and 10 fake
+trades (long/short, wins/losses, a same-candle scalp, notes in `Reason&Emotion`). Just click
+**Upload .xlsx** and pick it to explore the app.
+
+You can regenerate it (e.g. to tweak the rows) with:
+
+```powershell
+node samples/generate-sample.cjs
+```
+
+To use a **Google Sheet** instead, copy that same structure into a sheet (any two tabs first,
+then a third tab with the headers + your rows). Share it as "Anyone with the link can view"
+and paste the link, then **Sync** — or keep it private and load via the local server (below).
 
 ## Development
 
@@ -107,9 +117,14 @@ npm run lint     # ESLint
 
 ## Notes
 
-Google Sheet sync relies on the Vite dev proxy and only works under `npm run dev`. To deploy
-as a static site with private-sheet sync, you'd need an additional backend/serverless proxy.
-Uploading an `.xlsx` works in any deployment.
+Uploading an `.xlsx` works in any deployment. For private-sheet sync you need a small backend
+proxy that carries your Google session.
+
+The repo includes an optional **local server** (`server/serve.cjs`) — a dependency-free static
+host that also proxies `/yahoo` (intraday candles) and `/gsheet`, serves the live workbook at
+`/data/trades.xlsx`, and exposes `/api/sync` to refresh it from Google Sheets. `npm run serve`
+runs it; `server/install-autostart.ps1` registers it to auto-start at logon. Paths and the sheet
+id in `server/` are personal defaults — adjust them for your own setup.
 
 ## Tech stack
 
