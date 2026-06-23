@@ -305,6 +305,27 @@
 }
 .main-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 
+/* ===== Onboarding checklist ===== */
+.onboard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+.onboard-head { display: flex; align-items: center; gap: 10px; }
+.onboard-title { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; }
+.onboard-title svg { color: var(--accent); }
+.onboard-progress { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 3px 9px; border-radius: 999px; }
+.onboard-close { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px; display: inline-flex; }
+.onboard-close:hover { color: var(--text); }
+.onboard-bar { height: 6px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 11px 0 12px; }
+.onboard-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s ease; }
+.onboard-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.onboard-steps li { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--text); }
+.onboard-steps li svg { color: var(--muted); flex: none; }
+.onboard-steps li.done { color: var(--text-2); }
+.onboard-steps li.done svg { color: var(--pos); }
+.onboard-steps li.done span { text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.onboard-action { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+.onboard-action:hover { border-color: var(--accent); }
+.onboard-done { margin-top: 12px; font-size: 13px; color: var(--pos); font-weight: 600; }
+.onboard-done button { background: none; border: none; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: 12.5px; margin-left: 6px; }
+
 /* Staggered entrance for the main column cards and sidebar. */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }

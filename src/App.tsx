@@ -18,6 +18,7 @@ import TradeAtlas from './components/TradeAtlas';
 import WeeklyReview from './components/WeeklyReview';
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
+import OnboardingChecklist from './components/OnboardingChecklist';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { OPEN_PRICING_EVENT } from './lib/pricingBus';
@@ -152,6 +153,11 @@ export default function App() {
   }, []);
 
   const accounts = useMemo(() => distinctAccounts(trades), [trades]);
+  const setupNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of trades) { const s = (t.setup ?? '').trim(); if (s) set.add(s); }
+    return [...set];
+  }, [trades]);
   const [account, setAccount] = useState<string>('All');
   const filteredTrades = useMemo(
     () => (account === 'All' ? trades : trades.filter((t) => (t.account ?? '') === account)),
@@ -378,6 +384,11 @@ export default function App() {
                 onOpenSettings={() => setShowSettings(true)}
               />
               <section className="main-col">
+                <OnboardingChecklist
+                  hasTrades={trades.length > 0}
+                  setups={setupNames}
+                  onOpenSettings={() => setShowSettings(true)}
+                />
                 <CalendarView
                   dailyMap={dailyMap}
                   holidays={holidays}
