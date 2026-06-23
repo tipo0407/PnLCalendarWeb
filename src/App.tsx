@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
 import type { TradeRecord } from './types';
@@ -359,6 +359,29 @@ export default function App() {
               </div>
             </div>
 
+            <div className="landing-faq">
+              <h3 className="landing-section-title">Frequently asked</h3>
+              <div className="faq-grid">
+                <FaqItem q="Do I have to connect my broker?">
+                  No. You import an xlsx/CSV file or paste a Google Sheet link. There are no broker
+                  credentials and nothing is required to leave your browser.
+                </FaqItem>
+                <FaqItem q="Where is my data stored?">
+                  Locally, in your browser. Trades, tags, screenshots and settings live on your
+                  device. You can export a JSON backup anytime and clear everything in one click.
+                </FaqItem>
+                <FaqItem q="Which formats can I import?">
+                  Excel (.xlsx), CSV and Google Sheets. The import wizard auto-detects 10+ broker
+                  layouts (IBKR, Tradovate, NinjaTrader, Webull, Rithmic, DAS and more) or lets you
+                  map columns yourself.
+                </FaqItem>
+                <FaqItem q="Is this financial advice?">
+                  No. It’s a journaling and review tool to help you understand your own behavior —
+                  not a signal service or investment advice.
+                </FaqItem>
+              </div>
+            </div>
+
             <p className="landing-foot">
               A trading journal &amp; review tool — not investment advice. Data is read from the
               <strong> 3rd worksheet</strong> by default (or pick a sheet &amp; map columns on import).
@@ -451,6 +474,19 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function FaqItem({ q, children }: { q: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`faq-item ${open ? 'open' : ''}`}>
+      <button className="faq-q" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>{q}</span>
+        <span className="faq-chevron">{open ? '−' : '+'}</span>
+      </button>
+      {open && <div className="faq-a">{children}</div>}
     </div>
   );
 }
