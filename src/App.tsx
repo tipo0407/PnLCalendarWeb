@@ -15,13 +15,14 @@ import Heatmap from './components/Heatmap';
 import Sidebar from './components/Sidebar';
 import DayDetailModal from './components/DayDetailModal';
 import TradeAtlas from './components/TradeAtlas';
+import WeeklyReview from './components/WeeklyReview';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
 const THEME_KEY = 'pnlcalendar.theme';
 const SYNC_KEY = 'pnlcalendar.lastSync';
 
-type View = 'calendar' | 'atlas';
+type View = 'calendar' | 'atlas' | 'review';
 type Theme = 'light' | 'dark';
 
 export default function App() {
@@ -168,7 +169,7 @@ export default function App() {
 
           {trades.length > 0 && (
             <nav className="view-tabs">
-              {(['calendar', 'atlas'] as const).map((v) => (
+              {(['calendar', 'atlas', 'review'] as const).map((v) => (
                 <button
                   key={v}
                   className={`tab-btn ${view === v ? 'active' : ''}`}
@@ -181,7 +182,7 @@ export default function App() {
                       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                     />
                   )}
-                  <span className="tab-label">{v === 'calendar' ? 'Calendar' : 'Trade Atlas'}</span>
+                  <span className="tab-label">{v === 'calendar' ? 'Calendar' : v === 'atlas' ? 'Trade Atlas' : 'Review'}</span>
                 </button>
               ))}
             </nav>
@@ -263,7 +264,7 @@ export default function App() {
                 />
               </section>
             </motion.main>
-          ) : (
+          ) : view === 'atlas' ? (
             <motion.div
               key="atlas"
               initial={{ opacity: 0, y: 12 }}
@@ -272,6 +273,17 @@ export default function App() {
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
               <TradeAtlas trades={trades} summary={summary} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="review"
+              className="review-page"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <WeeklyReview trades={trades} />
             </motion.div>
           )}
         </AnimatePresence>

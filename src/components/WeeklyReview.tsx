@@ -1,0 +1,113 @@
+import { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import type { TradeRecord } from '../types';
+import {
+  computeSummary, groupByDay, edgeByField, hourEdgeBySymbol, formatMoneySigned,
+} from '../lib/metrics';
+import { tagEdge } from '../lib/tags';
+import { emotionEdge } from '../lib/emotions';
+import { avgDiscipline } from '../lib/discipline';
+import { evaluateRules, loadRules } from '../lib/rules';
+import { groupByWeek, weekLabel } from '../lib/review';
+
+export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
+  const weeks = useMemo(() => groupByWeek(trades), [trades]);
+  const [idx, setIdx] = useState(0);
+
+  if (weeks.length === 0) {
+    return <div className="review"><div className="review-empty">No trades to review yet.</div></div>;
+  }
+
+  const clamped = Math.min(idx, weeks.length - 1);
+  const week = weeks[clamped];
+  const wt = week.trades;
+
+  const s = computeSummary(wt);
+  const days = [...groupByDay(wt).values()];
+  const disc = avgDiscipline(days);
+  const mistakes = tagEdge(wt);
+  const emotions = emotionEdge(wt);
+  const setups = edgeByField(wt, (t) => t.setup).filter((x) => x.key !== '(未填写)').sort((a, b) => a.pnl - b.pnl);
+  const hours = hourEdgeBySymbol(wt, 'All').slice().sort((a, b) => a.pnl - b.pnl);
+  const rules = evaluateRules(wt, loadRules()).filter((r) => r.count > 0).sort((a, b) => a.impact - b.impact);
+
+  const worstMistake = mistakes[0] && mistakes[0].pnl < 0 ? mistakes[0] : null;
+  const bestEmotion = emotions.length ? emotions[emotions.length - 1] : null;
+  const worstSetup = setups[0] && setups[0].pnl < 0 ? setups[0] : null;
+  const worstHour = hours[0] && hours[0].pnl < 0 ? hours[0] : null;
+  const worstRule = rules[0] && rules[0].impact < 0 ? rules[0] : null;
+
+  // Pick the single biggest leak for the "change one thing" recommendation.
+  const candidates: { text: string; impact: number }[] = [];
+  if (worstMistake) candidates.push({ text: `cut "${worstMistake.label}" trades — they cost ${formatMoneySigned(worstMistake.pnl)} this week`, impact: worstMistake.pnl });
+  if (worstSetup) candidates.push({ text: `avoid the "${worstSetup.key}" setup — ${formatMoneySigned(worstSetup.pnl)} this week`, impact: worstSetup.pnl });
+  if (worstHour) candidates.push({ text: `skip the ${worstHour.key} hour — ${formatMoneySigned(worstHour.pnl)} this week`, impact: worstHour.pnl });
+  if (worstRule) candidates.push({ text: `respect your rule: ${worstRule.label.toLowerCase()} (${formatMoneySigned(worstRule.impact)})`, impact: worstRule.impact });
+  candidates.sort((a, b) => a.impact - b.impact);
+  const recommendation = candidates[0]?.text;
+
+  const winners = setups.slice().reverse().filter((x) => x.pnl > 0).slice(0, 3);
+
+  return (
+    <div className="review">
+      <div className="review-nav">
+        <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older week"><ChevronLeft size={16} /></button>
+        <div className="review-week">
+          <span className="review-eyebrow">WEEKLY REVIEW</span>
+          <h2>{weekLabel(week.key)}</h2>
+        </div>
+        <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer week"><ChevronRight size={16} /></button>
+      </div>
+
+      <div className="review-kpis">
+        <Kpi label="Net P&L" value={formatMoneySigned(s.totalPnl)} cls={s.totalPnl >= 0 ? 'pos' : 'neg'} />
+        <Kpi label="Trades" value={String(s.tradeCount)} />
+        <Kpi label="Win rate" value={`${(s.winRateTrades * 100).toFixed(0)}%`} />
+        <Kpi label="Discipline" value={`${disc}/100`} cls={disc >= 80 ? 'pos' : disc < 60 ? 'neg' : ''} />
+      </div>
+
+      <div className="review-cols">
+        <div className="review-card good">
+          <h3>What worked</h3>
+          <ul>
+            {s.bestDay && <li><b className="pos">{formatMoneySigned(s.bestDay.pnl)}</b> best day</li>}
+            {winners.length > 0
+              ? winners.map((w) => <li key={w.key}><b className="pos">{formatMoneySigned(w.pnl)}</b> from {w.key}</li>)
+              : <li className="muted">No standout winning setups.</li>}
+            {bestEmotion && bestEmotion.pnl > 0 && <li>Best while <b>{bestEmotion.label.toLowerCase()}</b> ({formatMoneySigned(bestEmotion.pnl)})</li>}
+          </ul>
+        </div>
+        <div className="review-card bad">
+          <h3>What hurt</h3>
+          <ul>
+            {s.worstDay && <li><b className="neg">{formatMoneySigned(s.worstDay.pnl)}</b> worst day</li>}
+            {worstMistake && <li><b className="neg">{formatMoneySigned(worstMistake.pnl)}</b> from {worstMistake.label}</li>}
+            {worstSetup && <li><b className="neg">{formatMoneySigned(worstSetup.pnl)}</b> from {worstSetup.key}</li>}
+            {worstHour && <li><b className="neg">{formatMoneySigned(worstHour.pnl)}</b> at {worstHour.key}</li>}
+            {worstRule && <li>{worstRule.count}× {worstRule.label.toLowerCase()} ({formatMoneySigned(worstRule.impact)})</li>}
+            {!worstMistake && !worstSetup && !worstHour && !worstRule && !s.worstDay && <li className="muted">Clean week — nothing flagged.</li>}
+          </ul>
+        </div>
+      </div>
+
+      {recommendation && (
+        <div className="review-action">
+          <span className="ra-icon"><Target size={18} /></span>
+          <div>
+            <span className="ra-label">Change one thing next week</span>
+            <span className="ra-text">{recommendation.charAt(0).toUpperCase() + recommendation.slice(1)}.</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Kpi({ label, value, cls }: { label: string; value: string; cls?: string }) {
+  return (
+    <div className="review-kpi">
+      <span className="review-kpi-label">{label}</span>
+      <span className={`review-kpi-value ${cls ?? ''}`}>{value}</span>
+    </div>
+  );
+}
