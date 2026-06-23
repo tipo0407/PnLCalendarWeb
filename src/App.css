@@ -1674,6 +1674,17 @@
 }
 .atlas-empty b { color: var(--text); }
 
+/* Tag insights panel */
+.taginsight { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+.taginsight-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.cooccur-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.cooccur-list li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.co-pair { flex: 1; }
+.co-plus { color: var(--muted); }
+.co-count { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.co-pnl { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+@media (max-width: 760px) { .taginsight { grid-template-columns: 1fr; } }
+
 /* ===== Trade table ===== */
 .ttable { display: flex; flex-direction: column; gap: 10px; }
 .ttable-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

@@ -90,6 +90,7 @@ const EN: Record<string, string> = {
   'panel.rules': 'Rule Adherence',
   'panel.tbt': 'Trade-by-Trade P&L',
   'panel.allTrades': 'All Trades',
+  'panel.tagInsights': 'Tag Insights',
   // Pricing
   'pricing.title': 'Stop repeating the same trading mistake',
   'pricing.sub': 'Free forever for the core journal. Upgrade when you want the behavioral edge.',
@@ -213,6 +214,7 @@ const ZH: Record<string, string> = {
   'panel.rules': '规则遵守',
   'panel.tbt': '逐笔盈亏',
   'panel.allTrades': '全部交易',
+  'panel.tagInsights': '标签洞察',
   // Pricing
   'pricing.title': '停止重复同一个交易错误',
   'pricing.sub': '核心日志永久免费。当你需要行为复盘优势时再升级。',

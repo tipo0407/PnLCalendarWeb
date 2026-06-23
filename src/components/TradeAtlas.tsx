@@ -4,9 +4,10 @@ import {
   ResponsiveContainer,
   AreaChart, Area,
   ComposedChart, Line,
+  LineChart,
   BarChart, Bar,
   PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid,
+  XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid, Legend,
 } from 'recharts';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
@@ -14,6 +15,7 @@ import { useThemeColors } from '../lib/useThemeColors';
 import { useUserTags } from '../lib/useUserTags';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
+import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
@@ -107,6 +109,16 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
   const taggedCount = useMemo(() => taggedTradeCount(trades, userTags), [trades, userTags]);
   const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
+  const trend = useMemo(() => tagTrend(trades, userTags), [trades, userTags]);
+  const cooccur = useMemo(() => tagCooccurrence(trades, userTags), [trades, userTags]);
+  const trendData = useMemo(
+    () => trend.months.map((m, i) => {
+      const row: Record<string, number | string> = { month: m };
+      trend.series.forEach((s) => { row[s.label] = s.counts[i]; });
+      return row;
+    }),
+    [trend],
+  );
 
   const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
@@ -486,6 +498,48 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
               </BarChart>
             </ResponsiveContainer>
           )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.tagInsights')} subtitle="When mistakes happen and which cluster together" span={12}>
+          <ProGate feature="Tag Insights">
+            {cooccur.length === 0 && trend.series.length === 0 ? (
+              <div className="atlas-empty">Tag some trades (auto-detected or manual) to see trends and clusters.</div>
+            ) : (
+              <div className="taginsight">
+                <div className="taginsight-chart">
+                  <div className="taginsight-h">Frequency by month</div>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={trendData} margin={{ top: 6, right: 10, bottom: 0, left: -10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                      <XAxis dataKey="month" {...AXIS} minTickGap={20} />
+                      <YAxis {...AXIS} width={30} allowDecimals={false} />
+                      <Tooltip {...TOOLTIP} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      {trend.series.map((s, i) => (
+                        <Line key={s.key} type="monotone" dataKey={s.label} stroke={[NEG, ACC, POS, '#a855f7'][i % 4]} strokeWidth={2} dot={false} />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="taginsight-co">
+                  <div className="taginsight-h">Common pairs</div>
+                  {cooccur.length === 0 ? (
+                    <div className="atlas-empty">No co-occurring tags yet.</div>
+                  ) : (
+                    <ul className="cooccur-list">
+                      {cooccur.map((p) => (
+                        <li key={`${p.a}-${p.b}`}>
+                          <span className="co-pair">{p.labelA} <span className="co-plus">+</span> {p.labelB}</span>
+                          <span className="co-count">×{p.count}</span>
+                          <span className={`co-pnl ${p.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(p.pnl)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
           </ProGate>
         </Panel>
 
