@@ -21,6 +21,7 @@ import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
 import { riskStats, drawdownSeries, rMultipleHistogram, drawdownDuration } from '../lib/risk';
 import { monteCarlo } from '../lib/monteCarlo';
+import { sizePerformance } from '../lib/sizeAnalysis';
 import { riskModel } from '../lib/riskModel';
 import { buildYearHeatmap } from '../lib/yearHeatmap';
 import { getSettings } from '../lib/settings';
@@ -145,6 +146,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
     const ruinThreshold = accountSize > 0 ? accountSize : 0;
     return monteCarlo(trades, { runs: 1000, ruinThreshold, seed: 12345 });
   }, [trades, accountSize]);
+  const sizeBuckets = useMemo(() => sizePerformance(trades), [trades]);
   const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
   const rm = useMemo(() => {
     const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
@@ -704,6 +706,34 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                 <RiskTile label={t('rm.payoff')} value={`${rm.payoff.toFixed(2)}×`} sub={t('rm.winLoss')} />
                 <RiskTile label={t('rm.ror')} value={`${(rm.riskOfRuin * 100).toFixed(rm.riskOfRuin < 0.1 ? 1 : 0)}%`} cls={rm.riskOfRuin < 0.1 ? 'pos' : rm.riskOfRuin > 0.5 ? 'neg' : ''} sub={t('rm.rorSub')} />
               </div>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.sizePerf')} subtitle={t('panel.sizePerfSub')} span={6}>
+          <ProGate feature="Position-Size Analysis">
+            {sizeBuckets.length < 2 ? (
+              <div className="atlas-empty">{t('size.empty')}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={sizeBuckets} barCategoryGap="20%" margin={{ top: 6, right: 10, bottom: 0, left: -8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="label" {...AXIS} />
+                  <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
+                  <Tooltip
+                    {...TOOLTIP}
+                    formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
+                    labelFormatter={(l) => {
+                      const b = sizeBuckets.find((x) => x.label === String(l));
+                      return b ? `${t('size.size')} ${l} · ${b.trades} trades · ${(b.winRate * 100).toFixed(0)}% win` : String(l);
+                    }}
+                  />
+                  <ReferenceLine y={0} stroke="var(--border-strong)" />
+                  <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={48}>
+                    {sizeBuckets.map((b, i) => <Cell key={i} fill={b.net >= 0 ? POS : NEG} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </ProGate>
         </Panel>
