@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check, Database, Zap, FileDown } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary, distinctAccounts } from './lib/metrics';
 import { parseWorkbook } from './lib/parseWorkbook';
@@ -447,6 +447,13 @@ export default function App() {
               </button>
             </div>
 
+            <div className="landing-trust">
+              <span className="lt-chip"><Database size={14} /> {t('trust.brokers')}</span>
+              <span className="lt-chip"><Lock size={14} /> {t('trust.local')}</span>
+              <span className="lt-chip"><Zap size={14} /> {t('trust.demo')}</span>
+              <span className="lt-chip"><FileDown size={14} /> {t('trust.pdf')}</span>
+            </div>
+
             <div className="landing-features">
               <div className="lf">
                 <span className="lf-icon"><CalendarRange size={18} /></span>
@@ -500,8 +507,8 @@ export default function App() {
             </div>
 
             <p className="landing-foot">
-              A trading journal &amp; review tool — not investment advice. Data is read from the
-              <strong> 3rd worksheet</strong> by default (or pick a sheet &amp; map columns on import).
+              A trading journal &amp; review tool — not investment advice. The import wizard
+              auto-detects your layout, or lets you pick a sheet &amp; map columns yourself.
             </p>
           </motion.section>
         </div>
