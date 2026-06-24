@@ -2284,3 +2284,15 @@
 
 /* Risk model tiles */
 .rm-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+/* Year P&L heatmap (GitHub-style) */
+.yheat { overflow-x: auto; }
+.yheat-grid { display: flex; gap: 3px; min-width: max-content; padding-bottom: 4px; }
+.yheat-col { display: flex; flex-direction: column; gap: 3px; }
+.yheat-cell { width: 12px; height: 12px; border-radius: 3px; background: var(--border); }
+.yheat-cell.none { background: var(--border); opacity: 0.5; }
+.yheat-cell.pos { background: var(--pos); cursor: pointer; }
+.yheat-cell.neg { background: var(--neg); cursor: pointer; }
+.yheat-cell.empty { background: transparent; }
+.yheat-foot { display: flex; gap: 16px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.atlas-year-sel { padding: 4px 8px; border-radius: 7px; border: 1px solid var(--border-strong); background: var(--card); color: var(--text); font-size: 12px; }

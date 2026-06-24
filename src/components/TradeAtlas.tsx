@@ -21,6 +21,7 @@ import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
 import { riskStats, drawdownSeries, rMultipleHistogram } from '../lib/risk';
 import { riskModel } from '../lib/riskModel';
+import { buildYearHeatmap } from '../lib/yearHeatmap';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
 import { t } from '../lib/i18n';
@@ -140,6 +141,16 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
     const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
     return riskModel(trades, units);
   }, [trades, accountSize, riskPerTrade]);
+
+  const yearsAvailable = useMemo(() => {
+    const set = new Set<number>();
+    for (const tr of trades) set.add(Number(tr.date.slice(0, 4)));
+    return [...set].sort((a, b) => b - a);
+  }, [trades]);
+  const [heatYear, setHeatYear] = useState<number>(() => Number(new Date().getFullYear()));
+  const effHeatYear = yearsAvailable.includes(heatYear) ? heatYear : (yearsAvailable[0] ?? heatYear);
+  const dayMap = useMemo(() => groupByDay(trades), [trades]);
+  const heatmap = useMemo(() => buildYearHeatmap(dayMap, effHeatYear), [dayMap, effHeatYear]);
   // Click a mistake/emotion bar to filter the All Trades table to that tag.
   const [tagFilter, setTagFilter] = useState<{ kind: 'mistake' | 'emotion'; key: string; label: string } | null>(null);
   const tableTrades = useMemo(() => {
@@ -529,6 +540,45 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
             </ResponsiveContainer>
           )}
           </ProGate>
+        </Panel>
+
+        <Panel
+          title={t('panel.yearHeatmap')}
+          subtitle={t('panel.yearHeatmapSub')}
+          span={12}
+          action={yearsAvailable.length > 1
+            ? <select className="atlas-year-sel" value={effHeatYear} onChange={(e) => setHeatYear(Number(e.target.value))}>
+                {yearsAvailable.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            : undefined}
+        >
+          <div className="yheat">
+            <div className="yheat-grid">
+              {heatmap.weeks.map((col, ci) => (
+                <div className="yheat-col" key={ci}>
+                  {col.map((cell, ri) => {
+                    if (!cell.date) return <span className="yheat-cell empty" key={ri} />;
+                    const intensity = heatmap.maxAbs > 0 ? Math.min(1, Math.abs(cell.pnl) / heatmap.maxAbs) : 0;
+                    const cls = !cell.traded ? 'none' : cell.pnl >= 0 ? 'pos' : 'neg';
+                    const op = cell.traded ? 0.25 + 0.75 * intensity : 1;
+                    return (
+                      <span
+                        className={`yheat-cell ${cls}`}
+                        key={ri}
+                        style={cell.traded ? { opacity: op } : undefined}
+                        title={`${shortDate(cell.date)}: ${cell.traded ? formatMoneySigned(cell.pnl) : 'no trades'}`}
+                        onClick={() => cell.traded && onSelectDay?.(cell.date!)}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <div className="yheat-foot">
+              <span><b className={heatmap.totalPnl >= 0 ? 'pos' : 'neg'}>{formatMoneySigned(heatmap.totalPnl)}</b> {t('yheat.net')}</span>
+              <span><b className="pos">{heatmap.greenDays}</b> {t('yheat.green')} · <b className="neg">{heatmap.redDays}</b> {t('yheat.red')}</span>
+            </div>
+          </div>
         </Panel>
 
         <Panel title={t('panel.leaks')} subtitle={t('panel.leaksSub')} span={12}>
