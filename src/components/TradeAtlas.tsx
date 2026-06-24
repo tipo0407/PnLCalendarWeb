@@ -20,6 +20,7 @@ import { findLeaks } from '../lib/leaks';
 import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
 import { riskStats, drawdownSeries, rMultipleHistogram, drawdownDuration } from '../lib/risk';
+import { monteCarlo } from '../lib/monteCarlo';
 import { riskModel } from '../lib/riskModel';
 import { buildYearHeatmap } from '../lib/yearHeatmap';
 import { getSettings } from '../lib/settings';
@@ -139,6 +140,10 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
   const ddDur = useMemo(() => drawdownDuration(ddSeries), [ddSeries]);
+  const mc = useMemo(() => {
+    const ruinThreshold = accountSize > 0 ? accountSize : 0;
+    return monteCarlo(trades, { runs: 1000, ruinThreshold, seed: 12345 });
+  }, [trades, accountSize]);
   const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
   const rm = useMemo(() => {
     const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
@@ -694,6 +699,21 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                 <RiskTile label={t('rm.halfKelly')} value={`${(rm.halfKelly * 100).toFixed(1)}%`} cls={rm.halfKelly > 0 ? 'pos' : 'neg'} sub={t('rm.conservative')} />
                 <RiskTile label={t('rm.payoff')} value={`${rm.payoff.toFixed(2)}×`} sub={t('rm.winLoss')} />
                 <RiskTile label={t('rm.ror')} value={`${(rm.riskOfRuin * 100).toFixed(rm.riskOfRuin < 0.1 ? 1 : 0)}%`} cls={rm.riskOfRuin < 0.1 ? 'pos' : rm.riskOfRuin > 0.5 ? 'neg' : ''} sub={t('rm.rorSub')} />
+              </div>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.monteCarlo')} subtitle={t('panel.monteCarloSub')} span={6}>
+          <ProGate feature="Monte-Carlo Simulation">
+            {!mc ? (
+              <div className="atlas-empty">{t('mc.empty')}</div>
+            ) : (
+              <div className="rm-tiles">
+                <RiskTile label={t('mc.median')} value={formatMoneySigned(mc.medianFinal)} cls={mc.medianFinal >= 0 ? 'pos' : 'neg'} sub={`${mc.horizon} ${t('mc.tradesAhead')}`} />
+                <RiskTile label={t('mc.band')} value={`${compactMoney(mc.p5Final)} … ${compactMoney(mc.p95Final)}`} sub={t('mc.bandSub')} />
+                <RiskTile label={t('mc.medianDD')} value={formatMoney(mc.medianMaxDrawdown)} cls="neg" sub={`${t('mc.worst')} ${compactMoney(mc.worstMaxDrawdown)}`} />
+                <RiskTile label={t('mc.probProfit')} value={`${(mc.probProfit * 100).toFixed(0)}%`} cls={mc.probProfit >= 0.5 ? 'pos' : 'neg'} sub={accountSize > 0 ? `${t('mc.ruin')} ${(mc.riskOfRuin * 100).toFixed(1)}%` : undefined} />
               </div>
             )}
           </ProGate>
