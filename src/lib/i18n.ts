@@ -104,6 +104,8 @@ const EN: Record<string, string> = {
   // Dashboard
   'dash.netPnl': 'Net P&L',
   'dash.setGoal': 'Set a goal',
+  'dash.ytd': 'year to date',
+  'dash.tradingDays': 'trading days',
   'dash.winRate': 'Win rate',
   'dash.profitFactor': 'Profit factor',
   'dash.dayStreak': 'Day streak',
@@ -311,6 +313,8 @@ const ZH: Record<string, string> = {
   // Dashboard
   'dash.netPnl': '净盈亏',
   'dash.setGoal': '设定目标',
+  'dash.ytd': '年初至今',
+  'dash.tradingDays': '个交易日',
   'dash.winRate': '胜率',
   'dash.profitFactor': '盈亏比',
   'dash.dayStreak': '连续天数',

@@ -6,7 +6,7 @@ import {
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
-import { dayStreaks, monthProgress } from '../lib/goals';
+import { dayStreaks, monthProgress, yearProgress } from '../lib/goals';
 import { earnedBadges } from '../lib/badges';
 import { groupByWeek } from '../lib/review';
 import { reviewStreak as reviewStreakOf } from '../lib/reviewLog';
@@ -41,6 +41,13 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
     const [y, m] = lastDate.split('-').map(Number);
     return monthProgress(days, y, m - 1, monthlyGoal);
   }, [days, lastDate, monthlyGoal]);
+
+  // Year-to-date for the most recent year; derive an annual goal from the monthly one.
+  const annualGoal = monthlyGoal > 0 ? monthlyGoal * 12 : 0;
+  const year = useMemo(() => {
+    if (!lastDate) return null;
+    return { y: Number(lastDate.slice(0, 4)), prog: yearProgress(days, Number(lastDate.slice(0, 4)), annualGoal) };
+  }, [days, lastDate, annualGoal]);
 
   const recent = useMemo(
     () => [...trades].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.tradeNumber - a.tradeNumber)).slice(0, 8),
@@ -100,6 +107,17 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
               <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
             </>
           )}
+        </div>
+      )}
+
+      {year && year.prog.tradeDays > 0 && (
+        <div className="dash-year">
+          <span className="dash-year-label">{year.y} {t('dash.ytd')}</span>
+          <span className={`dash-year-net ${year.prog.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(year.prog.pnl)}</span>
+          {annualGoal > 0 && (
+            <span className="dash-year-goal">/ {formatMoney(annualGoal)} · {Math.round(year.prog.pct)}%</span>
+          )}
+          <span className="dash-year-days">{year.prog.tradeDays} {t('dash.tradingDays')}</span>
         </div>
       )}
 
