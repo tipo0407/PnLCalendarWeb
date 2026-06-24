@@ -110,7 +110,7 @@ async function handle(req, res) {
   const url = (req.url || '').split('?')[0];
 
   // Health & version (GET, unauthenticated).
-  if (req.method === 'GET' && url === '/api/health') {
+  if (req.method === 'GET' && (url === '/api/health' || url === '/api/healthz')) {
     return send(res, 200, { ok: true, uptime: Math.round((Date.now() - START) / 1000) });
   }
   if (req.method === 'GET' && url === '/api/version') {

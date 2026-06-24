@@ -218,6 +218,16 @@ The server exposes unauthenticated health endpoints for load balancers / uptime 
 
 Point your monitor at `/api/health` and treat a non-200 or `ok:false` as unhealthy.
 
+### Security
+
+- The static server sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: no-referrer` and a restrictive `Content-Security-Policy`.
+- Auth endpoints are rate-limited per IP (default 20/min, configurable via `AUTH_RATE_MAX`),
+  and a wrong-password streak locks an email+IP for 15 minutes.
+- Passwords are salted + scrypt-hashed; sessions are HMAC-signed bearer tokens (30-day TTL);
+  password-reset tokens are purpose-scoped and can't be used as auth tokens.
+- Health probes also answer at `/api/healthz`.
+
 ## Tech stack
 
 - React 19 + TypeScript + Vite

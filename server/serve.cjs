@@ -19,6 +19,28 @@ const DIST = path.join(__dirname, '..', 'dist');
 const TRADES_FILE = process.env.TRADES_FILE || path.join(__dirname, '..', '..', 'Trading.xlsx');
 let syncing = false;
 
+// Conservative security headers for the static app shell.
+const CSP = [
+  "default-src 'self'",
+  "img-src 'self' data: blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': CSP,
+  };
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -95,7 +117,7 @@ function serveStatic(req, res) {
       file = path.join(DIST, 'index.html'); // SPA fallback
     }
     const ext = path.extname(file).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', ...securityHeaders() });
     fs.createReadStream(file).pipe(res);
   });
 }
