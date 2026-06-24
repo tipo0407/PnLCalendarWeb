@@ -9,7 +9,7 @@ import { emotionEdge } from '../lib/emotions';
 import { useUserTags } from '../lib/useUserTags';
 import { avgDiscipline } from '../lib/discipline';
 import { evaluateRules, loadRules } from '../lib/rules';
-import { groupByWeek, groupByMonth, weekLabel, monthLabel } from '../lib/review';
+import { groupByWeek, groupByMonth, groupByYear, weekLabel, monthLabel, yearLabel } from '../lib/review';
 import { findLeaks } from '../lib/leaks';
 import { isReviewed, setReviewed, reviewStreak, REVIEW_LOG_EVENT } from '../lib/reviewLog';
 import { t } from '../lib/i18n';
@@ -17,9 +17,12 @@ import { useLang } from '../lib/useLang';
 
 export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   useLang();
-  const [period, setPeriod] = useState<'week' | 'month'>('week');
-  const weeks = useMemo(() => (period === 'week' ? groupByWeek(trades) : groupByMonth(trades)), [trades, period]);
-  const labelOf = period === 'week' ? weekLabel : monthLabel;
+  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('week');
+  const weeks = useMemo(
+    () => (period === 'week' ? groupByWeek(trades) : period === 'month' ? groupByMonth(trades) : groupByYear(trades)),
+    [trades, period],
+  );
+  const labelOf = period === 'week' ? weekLabel : period === 'month' ? monthLabel : yearLabel;
   const userTags = useUserTags();
   const [idx, setIdx] = useState(0);
   const [, bumpLog] = useState(0);
@@ -89,6 +92,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
         <div className="review-period-toggle">
           <button className={period === 'week' ? 'on' : ''} onClick={() => { setPeriod('week'); setIdx(0); }}>{t('review.week')}</button>
           <button className={period === 'month' ? 'on' : ''} onClick={() => { setPeriod('month'); setIdx(0); }}>{t('review.month')}</button>
+          <button className={period === 'year' ? 'on' : ''} onClick={() => { setPeriod('year'); setIdx(0); }}>{t('review.year')}</button>
         </div>
         <div className="review-rail-list">
           {weeks.map((w, i) => {
@@ -110,13 +114,13 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
 
       <div className="review">
         <div className="review-print-header">
-          <span className="rph-brand">PnL Calendar — {period === 'week' ? t('review.reportTitle') : t('review.reportTitleM')}</span>
+          <span className="rph-brand">PnL Calendar — {period === 'week' ? t('review.reportTitle') : period === 'month' ? t('review.reportTitleM') : t('review.reportTitleY')}</span>
           <span className="rph-meta">{labelOf(week.key)} · {t('review.generated')} {new Date().toLocaleDateString()}</span>
         </div>
         <div className="review-nav">
           <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older period"><ChevronLeft size={16} /></button>
           <div className="review-week">
-            <span className="review-eyebrow">{period === 'week' ? t('review.eyebrow') : t('review.eyebrowM')}</span>
+            <span className="review-eyebrow">{period === 'week' ? t('review.eyebrow') : period === 'month' ? t('review.eyebrowM') : t('review.eyebrowY')}</span>
             <h2>{labelOf(week.key)}</h2>
           </div>
           <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer period"><ChevronRight size={16} /></button>
@@ -168,7 +172,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
         )}
         {weekLeaks.length > 0 && (
           <div className="review-leaks">
-            <h3>{period === 'week' ? t('review.topLeaks') : t('review.topLeaksM')}</h3>
+            <h3>{period === 'week' ? t('review.topLeaks') : period === 'month' ? t('review.topLeaksM') : t('review.topLeaksY')}</h3>
             <ul>
               {weekLeaks.map((l) => (
                 <li key={`${l.dimension}-${l.value}`}>

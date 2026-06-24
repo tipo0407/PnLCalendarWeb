@@ -62,3 +62,22 @@ export function monthLabel(startIso: string): string {
   return `${MONTHS[(m - 1) % 12]} ${y}`;
 }
 
+/** Group trades by calendar year (key = YYYY-01-01), newest year first. */
+export function groupByYear(trades: TradeRecord[]): { key: string; trades: TradeRecord[] }[] {
+  const map = new Map<string, TradeRecord[]>();
+  for (const t of trades) {
+    const k = `${t.date.slice(0, 4)}-01-01`;
+    const arr = map.get(k) ?? [];
+    arr.push(t);
+    map.set(k, arr);
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([key, ts]) => ({ key, trades: ts }));
+}
+
+/** "2025" label for a year-start key. */
+export function yearLabel(startIso: string): string {
+  return startIso.slice(0, 4);
+}
+
