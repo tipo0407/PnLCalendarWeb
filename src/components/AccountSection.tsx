@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
-import { signup, login, logout, changePassword, signOutAll, EMAIL_RE } from '../lib/account';
+import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
 
 /** Optional cloud account sign-in / sign-up, shown inside Settings. */
@@ -33,7 +33,14 @@ export default function AccountSection() {
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
         <ChangePassword />
-        <button className="acct-link" onClick={() => { if (window.confirm('Sign out of all other devices?')) signOutAll(); }}>Sign out everywhere</button>
+        <div className="acct-row-links">
+          <button className="acct-link" onClick={() => { if (window.confirm('Sign out of all other devices?')) signOutAll(); }}>Sign out everywhere</button>
+          <button className="acct-link" onClick={() => exportAccountData()}>Export my data</button>
+          <button className="acct-link danger" onClick={async () => {
+            const pw = window.prompt('Type your password to permanently delete your account and cloud data:');
+            if (pw) { try { await deleteAccount(pw); } catch (e) { window.alert(e instanceof Error ? e.message : 'Failed'); } }
+          }}>Delete account</button>
+        </div>
         <p className="set-data-note">Cloud is optional — your data stays local unless you sync it.</p>
       </div>
     );

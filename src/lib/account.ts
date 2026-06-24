@@ -119,3 +119,35 @@ export async function signOutAll(): Promise<void> {
   const data = (await res.json()) as { token?: string };
   if (data.token) store(data.token, acc.email);
 }
+
+/** Download everything stored server-side for this account as JSON (GDPR). */
+export async function exportAccountData(): Promise<void> {
+  const res = await fetch('/api/auth/export', { headers: { ...authHeader() } });
+  if (!res.ok) throw new Error(`Export failed (${res.status})`);
+  const data = await res.json();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `pnlcalendar-account-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/** Permanently delete the account and all server-side data (needs password). */
+export async function deleteAccount(password: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch('/api/auth/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ password }),
+    });
+  } catch {
+    throw new Error('Cloud service is unreachable.');
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  logout();
+}

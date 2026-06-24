@@ -121,6 +121,35 @@ async function route(req, res, { send, readBody }) {
     return send(res, 200, { email: session.email }), true;
   }
 
+  // GDPR-style: download everything stored for this account.
+  if (req.method === 'GET' && url === '/api/auth/export') {
+    const session = verifySession(bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' }), true;
+    const user = loadUsers()[session.email] || {};
+    const blob = store.getBlob(session.email);
+    return send(res, 200, {
+      email: session.email,
+      created: user.created || null,
+      cloudUpdatedAt: blob ? blob.updatedAt : null,
+      cloudBackup: blob ? blob.blob : null,
+    }), true;
+  }
+
+  // Delete the account and all its server-side data (requires password).
+  if (req.method === 'POST' && url === '/api/auth/delete') {
+    const session = verifySession(bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' }), true;
+    const { password } = await readBody(req);
+    const user = loadUsers()[session.email];
+    const ok = user && crypto.timingSafeEqual(
+      Buffer.from(user.hash),
+      Buffer.from(hashPassword(password || '', user.salt)),
+    );
+    if (!ok) return send(res, 401, { error: 'password is incorrect' }), true;
+    store.deleteUser(session.email);
+    return send(res, 200, { ok: true }), true;
+  }
+
   if (req.method === 'POST' && url === '/api/auth/signout-all') {
     const session = verifySession(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;

@@ -167,3 +167,23 @@ test('reset revokes existing sessions', async () => {
   // Old session token no longer valid after reset.
   assert.equal((await get('/api/auth/me', { Authorization: `Bearer ${token}` })).status, 401);
 });
+
+test('export and delete account', async () => {
+  const su = await post('/api/auth/signup', { email: 'gdpr@example.com', password: 'supersecret' });
+  const { token } = await su.json();
+  const h = { Authorization: `Bearer ${token}` };
+  await post('/api/sync/push', { app: 'pnlcalendar', trades: [{ date: '2025-01-01', profitLoss: 5 }] }, h);
+
+  const exp = await get('/api/auth/export', h);
+  assert.equal(exp.status, 200);
+  const data = await exp.json();
+  assert.equal(data.email, 'gdpr@example.com');
+  assert.equal(data.cloudBackup.trades.length, 1);
+
+  // Wrong password is rejected; correct one deletes the account.
+  assert.equal((await post('/api/auth/delete', { password: 'nope' }, h)).status, 401);
+  assert.equal((await post('/api/auth/delete', { password: 'supersecret' }, h)).status, 200);
+  // After deletion the session and login no longer work.
+  assert.equal((await get('/api/auth/me', h)).status, 401);
+  assert.equal((await post('/api/auth/login', { email: 'gdpr@example.com', password: 'supersecret' })).status, 401);
+});
