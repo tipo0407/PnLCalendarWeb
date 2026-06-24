@@ -110,6 +110,9 @@ const EN: Record<string, string> = {
   'panel.tbt': 'Trade-by-Trade P&L',
   'panel.allTrades': 'All Trades',
   'panel.tagInsights': 'Tag Insights',
+  'panel.leaks': 'Leak Finder',
+  'panel.leaksSub': 'Where your money actually drains — biggest losses first',
+  'leaks.empty': 'Not enough trades yet to find consistent leaks. Tag a few losers and check back.',
   // FAQ
   'faq.title': 'Frequently asked',
   'faq.q1': 'Do I have to connect my broker?',
@@ -264,6 +267,9 @@ const ZH: Record<string, string> = {
   'panel.tbt': '逐笔盈亏',
   'panel.allTrades': '全部交易',
   'panel.tagInsights': '标签洞察',
+  'panel.leaks': '漏损分析',
+  'panel.leaksSub': '钱到底从哪里流走——亏得最多的排在前面',
+  'leaks.empty': '交易样本还不够，无法找出稳定的漏损。给几笔亏损打上标签后再回来看。',
   // FAQ
   'faq.title': '常见问题',
   'faq.q1': '我必须连接券商吗？',

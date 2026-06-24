@@ -16,6 +16,7 @@ import { useUserTags } from '../lib/useUserTags';
 import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
 import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
+import { findLeaks } from '../lib/leaks';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
@@ -111,6 +112,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
   const trend = useMemo(() => tagTrend(trades, userTags), [trades, userTags]);
   const cooccur = useMemo(() => tagCooccurrence(trades, userTags), [trades, userTags]);
+  const leaks = useMemo(() => findLeaks(trades, userTags), [trades, userTags]);
   const trendData = useMemo(
     () => trend.months.map((m, i) => {
       const row: Record<string, number | string> = { month: m };
@@ -498,6 +500,29 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
               </BarChart>
             </ResponsiveContainer>
           )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.leaks')} subtitle={t('panel.leaksSub')} span={12}>
+          <ProGate feature="Leak Finder">
+            {leaks.length === 0 ? (
+              <div className="atlas-empty">{t('leaks.empty')}</div>
+            ) : (
+              <ul className="leak-list">
+                {leaks.map((l) => (
+                  <li key={`${l.dimension}-${l.value}`} className="leak-row">
+                    <span className="leak-rank">{Math.round(l.shareOfLosses * 100)}%</span>
+                    <span className="leak-main">
+                      <span className="leak-dim">{l.dimensionLabel}</span>
+                      <span className="leak-val">{l.value}</span>
+                    </span>
+                    <span className="leak-meta">{l.count}× · {Math.round(l.winRate * 100)}% win · {formatMoneySigned(l.avg)}/trade</span>
+                    <span className="leak-net neg">{formatMoneySigned(l.net)}</span>
+                    <span className="leak-bar"><span className="leak-bar-fill" style={{ width: `${Math.round(l.shareOfLosses * 100)}%` }} /></span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </ProGate>
         </Panel>
 
