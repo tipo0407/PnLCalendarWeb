@@ -141,7 +141,8 @@ async function route(req, res, { send, readBody }) {
     const session = verifySession(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     const user = loadUsers()[session.email] || {};
-    return send(res, 200, { email: session.email, plan: user.plan === 'pro' ? 'pro' : 'free' }), true;
+    const plan = user.plan === 'pro' ? 'pro' : 'free';
+    return send(res, 200, { email: session.email, plan, planSince: plan === 'pro' ? (user.planSince || null) : null }), true;
   }
 
   // GDPR-style: download everything stored for this account.

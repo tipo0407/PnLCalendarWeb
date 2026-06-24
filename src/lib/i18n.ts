@@ -43,6 +43,7 @@ const EN: Record<string, string> = {
   'plan.upgradeTitle': 'Unlock Pro — plans & pricing',
   'plan.proAccount': 'Pro is active on your account',
   'plan.proKey': 'Pro is active via license key',
+  'plan.since': 'Pro since',
   // Sidebar
   'side.totalPnl': 'TOTAL P&L',
   'side.winDays': 'Win Days',
@@ -220,6 +221,7 @@ const ZH: Record<string, string> = {
   'plan.upgradeTitle': '解锁 Pro——套餐与价格',
   'plan.proAccount': 'Pro 已在你的账户上激活',
   'plan.proKey': 'Pro 已通过授权码激活',
+  'plan.since': 'Pro 自',
   // Sidebar
   'side.totalPnl': '总盈亏',
   'side.winDays': '盈利天数',

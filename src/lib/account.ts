@@ -102,6 +102,19 @@ export async function fetchPlan(): Promise<'free' | 'pro' | null> {
   }
 }
 
+/** Fetch full entitlement status (plan + when Pro began), or null when offline. */
+export async function fetchPlanStatus(): Promise<{ plan: 'free' | 'pro'; planSince: string | null } | null> {
+  if (!isSignedIn()) return null;
+  try {
+    const res = await fetch('/api/auth/me', { headers: { ...authHeader() } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { plan?: string; planSince?: string | null };
+    return { plan: data.plan === 'pro' ? 'pro' : 'free', planSince: data.planSince ?? null };
+  } catch {
+    return null;
+  }
+}
+
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   let res: Response;
   try {

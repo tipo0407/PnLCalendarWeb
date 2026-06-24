@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
-import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, EMAIL_RE } from '../lib/account';
+import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, fetchPlanStatus, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
 import { useIsPro } from '../lib/usePlan';
 import { planSource } from '../lib/plan';
@@ -10,6 +10,14 @@ import { t } from '../lib/i18n';
 export default function AccountSection() {
   const account = useAccount();
   const pro = useIsPro();
+  const [planSince, setPlanSince] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!account) return;
+    let cancelled = false;
+    fetchPlanStatus().then((s) => { if (!cancelled) setPlanSince(s?.planSince ?? null); });
+    return () => { cancelled = true; };
+  }, [account, pro]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,6 +45,9 @@ export default function AccountSection() {
           <span className={`acct-plan-badge ${pro ? 'pro' : 'free'}`} title={pro ? (planSource() === 'account' ? t('plan.proAccount') : t('plan.proKey')) : ''}>
             {pro ? t('plan.pro') : 'Free'}
           </span>
+          {pro && planSince && (
+            <span className="acct-plan-since">{t('plan.since')} {new Date(planSince).toLocaleDateString()}</span>
+          )}
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
         <ChangePassword />
