@@ -24,6 +24,7 @@ import TourOverlay from './components/TourOverlay';
 import Dashboard from './components/Dashboard';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
+import ReminderBanner from './components/ReminderBanner';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { useAccount } from './lib/useAccount';
@@ -280,6 +281,9 @@ export default function App() {
           <span className="sync-spinner" />
           Syncing latest from Google Sheet…
         </div>
+      )}
+      {trades.length > 0 && (
+        <ReminderBanner trades={trades} sampleMode={sampleMode} onReview={() => setView('review')} />
       )}
       <header className="topbar">
         <div className="topbar-inner">

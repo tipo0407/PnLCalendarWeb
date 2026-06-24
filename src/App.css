@@ -1961,3 +1961,45 @@
   body.printing-atlas .atlas-panel { width: 100% !important; margin-bottom: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { margin: 12mm; }
 }
+
+/* Local review reminder banner */
+.reminder-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 14px;
+  max-width: 1200px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+}
+.reminder-banner.is-weekly { border-left: 3px solid var(--accent); }
+.reminder-banner.is-daily { border-left: 3px solid var(--pos); }
+.reminder-icon { display: inline-flex; color: var(--accent); }
+.reminder-text { flex: 1; min-width: 0; line-height: 1.4; }
+.reminder-action {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+.reminder-action:hover { filter: brightness(1.08); }
+.reminder-dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.reminder-dismiss:hover { background: var(--accent-soft); color: var(--text); }

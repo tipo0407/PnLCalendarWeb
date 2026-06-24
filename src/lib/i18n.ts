@@ -55,6 +55,11 @@ const EN: Record<string, string> = {
   'cal.projected': 'Projected',
   'cal.consistency': 'Consistency',
   'cal.vsLastYear': 'vs last year',
+  'remind.daily': 'You traded {date} — net {pnl} across {n} trades. Take 2 minutes to journal it.',
+  'remind.weekly': 'Last week ({week}): {pnl}, {rate}% winning days. Review it before the next session.',
+  'remind.journalIt': 'Journal it',
+  'remind.reviewWeek': 'Review week',
+  'remind.dismiss': 'Dismiss',
   // Dashboard
   'dash.netPnl': 'Net P&L',
   'dash.winRate': 'Win rate',
@@ -191,6 +196,11 @@ const ZH: Record<string, string> = {
   'cal.projected': '预计',
   'cal.consistency': '稳定度',
   'cal.vsLastYear': '对比去年',
+  'remind.daily': '你在 {date} 交易了 {n} 笔，净盈亏 {pnl}。花两分钟复盘一下。',
+  'remind.weekly': '上周（{week}）：{pnl}，盈利天数 {rate}%。下次交易前先复盘。',
+  'remind.journalIt': '去复盘',
+  'remind.reviewWeek': '复盘本周',
+  'remind.dismiss': '忽略',
   // Dashboard
   'dash.netPnl': '净盈亏',
   'dash.winRate': '胜率',
