@@ -28,6 +28,8 @@ import ReminderBanner from './components/ReminderBanner';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
+import { applyAccountPlan } from './lib/plan';
+import { fetchPlan } from './lib/account';
 import { useAccount } from './lib/useAccount';
 import { getAutoSync, AUTOSYNC_EVENT, pushBackup } from './lib/cloudSync';
 import { buildBackup } from './lib/backup';
@@ -132,6 +134,15 @@ export default function App() {
   useEffect(() => {
     loadHolidays().then(setHolidays);
   }, []);
+
+  // Reconcile the local plan with the server-side entitlement when signed in, so
+  // a paid account unlocks Pro on any device without re-entering a license key.
+  useEffect(() => {
+    if (!cloudAccount) return;
+    let cancelled = false;
+    fetchPlan().then((p) => { if (!cancelled && p) applyAccountPlan(p); });
+    return () => { cancelled = true; };
+  }, [cloudAccount]);
 
   // Reflect the persisted language on <html lang> at startup.
   useEffect(() => {

@@ -85,6 +85,23 @@ export function authHeader(): Record<string, string> {
 
 export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/**
+ * Fetch the server-side entitlement for the signed-in account (/api/auth/me).
+ * Returns 'free' | 'pro', or null when signed out or the API is unreachable —
+ * callers keep the local plan in that case (local-first).
+ */
+export async function fetchPlan(): Promise<'free' | 'pro' | null> {
+  if (!isSignedIn()) return null;
+  try {
+    const res = await fetch('/api/auth/me', { headers: { ...authHeader() } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { plan?: string };
+    return data.plan === 'pro' ? 'pro' : 'free';
+  } catch {
+    return null;
+  }
+}
+
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   let res: Response;
   try {

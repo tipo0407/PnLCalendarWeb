@@ -172,12 +172,16 @@ async function handle(req, res) {
     try { event = JSON.parse(rawBody || '{}'); } catch { return send(res, 400, { error: 'bad payload' }); }
     if (event.type === 'checkout.session.completed') {
       const session = (event.data && event.data.object) || {};
-      const bind = (session.customer_details && session.customer_details.email) || session.id || '';
+      const email = (session.customer_details && session.customer_details.email) || '';
+      const bind = email || session.id || '';
       const payload = String(bind).replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
       const key = generateKey(payload.length >= 4 ? payload : undefined);
+      // Grant Pro server-side when the buyer matches a registered account, so the
+      // entitlement is enforced by the backend (not just a client-held key).
+      const granted = email ? auth.setPlan(email, 'pro') : false;
       // In production: email `key` to the buyer / store it. Here we log + return it.
-      console.log(`[stripe] issued license ${key} for ${bind || 'unknown'}`);
-      return send(res, 200, { received: true, key });
+      console.log(`[stripe] issued license ${key} for ${bind || 'unknown'}${granted ? ' (account upgraded)' : ''}`);
+      return send(res, 200, { received: true, key, upgraded: granted });
     }
     return send(res, 200, { received: true });
   }

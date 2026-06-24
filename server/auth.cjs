@@ -70,6 +70,22 @@ function bearer(req) {
   return h.startsWith('Bearer ') ? h.slice(7) : '';
 }
 
+/**
+ * Set (or clear) a user's entitlement plan by email. Called server-side by the
+ * Stripe webhook after a verified payment so Pro is granted by the backend, not
+ * just by a client-held license key. Returns true if the user existed.
+ */
+function setPlan(email, plan) {
+  const key = String(email || '').toLowerCase();
+  const users = loadUsers();
+  const user = users[key];
+  if (!user) return false;
+  if (plan === 'pro') user.plan = 'pro';
+  else delete user.plan;
+  saveUsers(users);
+  return true;
+}
+
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /** Handle /api/auth/* routes. Returns true if it handled the request. */
@@ -118,7 +134,8 @@ async function route(req, res, { send, readBody }) {
   if (req.method === 'GET' && url === '/api/auth/me') {
     const session = verifySession(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
-    return send(res, 200, { email: session.email }), true;
+    const user = loadUsers()[session.email] || {};
+    return send(res, 200, { email: session.email, plan: user.plan === 'pro' ? 'pro' : 'free' }), true;
   }
 
   // GDPR-style: download everything stored for this account.
@@ -207,4 +224,4 @@ async function route(req, res, { send, readBody }) {
   return false;
 }
 
-module.exports = { route, verifyToken, verifySession, signToken, bearer };
+module.exports = { route, verifyToken, verifySession, signToken, bearer, setPlan };

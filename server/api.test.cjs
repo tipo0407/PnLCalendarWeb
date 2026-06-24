@@ -168,8 +168,7 @@ test('reset revokes existing sessions', async () => {
   assert.equal((await get('/api/auth/me', { Authorization: `Bearer ${token}` })).status, 401);
 });
 
-test('export and delete account', async () => {
-  const su = await post('/api/auth/signup', { email: 'gdpr@example.com', password: 'supersecret' });
+test('export and delete account', async () => {  const su = await post('/api/auth/signup', { email: 'gdpr@example.com', password: 'supersecret' });
   const { token } = await su.json();
   const h = { Authorization: `Bearer ${token}` };
   await post('/api/sync/push', { app: 'pnlcalendar', trades: [{ date: '2025-01-01', profitLoss: 5 }] }, h);
@@ -186,4 +185,25 @@ test('export and delete account', async () => {
   // After deletion the session and login no longer work.
   assert.equal((await get('/api/auth/me', h)).status, 401);
   assert.equal((await post('/api/auth/login', { email: 'gdpr@example.com', password: 'supersecret' })).status, 401);
+});
+
+test('me reports free plan by default and pro after a verified Stripe checkout', async () => {
+  const su = await post('/api/auth/signup', { email: 'buyer@example.com', password: 'supersecret' });
+  const { token } = await su.json();
+  const h = { Authorization: `Bearer ${token}` };
+
+  // New accounts are free.
+  assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'free');
+
+  // Simulate Stripe's checkout.session.completed webhook for this buyer.
+  const event = JSON.stringify({
+    type: 'checkout.session.completed',
+    data: { object: { id: 'cs_test_1', customer_details: { email: 'buyer@example.com' } } },
+  });
+  const hook = await post('/api/stripe/webhook', JSON.parse(event));
+  assert.equal(hook.status, 200);
+  assert.equal((await hook.json()).upgraded, true);
+
+  // The backend now reports the account as Pro.
+  assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'pro');
 });

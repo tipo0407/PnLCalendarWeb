@@ -16,6 +16,8 @@ interface PlanState {
   plan: Plan;
   key?: string;
   since?: string;
+  /** How Pro was granted: a local license key, or a verified cloud account. */
+  source?: 'key' | 'account';
 }
 
 let cache: PlanState | null = null;
@@ -57,7 +59,7 @@ export function isValidKey(key: string): boolean {
 /** Activate Pro with a license key. Returns true on success. */
 export function activatePro(key: string): boolean {
   if (!isValidKey(key)) return false;
-  cache = { plan: 'pro', key: key.trim().toUpperCase(), since: new Date().toISOString() };
+  cache = { plan: 'pro', key: key.trim().toUpperCase(), since: new Date().toISOString(), source: 'key' };
   persist();
   return true;
 }
@@ -65,6 +67,25 @@ export function activatePro(key: string): boolean {
 export function deactivatePro() {
   cache = { plan: 'free' };
   persist();
+}
+
+/**
+ * Reconcile the local plan with the server-side entitlement returned by
+ * /api/auth/me. A verified Pro account upgrades the local plan; if the account
+ * loses Pro (refund/expiry), only an account-granted Pro is downgraded — a
+ * separately activated license key is left untouched.
+ */
+export function applyAccountPlan(serverPlan: Plan): void {
+  const cur = load();
+  if (serverPlan === 'pro') {
+    if (cur.plan !== 'pro' || cur.source !== 'account') {
+      cache = { plan: 'pro', source: 'account', since: cur.since || new Date().toISOString() };
+      persist();
+    }
+  } else if (cur.plan === 'pro' && cur.source === 'account') {
+    cache = { plan: 'free' };
+    persist();
+  }
 }
 
 export function planKey(): string | undefined {
@@ -95,7 +116,7 @@ export async function verifyKeyOnline(key: string): Promise<boolean> {
 export async function activateProOnline(key: string): Promise<boolean> {
   const valid = await verifyKeyOnline(key);
   if (valid) {
-    cache = { plan: 'pro', key: key.trim().toUpperCase(), since: new Date().toISOString() };
+    cache = { plan: 'pro', key: key.trim().toUpperCase(), since: new Date().toISOString(), source: 'key' };
     persist();
   }
   return valid;
