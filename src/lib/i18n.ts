@@ -210,6 +210,7 @@ const EN: Record<string, string> = {
   'tt.date': 'Date', 'tt.time': 'Time', 'tt.symbol': 'Symbol', 'tt.side': 'Side',
   'tt.size': 'Size', 'tt.pnl': 'P&L', 'tt.setup': 'Setup', 'tt.filter': 'Filter by symbol, setup, note…',
   'tt.r': 'R',
+  'tt.export': 'CSV', 'tt.exportTitle': 'Export the filtered, sorted trades to CSV',
   // Playbook columns
   'pb.setup': 'Setup', 'pb.trades': 'Trades', 'pb.winPct': 'Win%', 'pb.net': 'Net',
   'pb.expectancy': 'Expectancy', 'pb.pf': 'PF',
@@ -416,6 +417,7 @@ const ZH: Record<string, string> = {
   'tt.date': '日期', 'tt.time': '时间', 'tt.symbol': '品种', 'tt.side': '方向',
   'tt.size': '数量', 'tt.pnl': '盈亏', 'tt.setup': '套路', 'tt.filter': '按品种、套路、备注筛选…',
   'tt.r': 'R',
+  'tt.export': 'CSV', 'tt.exportTitle': '导出筛选并排序后的交易为 CSV',
   // Playbook columns
   'pb.setup': '套路', 'pb.trades': '交易数', 'pb.winPct': '胜率', 'pb.net': '净额',
   'pb.expectancy': '期望值', 'pb.pf': '盈亏比',

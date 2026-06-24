@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, Download } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { getSettings } from '../lib/settings';
 import { getTablePrefs, saveTablePrefs } from '../lib/tablePrefs';
+import { downloadText, tradesToCsv } from '../lib/exportCsv';
 import { t } from '../lib/i18n';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
@@ -65,6 +66,14 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tt.filter')} aria-label="Filter trades" />
         </div>
         <span className="ttable-count">{rows.length} trade{rows.length === 1 ? '' : 's'}{rows.length > MAX_ROWS && ` · showing ${MAX_ROWS}`}</span>
+        <button
+          className="ttable-export"
+          onClick={() => downloadText(`trades-filtered-${new Date().toISOString().slice(0, 10)}.csv`, tradesToCsv(rows), 'text/csv')}
+          disabled={rows.length === 0}
+          title={t('tt.exportTitle')}
+        >
+          <Download size={13} /> {t('tt.export')}
+        </button>
       </div>
       <div className="ttable-scroll">
         <table className="ttable-grid">
