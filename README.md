@@ -228,6 +228,69 @@ Point your monitor at `/api/health` and treat a non-200 or `ok:false` as unhealt
   password-reset tokens are purpose-scoped and can't be used as auth tokens.
 - Health probes also answer at `/api/healthz`.
 
+### Reverse proxy (nginx)
+
+In production, terminate TLS at a reverse proxy and forward to the Node server on
+`127.0.0.1:4173`. A minimal nginx site:
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name journal.example.com;
+
+  ssl_certificate     /etc/letsencrypt/live/journal.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/journal.example.com/privkey.pem;
+
+  # Cache hashed static assets aggressively; never cache the API.
+  location /assets/ {
+    proxy_pass http://127.0.0.1:4173;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+  }
+
+  location / {
+    proxy_pass http://127.0.0.1:4173;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+# Redirect plain HTTP to HTTPS.
+server {
+  listen 80;
+  server_name journal.example.com;
+  return 301 https://$host$request_uri;
+}
+```
+
+The app's CSP and `X-Frame-Options` headers are emitted by the Node server, so the
+proxy doesn't need to add them. Make sure the proxy forwards `X-Forwarded-For` so the
+per-IP auth rate-limiter and login lockout see the real client address.
+
+### Sessions, rotation & revocation
+
+Auth tokens are stateless HMAC bearer tokens (30-day TTL) carrying a per-user
+`tokenVersion` claim. To **revoke every active session** for a user — after a
+password change, a suspected leak, or on demand — bump that version:
+
+- Changing a password or completing a reset rotates `tokenVersion` automatically,
+  so old tokens stop validating.
+- `POST /api/auth/signout-all` (or **Settings → Account → Sign out everywhere**)
+  rotates it on demand.
+- `verifySession` re-checks the version on every protected request (`/api/auth/me`,
+  `/api/sync/*`), so revocation takes effect immediately without a token blacklist.
+
+Rotate `AUTH_SECRET` to invalidate **all** sessions across all users at once (e.g.
+during incident response); every existing token fails signature verification.
+
+**Storage backend.** Accounts and cloud blobs go through a pluggable seam
+(`server/store.cjs`, selected via the `STORE` env var). The default file store writes
+to `USERS_FILE` / `BLOB_DIR`; back these with a mounted volume (see docker-compose)
+and include them in your backup rotation. Swap in a different store implementation to
+move sessions/blobs into a database without touching the auth or sync handlers.
+
 ## Tech stack
 
 - React 19 + TypeScript + Vite
