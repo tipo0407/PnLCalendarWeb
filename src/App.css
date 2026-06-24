@@ -2281,3 +2281,6 @@
 
 /* Account: plan type chip */
 .acct-plan-type { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* Risk model tiles */
+.rm-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }

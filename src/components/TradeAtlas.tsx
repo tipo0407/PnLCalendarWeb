@@ -20,6 +20,7 @@ import { findLeaks } from '../lib/leaks';
 import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
 import { riskStats, drawdownSeries, rMultipleHistogram } from '../lib/risk';
+import { riskModel } from '../lib/riskModel';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
 import { t } from '../lib/i18n';
@@ -135,6 +136,10 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
   const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
+  const rm = useMemo(() => {
+    const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
+    return riskModel(trades, units);
+  }, [trades, accountSize, riskPerTrade]);
   // Click a mistake/emotion bar to filter the All Trades table to that tag.
   const [tagFilter, setTagFilter] = useState<{ kind: 'mistake' | 'emotion'; key: string; label: string } | null>(null);
   const tableTrades = useMemo(() => {
@@ -597,6 +602,21 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.riskModel')} subtitle={t('panel.riskModelSub')} span={6}>
+          <ProGate feature="Risk of Ruin & Kelly">
+            {!rm.hasEdge ? (
+              <div className="atlas-empty">{t('rm.empty')}</div>
+            ) : (
+              <div className="rm-tiles">
+                <RiskTile label={t('rm.kelly')} value={`${(rm.kelly * 100).toFixed(1)}%`} cls={rm.kelly > 0 ? 'pos' : 'neg'} sub={t('rm.ofCapital')} />
+                <RiskTile label={t('rm.halfKelly')} value={`${(rm.halfKelly * 100).toFixed(1)}%`} cls={rm.halfKelly > 0 ? 'pos' : 'neg'} sub={t('rm.conservative')} />
+                <RiskTile label={t('rm.payoff')} value={`${rm.payoff.toFixed(2)}×`} sub={t('rm.winLoss')} />
+                <RiskTile label={t('rm.ror')} value={`${(rm.riskOfRuin * 100).toFixed(rm.riskOfRuin < 0.1 ? 1 : 0)}%`} cls={rm.riskOfRuin < 0.1 ? 'pos' : rm.riskOfRuin > 0.5 ? 'neg' : ''} sub={t('rm.rorSub')} />
+              </div>
             )}
           </ProGate>
         </Panel>
