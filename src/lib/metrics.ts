@@ -1,5 +1,11 @@
 import type { TradeRecord, DailyPnl } from '../types';
 import { currencySymbol } from './settings';
+import { getLang } from './i18n';
+
+/** Locale used for number grouping, derived from the app language. */
+function numberLocale(): string {
+  return getLang() === 'zh' ? 'zh-CN' : 'en-US';
+}
 
 export function groupByDay(trades: TradeRecord[]): Map<string, DailyPnl> {
   const map = new Map<string, DailyPnl>();
@@ -364,7 +370,7 @@ export function pnlHistogram(trades: TradeRecord[], bucketCount = 11): { label: 
 
 export function formatMoney(n: number): string {
   const sign = n < 0 ? '-' : '';
-  return `${sign}${currencySymbol()}${Math.abs(n).toLocaleString('en-US', {
+  return `${sign}${currencySymbol()}${Math.abs(n).toLocaleString(numberLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

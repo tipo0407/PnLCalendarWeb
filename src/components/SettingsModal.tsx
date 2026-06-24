@@ -21,7 +21,7 @@ interface Props {
   onReplaceTrades: (trades: TradeRecord[]) => void;
 }
 
-const CURRENCIES = ['$', '€', '£', '¥', '₹', 'A$', 'C$'];
+const CURRENCIES = ['$', '€', '£', '¥', '₹', 'A$', 'C$', 'CHF', 'kr', '₩', 'R$', '₽', 'NZ$', 'HK$', 'S$', '₺', '₴', '₫', '฿', 'zł', '₪', 'R'];
 
 export default function SettingsModal({ onClose, trades, onReplaceTrades }: Props) {
   const [s, setS] = useState<Settings>(() => ({ ...getSettings() }));
