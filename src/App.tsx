@@ -445,6 +445,7 @@ export default function App() {
               <button className="landing-plans" onClick={() => setShowPricing(true)}>
                 <Sparkles size={14} /> {t('landing.plans')}
               </button>
+              <span className="landing-price-teaser">{t('landing.priceTeaser')}</span>
             </div>
 
             <div className="landing-trust">

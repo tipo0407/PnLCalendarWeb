@@ -35,8 +35,8 @@ convention: it reads **only the 3rd worksheet**, with the same column names as t
   and key metrics
 - **Day detail modal** — a per-trade breakdown for the selected day, with paste-from-clipboard
   screenshots and per-trade mistake/emotion tags
-- **Weekly & monthly review** — toggle period, find your single biggest leak, and export a branded
-  PDF report (header, top leaks, "change one thing", and a not-investment-advice disclaimer)
+- **Weekly, monthly & annual review** — toggle period, find your single biggest leak, and export a
+  branded PDF report (header, top leaks, "change one thing", and a not-investment-advice disclaimer)
 - **Local review reminders** — privacy-preserving daily-journal nudge and weekly summary, with
   optional opt-in browser notifications
 - **Light / dark theme** — toggle in the top bar; your choice is remembered
