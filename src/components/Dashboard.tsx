@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import {
   CalendarRange, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, ArrowRight, Flame, Target, Lightbulb,
-  Shield, Trophy, Sun, TrendingUp,
+  Shield, Trophy, Sun, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
@@ -53,6 +53,17 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
     () => [...trades].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.tradeNumber - a.tradeNumber)).slice(0, 8),
     [trades],
   );
+
+  // Single biggest win and loss to celebrate / learn from.
+  const extremes = useMemo(() => {
+    if (trades.length === 0) return null;
+    let best = trades[0], worst = trades[0];
+    for (const tr of trades) {
+      if (tr.profitLoss > best.profitLoss) best = tr;
+      if (tr.profitLoss < worst.profitLoss) worst = tr;
+    }
+    return { best, worst };
+  }, [trades]);
 
   const monthName = lastDate
     ? new Date(`${lastDate}T00:00:00`).toLocaleString('en-US', { month: 'long' })
@@ -132,6 +143,21 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {extremes && extremes.best.profitLoss > 0 && extremes.best !== extremes.worst && (
+        <div className="dash-extremes">
+          <button className="dash-extreme good" onClick={() => onSelectDay(extremes.best.date)} title={t('dash.openDay')}>
+            <span className="de-label"><Trophy size={13} /> {t('dash.bestTrade')}</span>
+            <span className="de-pnl pos">{formatMoneySigned(extremes.best.profitLoss)}</span>
+            <span className="de-meta">{extremes.best.symbol || '—'}{extremes.best.setup ? ` · ${extremes.best.setup}` : ''} · {shortDate(extremes.best.date)}</span>
+          </button>
+          <button className="dash-extreme bad" onClick={() => onSelectDay(extremes.worst.date)} title={t('dash.openDay')}>
+            <span className="de-label"><TrendingDown size={13} /> {t('dash.worstTrade')}</span>
+            <span className="de-pnl neg">{formatMoneySigned(extremes.worst.profitLoss)}</span>
+            <span className="de-meta">{extremes.worst.symbol || '—'}{extremes.worst.setup ? ` · ${extremes.worst.setup}` : ''} · {shortDate(extremes.worst.date)}</span>
+          </button>
         </div>
       )}
 
