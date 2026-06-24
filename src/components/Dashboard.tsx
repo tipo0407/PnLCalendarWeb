@@ -8,6 +8,7 @@ import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { dayStreaks, monthProgress, yearProgress } from '../lib/goals';
 import { earnedBadges } from '../lib/badges';
+import { streakStats } from '../lib/streaks';
 import { groupByWeek } from '../lib/review';
 import { reviewStreak as reviewStreakOf } from '../lib/reviewLog';
 import { generateInsights } from '../lib/insights';
@@ -31,6 +32,7 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   useLang(); // re-render on language change
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streak = useMemo(() => dayStreaks(days), [days]);
+  const runs = useMemo(() => streakStats(days), [days]);
   const userTags = useUserTags();
   const insights = useMemo(() => generateInsights(trades, userTags), [trades, userTags]);
 
@@ -143,6 +145,21 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {days.length >= 3 && (runs.maxWinStreak > 0 || runs.maxLossStreak > 0) && (
+        <div className="dash-streaks">
+          <div className="ds-item">
+            <span className="ds-label"><Flame size={13} className="pos" /> {t('dash.maxWinStreak')}</span>
+            <span className="ds-val pos">{runs.maxWinStreak}</span>
+            <span className="ds-sub">{t('dash.avg')} {runs.avgWinStreak.toFixed(1)}</span>
+          </div>
+          <div className="ds-item">
+            <span className="ds-label"><TrendingDown size={13} className="neg" /> {t('dash.maxLossStreak')}</span>
+            <span className="ds-val neg">{runs.maxLossStreak}</span>
+            <span className="ds-sub">{t('dash.avg')} {runs.avgLossStreak.toFixed(1)}</span>
+          </div>
         </div>
       )}
 
