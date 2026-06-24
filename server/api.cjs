@@ -103,6 +103,46 @@ function verifyStripeSignature(rawBody, header, secret, toleranceSec = 300) {
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
 }
 
+/**
+ * Collect any Stripe price IDs referenced by a webhook object, across the shapes
+ * Stripe uses for sessions, invoices and subscriptions. Used to map a payment to
+ * a plan tier so we only grant Pro for recognized prices.
+ */
+function extractPriceIds(obj) {
+  const ids = new Set();
+  const add = (v) => { if (typeof v === 'string' && v) ids.add(v); };
+  const fromLines = (lines) => {
+    const data = (lines && lines.data) || [];
+    for (const li of data) {
+      add(li.price && li.price.id);
+      add(li.plan && li.plan.id);
+      add(li.pricing && li.pricing.price_details && li.pricing.price_details.price);
+    }
+  };
+  if (obj) {
+    fromLines(obj.lines);        // invoice.lines
+    fromLines(obj.line_items);   // checkout session (expanded)
+    fromLines(obj.items);        // subscription.items
+    add(obj.price && (obj.price.id || obj.price));
+    add(obj.plan && obj.plan.id);
+    if (obj.metadata) { add(obj.metadata.price_id); add(obj.metadata.priceId); }
+  }
+  return [...ids];
+}
+
+/**
+ * Decide whether a granting event is for the Pro tier. When no allow-list is
+ * configured (STRIPE_PRO_PRICE_IDS unset) every successful payment grants Pro,
+ * preserving the simple single-product setup. When configured, at least one of
+ * the object's price IDs must be in the allow-list.
+ */
+function isProPurchase(obj, allowedCsv) {
+  const allowed = String(allowedCsv || '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (allowed.length === 0) return true;
+  const ids = extractPriceIds(obj);
+  return ids.some((id) => allowed.includes(id));
+}
+
 /** Route a request; exported so it can be embedded in another server too. */
 async function handle(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -178,6 +218,11 @@ async function handle(req, res) {
     // Events that GRANT Pro.
     if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
       const email = emailOf(obj);
+      // Only honor recognized Pro prices when an allow-list is configured.
+      if (!isProPurchase(obj, process.env.STRIPE_PRO_PRICE_IDS)) {
+        console.log(`[stripe] ${event.type}: ignored (price not in STRIPE_PRO_PRICE_IDS) for ${email || 'unknown'}`);
+        return send(res, 200, { received: true, upgraded: false, ignored: true });
+      }
       const bind = email || obj.id || '';
       const payload = String(bind).replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
       const key = generateKey(payload.length >= 4 ? payload : undefined);
@@ -202,7 +247,7 @@ async function handle(req, res) {
   return send(res, 404, { error: 'not found' });
 }
 
-module.exports = { handle, verifyKey, generateKey, sigFor, verifyStripeSignature };
+module.exports = { handle, verifyKey, generateKey, sigFor, verifyStripeSignature, extractPriceIds, isProPurchase };
 
 // CLI: key generator + standalone server.
 if (require.main === module) {

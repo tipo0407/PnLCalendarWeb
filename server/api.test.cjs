@@ -208,8 +208,7 @@ test('me reports free plan by default and pro after a verified Stripe checkout',
   assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'pro');
 });
 
-test('Stripe subscription cancellation downgrades the account to free', async () => {
-  const su = await post('/api/auth/signup', { email: 'churn@example.com', password: 'supersecret' });
+test('Stripe subscription cancellation downgrades the account to free', async () => {  const su = await post('/api/auth/signup', { email: 'churn@example.com', password: 'supersecret' });
   const { token } = await su.json();
   const h = { Authorization: `Bearer ${token}` };
 
@@ -227,4 +226,16 @@ test('Stripe subscription cancellation downgrades the account to free', async ()
   });
   assert.equal((await cancel.json()).downgraded, true);
   assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'free');
+});
+
+test('price->tier mapping: extractPriceIds + isProPurchase', () => {
+  const invoice = { lines: { data: [{ price: { id: 'price_pro_monthly' } }] } };
+  const session = { line_items: { data: [{ price: { id: 'price_other' } }] } };
+  assert.deepEqual(api.extractPriceIds(invoice), ['price_pro_monthly']);
+
+  // No allow-list configured -> any purchase counts as Pro (single-product mode).
+  assert.equal(api.isProPurchase(invoice, ''), true);
+  // Allow-list match / miss.
+  assert.equal(api.isProPurchase(invoice, 'price_pro_monthly,price_pro_yearly'), true);
+  assert.equal(api.isProPurchase(session, 'price_pro_monthly,price_pro_yearly'), false);
 });
