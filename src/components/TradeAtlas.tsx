@@ -17,6 +17,8 @@ import { tagEdge, taggedTradeCount } from '../lib/tags';
 import { emotionEdge } from '../lib/emotions';
 import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
+import { disciplineTrend } from '../lib/discipline';
+import { weekKeyOf, weekLabel } from '../lib/review';
 import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
@@ -113,6 +115,13 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const trend = useMemo(() => tagTrend(trades, userTags), [trades, userTags]);
   const cooccur = useMemo(() => tagCooccurrence(trades, userTags), [trades, userTags]);
   const leaks = useMemo(() => findLeaks(trades, userTags), [trades, userTags]);
+  const discTrend = useMemo(() => {
+    const ws = getSettings().weekStart;
+    const days = [...groupByDay(trades).values()];
+    return disciplineTrend(days, (d) => weekKeyOf(d, ws)).map((p) => ({
+      ...p, label: weekLabel(p.week).replace(/, \d{4}$/, ''),
+    }));
+  }, [trades]);
   const trendData = useMemo(
     () => trend.months.map((m, i) => {
       const row: Record<string, number | string> = { month: m };
@@ -522,6 +531,31 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   </li>
                 ))}
               </ul>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.disciplineTrend')} subtitle={t('panel.disciplineTrendSub')} span={12}>
+          <ProGate feature="Discipline Trend">
+            {discTrend.length < 2 ? (
+              <div className="atlas-empty">{t('disc.empty')}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={discTrend} margin={{ top: 6, right: 10, bottom: 0, left: -16 }}>
+                  <defs>
+                    <linearGradient id="discFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor={ACC} stopOpacity={0.3} />
+                      <stop offset="1" stopColor={ACC} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="label" {...AXIS} minTickGap={18} />
+                  <YAxis {...AXIS} width={42} domain={[0, 100]} ticks={[0, 50, 80, 100]} />
+                  <Tooltip {...TOOLTIP} formatter={(v) => [`${v}/100`, 'Discipline']} />
+                  <ReferenceLine y={80} stroke={POS} strokeDasharray="4 4" />
+                  <Area type="monotone" dataKey="score" stroke={ACC} strokeWidth={2.5} fill="url(#discFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
           </ProGate>
         </Panel>

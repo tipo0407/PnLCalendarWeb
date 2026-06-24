@@ -27,3 +27,31 @@ export function disciplineColor(score: number): string {
   if (score >= 60) return 'var(--gold-fg)';
   return 'var(--neg)';
 }
+
+export interface DisciplinePoint {
+  /** Week-start ISO key. */
+  week: string;
+  /** Average discipline (0–100) for the week. */
+  score: number;
+  /** Number of trading days in the week. */
+  days: number;
+}
+
+/**
+ * Average discipline per week over time, oldest week first. Lets a trader see
+ * whether their process is improving even when P&L is noisy — the behavioral
+ * analogue of an equity curve.
+ */
+export function disciplineTrend(days: DailyPnl[], weekKeyOf: (date: string) => string): DisciplinePoint[] {
+  const buckets = new Map<string, { sum: number; n: number }>();
+  for (const d of days) {
+    const k = weekKeyOf(d.date);
+    const b = buckets.get(k) ?? { sum: 0, n: 0 };
+    b.sum += dayDiscipline(d);
+    b.n += 1;
+    buckets.set(k, b);
+  }
+  return [...buckets.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([week, b]) => ({ week, score: Math.round(b.sum / b.n), days: b.n }));
+}

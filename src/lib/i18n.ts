@@ -115,6 +115,9 @@ const EN: Record<string, string> = {
   'panel.allTrades': 'All Trades',
   'panel.tagInsights': 'Tag Insights',
   'panel.leaks': 'Leak Finder',
+  'panel.disciplineTrend': 'Discipline Trend',
+  'panel.disciplineTrendSub': 'Average discipline score per week — your process curve',
+  'disc.empty': 'Need at least two weeks of trades to chart a discipline trend.',
   'panel.leaksSub': 'Where your money actually drains — biggest losses first',
   'leaks.empty': 'Not enough trades yet to find consistent leaks. Tag a few losers and check back.',
   // FAQ
@@ -280,6 +283,9 @@ const ZH: Record<string, string> = {
   'panel.allTrades': '全部交易',
   'panel.tagInsights': '标签洞察',
   'panel.leaks': '漏损分析',
+  'panel.disciplineTrend': '纪律趋势',
+  'panel.disciplineTrendSub': '每周平均纪律分——你的过程曲线',
+  'disc.empty': '至少需要两周的交易数据才能绘制纪律趋势。',
   'panel.leaksSub': '钱到底从哪里流走——亏得最多的排在前面',
   'leaks.empty': '交易样本还不够，无法找出稳定的漏损。给几笔亏损打上标签后再回来看。',
   // FAQ
