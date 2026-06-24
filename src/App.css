@@ -2335,3 +2335,12 @@
 
 /* Backup reminder banner variant */
 .reminder-banner.is-backup { border-left: 3px solid var(--accent); }
+
+/* Dashboard month-over-month comparison */
+.dash-mom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); }
+.dash-mom-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.dash-mom-chip { display: inline-flex; flex-direction: column; gap: 1px; }
+.dmc-label { font-size: 10.5px; color: var(--muted); }
+.dmc-val { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dash-mom-chip.pos .dmc-val { color: var(--pos); }
+.dash-mom-chip.neg .dmc-val { color: var(--neg); }

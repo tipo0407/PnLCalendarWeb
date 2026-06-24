@@ -9,6 +9,7 @@ import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/me
 import { dayStreaks, monthProgress, yearProgress } from '../lib/goals';
 import { earnedBadges } from '../lib/badges';
 import { streakStats } from '../lib/streaks';
+import { compareMonths } from '../lib/periodCompare';
 import { groupByWeek } from '../lib/review';
 import { reviewStreak as reviewStreakOf } from '../lib/reviewLog';
 import { generateInsights } from '../lib/insights';
@@ -33,6 +34,7 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streak = useMemo(() => dayStreaks(days), [days]);
   const runs = useMemo(() => streakStats(days), [days]);
+  const moM = useMemo(() => compareMonths(trades), [trades]);
   const userTags = useUserTags();
   const insights = useMemo(() => generateInsights(trades, userTags), [trades, userTags]);
 
@@ -148,6 +150,15 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
         </div>
       )}
 
+      {moM && moM.hasPrevious && (
+        <div className="dash-mom">
+          <span className="dash-mom-label">{t('dash.vsLastMonth')}</span>
+          <DeltaChip label={t('dash.netPnl')} delta={moM.deltaPnl} fmt={(v) => formatMoneySigned(v)} />
+          <DeltaChip label={t('dash.winRate')} delta={moM.deltaWinRate * 100} fmt={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`} />
+          <DeltaChip label={t('dash.expectancy')} delta={moM.deltaExpectancy} fmt={(v) => formatMoneySigned(v)} />
+        </div>
+      )}
+
       {days.length >= 3 && (runs.maxWinStreak > 0 || runs.maxLossStreak > 0) && (
         <div className="dash-streaks">
           <div className="ds-item">
@@ -218,6 +229,16 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
         </div>
       </div>
     </div>
+  );
+}
+
+function DeltaChip({ label, delta, fmt }: { label: string; delta: number; fmt: (v: number) => string }) {
+  const up = delta >= 0;
+  return (
+    <span className={`dash-mom-chip ${up ? 'pos' : 'neg'}`}>
+      <span className="dmc-label">{label}</span>
+      <span className="dmc-val">{up ? '▲' : '▼'} {fmt(delta)}</span>
+    </span>
   );
 }
 
