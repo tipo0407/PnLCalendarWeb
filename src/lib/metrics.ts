@@ -347,21 +347,6 @@ export function movingWinRate(trades: TradeRecord[], window = 20): { i: number; 
   return out;
 }
 
-/** Rolling expectancy (avg P&L per trade) over a trailing window. */
-export function rollingExpectancy(trades: TradeRecord[], window = 20): { i: number; expectancy: number }[] {
-  const out: { i: number; expectancy: number }[] = [];
-  const buf: number[] = [];
-  let sum = 0;
-  const startAt = trades.length >= window ? window - 1 : 0;
-  trades.forEach((t, idx) => {
-    buf.push(t.profitLoss);
-    sum += t.profitLoss;
-    if (buf.length > window) sum -= buf.shift() ?? 0;
-    if (idx >= startAt) out.push({ i: idx + 1, expectancy: sum / buf.length });
-  });
-  return out;
-}
-
 /** P&L distribution histogram buckets. */
 export function pnlHistogram(trades: TradeRecord[], bucketCount = 11): { label: string; count: number }[] {
   if (trades.length === 0) return [];

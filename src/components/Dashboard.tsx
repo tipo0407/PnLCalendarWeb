@@ -1,17 +1,11 @@
 import { useMemo } from 'react';
 import {
   CalendarRange, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, ArrowRight, Flame, Target, Lightbulb,
-  Shield, Trophy, Sun, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
-import { dayStreaks, monthProgress, yearProgress } from '../lib/goals';
-import { earnedBadges } from '../lib/badges';
-import { streakStats } from '../lib/streaks';
-import { compareMonths } from '../lib/periodCompare';
-import { groupByWeek } from '../lib/review';
-import { reviewStreak as reviewStreakOf } from '../lib/reviewLog';
+import { dayStreaks, monthProgress } from '../lib/goals';
 import { generateInsights } from '../lib/insights';
 import { useUserTags } from '../lib/useUserTags';
 import { getSettings } from '../lib/settings';
@@ -33,8 +27,6 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   useLang(); // re-render on language change
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streak = useMemo(() => dayStreaks(days), [days]);
-  const runs = useMemo(() => streakStats(days), [days]);
-  const moM = useMemo(() => compareMonths(trades), [trades]);
   const userTags = useUserTags();
   const insights = useMemo(() => generateInsights(trades, userTags), [trades, userTags]);
 
@@ -46,40 +38,14 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
     return monthProgress(days, y, m - 1, monthlyGoal);
   }, [days, lastDate, monthlyGoal]);
 
-  // Year-to-date for the most recent year; derive an annual goal from the monthly one.
-  const annualGoal = monthlyGoal > 0 ? monthlyGoal * 12 : 0;
-  const year = useMemo(() => {
-    if (!lastDate) return null;
-    return { y: Number(lastDate.slice(0, 4)), prog: yearProgress(days, Number(lastDate.slice(0, 4)), annualGoal) };
-  }, [days, lastDate, annualGoal]);
-
   const recent = useMemo(
     () => [...trades].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.tradeNumber - a.tradeNumber)).slice(0, 8),
     [trades],
   );
 
-  // Single biggest win and loss to celebrate / learn from.
-  const extremes = useMemo(() => {
-    if (trades.length === 0) return null;
-    let best = trades[0], worst = trades[0];
-    for (const tr of trades) {
-      if (tr.profitLoss > best.profitLoss) best = tr;
-      if (tr.profitLoss < worst.profitLoss) worst = tr;
-    }
-    return { best, worst };
-  }, [trades]);
-
   const monthName = lastDate
     ? new Date(`${lastDate}T00:00:00`).toLocaleString('en-US', { month: 'long' })
     : '';
-
-  const badges = useMemo(() => earnedBadges({
-    winStreak: streak.currentType === 'win' ? streak.current : 0,
-    reviewStreak: reviewStreakOf(groupByWeek(trades).map((w) => w.key)),
-    days,
-    monthPnl: month?.pnl ?? 0,
-    goalMet: !!month && monthlyGoal > 0 && month.pnl >= monthlyGoal,
-  }), [streak, trades, days, month, monthlyGoal]);
 
   return (
     <div className="dash">
@@ -97,95 +63,20 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
 
       {month && (
         <div className="dash-month">
-          {monthlyGoal > 0 ? (
-            <div className="dash-month-ring-wrap">
-              <GoalRing pct={month.pct} positive={month.pnl >= 0} />
-              <div className="dash-month-info">
-                <div className="dash-month-head">
-                  <Target size={15} />
-                  <span>{monthName} so far</span>
-                </div>
-                <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>
-                  {formatMoneySigned(month.pnl)} <span className="dash-month-goal">/ {formatMoney(monthlyGoal)}</span>
-                </span>
-                <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="dash-month-head">
-                <Target size={15} />
-                <span>{monthName} so far</span>
-                <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(month.pnl)}</span>
-                <button className="dash-link-sm" onClick={onOpenSettings}>{t('dash.setGoal')}</button>
-              </div>
-              <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
-            </>
-          )}
-        </div>
-      )}
-
-      {year && year.prog.tradeDays > 0 && (
-        <div className="dash-year">
-          <span className="dash-year-label">{year.y} {t('dash.ytd')}</span>
-          <span className={`dash-year-net ${year.prog.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(year.prog.pnl)}</span>
-          {annualGoal > 0 && (
-            <span className="dash-year-goal">/ {formatMoney(annualGoal)} · {Math.round(year.prog.pct)}%</span>
-          )}
-          <span className="dash-year-days">{year.prog.tradeDays} {t('dash.tradingDays')}</span>
-        </div>
-      )}
-
-      {badges.length > 0 && (
-        <div className="dash-badges">
-          {badges.map((b) => (
-            <div key={b.id} className={`dash-badge ${b.tone}`} title={b.detail}>
-              <span className="db-icon"><BadgeIcon icon={b.icon} /></span>
-              <span className="db-text">
-                <span className="db-title">{b.title}</span>
-                <span className="db-detail">{b.detail}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {moM && moM.hasPrevious && (
-        <div className="dash-mom">
-          <span className="dash-mom-label">{t('dash.vsLastMonth')}</span>
-          <DeltaChip label={t('dash.netPnl')} delta={moM.deltaPnl} fmt={(v) => formatMoneySigned(v)} />
-          <DeltaChip label={t('dash.winRate')} delta={moM.deltaWinRate * 100} fmt={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`} />
-          <DeltaChip label={t('dash.expectancy')} delta={moM.deltaExpectancy} fmt={(v) => formatMoneySigned(v)} />
-        </div>
-      )}
-
-      {days.length >= 3 && (runs.maxWinStreak > 0 || runs.maxLossStreak > 0) && (
-        <div className="dash-streaks">
-          <div className="ds-item">
-            <span className="ds-label"><Flame size={13} className="pos" /> {t('dash.maxWinStreak')}</span>
-            <span className="ds-val pos">{runs.maxWinStreak}</span>
-            <span className="ds-sub">{t('dash.avg')} {runs.avgWinStreak.toFixed(1)}</span>
+          <div className="dash-month-head">
+            <Target size={15} />
+            <span>{monthName} so far</span>
+            <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>
+              {formatMoneySigned(month.pnl)}{monthlyGoal > 0 && <span className="dash-month-goal"> / {formatMoney(monthlyGoal)}</span>}
+            </span>
+            {monthlyGoal <= 0 && <button className="dash-link-sm" onClick={onOpenSettings}>{t('dash.setGoal')}</button>}
           </div>
-          <div className="ds-item">
-            <span className="ds-label"><TrendingDown size={13} className="neg" /> {t('dash.maxLossStreak')}</span>
-            <span className="ds-val neg">{runs.maxLossStreak}</span>
-            <span className="ds-sub">{t('dash.avg')} {runs.avgLossStreak.toFixed(1)}</span>
-          </div>
-        </div>
-      )}
-
-      {extremes && extremes.best.profitLoss > 0 && extremes.best !== extremes.worst && (
-        <div className="dash-extremes">
-          <button className="dash-extreme good" onClick={() => onSelectDay(extremes.best.date)} title={t('dash.openDay')}>
-            <span className="de-label"><Trophy size={13} /> {t('dash.bestTrade')}</span>
-            <span className="de-pnl pos">{formatMoneySigned(extremes.best.profitLoss)}</span>
-            <span className="de-meta">{extremes.best.symbol || '—'}{extremes.best.setup ? ` · ${extremes.best.setup}` : ''} · {shortDate(extremes.best.date)}</span>
-          </button>
-          <button className="dash-extreme bad" onClick={() => onSelectDay(extremes.worst.date)} title={t('dash.openDay')}>
-            <span className="de-label"><TrendingDown size={13} /> {t('dash.worstTrade')}</span>
-            <span className="de-pnl neg">{formatMoneySigned(extremes.worst.profitLoss)}</span>
-            <span className="de-meta">{extremes.worst.symbol || '—'}{extremes.worst.setup ? ` · ${extremes.worst.setup}` : ''} · {shortDate(extremes.worst.date)}</span>
-          </button>
+          {monthlyGoal > 0 && (
+            <div className="dash-month-bar">
+              <div className={`dash-month-fill ${month.pnl >= 0 ? 'pos' : 'neg'}`} style={{ width: `${Math.max(0, Math.min(100, month.pct))}%` }} />
+            </div>
+          )}
+          <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
         </div>
       )}
 
@@ -229,47 +120,6 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
         </div>
       </div>
     </div>
-  );
-}
-
-function DeltaChip({ label, delta, fmt }: { label: string; delta: number; fmt: (v: number) => string }) {
-  const up = delta >= 0;
-  return (
-    <span className={`dash-mom-chip ${up ? 'pos' : 'neg'}`}>
-      <span className="dmc-label">{label}</span>
-      <span className="dmc-val">{up ? '▲' : '▼'} {fmt(delta)}</span>
-    </span>
-  );
-}
-
-function BadgeIcon({ icon }: { icon: string }) {
-  const size = 16;
-  switch (icon) {
-    case 'flame': return <Flame size={size} />;
-    case 'shield': return <Shield size={size} />;
-    case 'target': return <Target size={size} />;
-    case 'trophy': return <Trophy size={size} />;
-    case 'sun': return <Sun size={size} />;
-    case 'trending': return <TrendingUp size={size} />;
-    default: return <Sparkles size={size} />;
-  }
-}
-
-function GoalRing({ pct, positive }: { pct: number; positive: boolean }) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  const R = 26;
-  const C = 2 * Math.PI * R;
-  const offset = C * (1 - clamped / 100);
-  const stroke = positive ? 'var(--pos)' : 'var(--neg)';
-  return (
-    <svg className="goal-ring" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label={`${Math.round(pct)}% of goal`}>
-      <circle cx="32" cy="32" r={R} fill="none" stroke="var(--border)" strokeWidth="6" />
-      <circle
-        cx="32" cy="32" r={R} fill="none" stroke={stroke} strokeWidth="6" strokeLinecap="round"
-        strokeDasharray={C} strokeDashoffset={offset} transform="rotate(-90 32 32)"
-      />
-      <text x="32" y="36" textAnchor="middle" className="goal-ring-text">{Math.round(clamped)}%</text>
-    </svg>
   );
 }
 

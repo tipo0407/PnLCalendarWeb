@@ -25,7 +25,6 @@ import Dashboard from './components/Dashboard';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
 import ReminderBanner from './components/ReminderBanner';
-import BackupReminderBanner from './components/BackupReminderBanner';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
@@ -303,9 +302,6 @@ export default function App() {
       )}
       {trades.length > 0 && (
         <ReminderBanner trades={trades} sampleMode={sampleMode} onReview={() => setView('review')} />
-      )}
-      {trades.length > 0 && (
-        <BackupReminderBanner trades={trades} signedIn={!!cloudAccount} sampleMode={sampleMode} />
       )}
       <header className="topbar">
         <div className="topbar-inner">

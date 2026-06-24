@@ -17,13 +17,7 @@ import { tagEdge, taggedTradeCount, detectTags } from '../lib/tags';
 import { emotionEdge, detectEmotions } from '../lib/emotions';
 import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
-import { disciplineTrend } from '../lib/discipline';
-import { weekKeyOf, weekLabel } from '../lib/review';
-import { riskStats, drawdownSeries, rMultipleHistogram, drawdownDuration } from '../lib/risk';
-import { monteCarlo } from '../lib/monteCarlo';
-import { sizePerformance } from '../lib/sizeAnalysis';
-import { riskModel } from '../lib/riskModel';
-import { buildYearHeatmap } from '../lib/yearHeatmap';
+import { riskStats, drawdownSeries } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv, downloadText } from '../lib/exportCsv';
 import { taxSummaryCsv } from '../lib/taxSummary';
@@ -39,7 +33,6 @@ import {
   hourEdgeBySymbol,
   distinctSymbols,
   movingWinRate,
-  rollingExpectancy,
   pnlHistogram,
   monthlyBreakdown,
   dayOfWeekEdge,
@@ -113,7 +106,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const holdEdge = useMemo(() => holdTimeEdge(trades), [trades]);
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
-  const rollExp = useMemo(() => rollingExpectancy(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
   const userTags = useUserTags();
   const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
@@ -122,13 +114,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const trend = useMemo(() => tagTrend(trades, userTags), [trades, userTags]);
   const cooccur = useMemo(() => tagCooccurrence(trades, userTags), [trades, userTags]);
   const leaks = useMemo(() => findLeaks(trades, userTags), [trades, userTags]);
-  const discTrend = useMemo(() => {
-    const ws = getSettings().weekStart;
-    const days = [...groupByDay(trades).values()];
-    return disciplineTrend(days, (d) => weekKeyOf(d, ws)).map((p) => ({
-      ...p, label: weekLabel(p.week).replace(/, \d{4}$/, ''),
-    }));
-  }, [trades]);
   const trendData = useMemo(
     () => trend.months.map((m, i) => {
       const row: Record<string, number | string> = { month: m };
@@ -141,27 +126,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
-  const ddDur = useMemo(() => drawdownDuration(ddSeries), [ddSeries]);
-  const mc = useMemo(() => {
-    const ruinThreshold = accountSize > 0 ? accountSize : 0;
-    return monteCarlo(trades, { runs: 1000, ruinThreshold, seed: 12345 });
-  }, [trades, accountSize]);
-  const sizeBuckets = useMemo(() => sizePerformance(trades), [trades]);
-  const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
-  const rm = useMemo(() => {
-    const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
-    return riskModel(trades, units);
-  }, [trades, accountSize, riskPerTrade]);
-
-  const yearsAvailable = useMemo(() => {
-    const set = new Set<number>();
-    for (const tr of trades) set.add(Number(tr.date.slice(0, 4)));
-    return [...set].sort((a, b) => b - a);
-  }, [trades]);
-  const [heatYear, setHeatYear] = useState<number>(() => Number(new Date().getFullYear()));
-  const effHeatYear = yearsAvailable.includes(heatYear) ? heatYear : (yearsAvailable[0] ?? heatYear);
-  const dayMap = useMemo(() => groupByDay(trades), [trades]);
-  const heatmap = useMemo(() => buildYearHeatmap(dayMap, effHeatYear), [dayMap, effHeatYear]);
   // Click a mistake/emotion bar to filter the All Trades table to that tag.
   const [tagFilter, setTagFilter] = useState<{ kind: 'mistake' | 'emotion'; key: string; label: string } | null>(null);
   const tableTrades = useMemo(() => {
@@ -556,45 +520,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ProGate>
         </Panel>
 
-        <Panel
-          title={t('panel.yearHeatmap')}
-          subtitle={t('panel.yearHeatmapSub')}
-          span={12}
-          action={yearsAvailable.length > 1
-            ? <select className="atlas-year-sel" value={effHeatYear} onChange={(e) => setHeatYear(Number(e.target.value))}>
-                {yearsAvailable.map((y) => <option key={y} value={y}>{y}</option>)}
-              </select>
-            : undefined}
-        >
-          <div className="yheat">
-            <div className="yheat-grid">
-              {heatmap.weeks.map((col, ci) => (
-                <div className="yheat-col" key={ci}>
-                  {col.map((cell, ri) => {
-                    if (!cell.date) return <span className="yheat-cell empty" key={ri} />;
-                    const intensity = heatmap.maxAbs > 0 ? Math.min(1, Math.abs(cell.pnl) / heatmap.maxAbs) : 0;
-                    const cls = !cell.traded ? 'none' : cell.pnl >= 0 ? 'pos' : 'neg';
-                    const op = cell.traded ? 0.25 + 0.75 * intensity : 1;
-                    return (
-                      <span
-                        className={`yheat-cell ${cls}`}
-                        key={ri}
-                        style={cell.traded ? { opacity: op } : undefined}
-                        title={`${shortDate(cell.date)}: ${cell.traded ? formatMoneySigned(cell.pnl) : 'no trades'}`}
-                        onClick={() => cell.traded && onSelectDay?.(cell.date!)}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <div className="yheat-foot">
-              <span><b className={heatmap.totalPnl >= 0 ? 'pos' : 'neg'}>{formatMoneySigned(heatmap.totalPnl)}</b> {t('yheat.net')}</span>
-              <span><b className="pos">{heatmap.greenDays}</b> {t('yheat.green')} · <b className="neg">{heatmap.redDays}</b> {t('yheat.red')}</span>
-            </div>
-          </div>
-        </Panel>
-
         <Panel title={t('panel.leaks')} subtitle={t('panel.leaksSub')} span={12}>
           <ProGate feature="Leak Finder">
             {leaks.length === 0 ? (
@@ -614,141 +539,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   </li>
                 ))}
               </ul>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.disciplineTrend')} subtitle={t('panel.disciplineTrendSub')} span={6}>
-          <ProGate feature="Discipline Trend">
-            {discTrend.length < 2 ? (
-              <div className="atlas-empty">{t('disc.empty')}</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={discTrend} margin={{ top: 6, right: 10, bottom: 0, left: -16 }}>
-                  <defs>
-                    <linearGradient id="discFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor={ACC} stopOpacity={0.3} />
-                      <stop offset="1" stopColor={ACC} stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                  <XAxis dataKey="label" {...AXIS} minTickGap={18} />
-                  <YAxis {...AXIS} width={42} domain={[0, 100]} ticks={[0, 50, 80, 100]} />
-                  <Tooltip {...TOOLTIP} formatter={(v) => [`${v}/100`, 'Discipline']} />
-                  <ReferenceLine y={80} stroke={POS} strokeDasharray="4 4" />
-                  <Area type="monotone" dataKey="score" stroke={ACC} strokeWidth={2.5} fill="url(#discFill)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.rollExp')} subtitle={t('panel.rollExpSub', { n: String(maWindow) })} span={6}>
-          <ProGate feature="Rolling Expectancy">
-            {rollExp.length < 2 ? (
-              <div className="atlas-empty">{t('rollExp.empty')}</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={rollExp} margin={{ top: 6, right: 10, bottom: 0, left: -8 }}>
-                  <defs>
-                    <linearGradient id="rollExpFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor={POS} stopOpacity={0.28} />
-                      <stop offset="1" stopColor={POS} stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                  <XAxis dataKey="i" {...AXIS} minTickGap={28} />
-                  <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
-                  <Tooltip {...TOOLTIP} labelFormatter={(l) => `Trade #${l}`} formatter={(v) => [formatMoneySigned(Number(v)), 'Expectancy']} />
-                  <ReferenceLine y={0} stroke="var(--border-strong)" />
-                  <Area type="monotone" dataKey="expectancy" stroke={ACC} strokeWidth={2.2} fill="url(#rollExpFill)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel
-          title={t('panel.rDist')}
-          subtitle={t('panel.rDistSub')}
-          span={6}
-          action={(!risk.hasRisk) && onOpenSettings
-            ? <button className="atlas-link" onClick={onOpenSettings}>{t('panel.setRisk')}</button>
-            : undefined}
-        >
-          <ProGate feature="R-Multiple Distribution">
-            {!risk.hasRisk || rHist.length === 0 ? (
-              <div className="atlas-empty">{t('rdist.empty')}</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={rHist} barCategoryGap="14%" margin={{ top: 6, right: 10, bottom: 0, left: -16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                  <XAxis dataKey="label" {...AXIS} interval={0} angle={-30} textAnchor="end" height={48} />
-                  <YAxis {...AXIS} width={32} allowDecimals={false} />
-                  <Tooltip {...TOOLTIP} formatter={(v) => [String(v), 'Trades']} />
-                  <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={46}>
-                    {rHist.map((b, i) => <Cell key={i} fill={b.win ? POS : NEG} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.riskModel')} subtitle={t('panel.riskModelSub')} span={6}>
-          <ProGate feature="Risk of Ruin & Kelly">
-            {!rm.hasEdge ? (
-              <div className="atlas-empty">{t('rm.empty')}</div>
-            ) : (
-              <div className="rm-tiles">
-                <RiskTile label={t('rm.kelly')} value={`${(rm.kelly * 100).toFixed(1)}%`} cls={rm.kelly > 0 ? 'pos' : 'neg'} sub={t('rm.ofCapital')} />
-                <RiskTile label={t('rm.halfKelly')} value={`${(rm.halfKelly * 100).toFixed(1)}%`} cls={rm.halfKelly > 0 ? 'pos' : 'neg'} sub={t('rm.conservative')} />
-                <RiskTile label={t('rm.payoff')} value={`${rm.payoff.toFixed(2)}×`} sub={t('rm.winLoss')} />
-                <RiskTile label={t('rm.ror')} value={`${(rm.riskOfRuin * 100).toFixed(rm.riskOfRuin < 0.1 ? 1 : 0)}%`} cls={rm.riskOfRuin < 0.1 ? 'pos' : rm.riskOfRuin > 0.5 ? 'neg' : ''} sub={t('rm.rorSub')} />
-              </div>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.sizePerf')} subtitle={t('panel.sizePerfSub')} span={6}>
-          <ProGate feature="Position-Size Analysis">
-            {sizeBuckets.length < 2 ? (
-              <div className="atlas-empty">{t('size.empty')}</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={sizeBuckets} barCategoryGap="20%" margin={{ top: 6, right: 10, bottom: 0, left: -8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                  <XAxis dataKey="label" {...AXIS} />
-                  <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
-                  <Tooltip
-                    {...TOOLTIP}
-                    formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
-                    labelFormatter={(l) => {
-                      const b = sizeBuckets.find((x) => x.label === String(l));
-                      return b ? `${t('size.size')} ${l} · ${b.trades} trades · ${(b.winRate * 100).toFixed(0)}% win` : String(l);
-                    }}
-                  />
-                  <ReferenceLine y={0} stroke="var(--border-strong)" />
-                  <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={48}>
-                    {sizeBuckets.map((b, i) => <Cell key={i} fill={b.net >= 0 ? POS : NEG} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.monteCarlo')} subtitle={t('panel.monteCarloSub')} span={6}>
-          <ProGate feature="Monte-Carlo Simulation">
-            {!mc ? (
-              <div className="atlas-empty">{t('mc.empty')}</div>
-            ) : (
-              <div className="rm-tiles">
-                <RiskTile label={t('mc.median')} value={formatMoneySigned(mc.medianFinal)} cls={mc.medianFinal >= 0 ? 'pos' : 'neg'} sub={`${mc.horizon} ${t('mc.tradesAhead')}`} />
-                <RiskTile label={t('mc.band')} value={`${compactMoney(mc.p5Final)} … ${compactMoney(mc.p95Final)}`} sub={t('mc.bandSub')} />
-                <RiskTile label={t('mc.medianDD')} value={formatMoney(mc.medianMaxDrawdown)} cls="neg" sub={`${t('mc.worst')} ${compactMoney(mc.worstMaxDrawdown)}`} />
-                <RiskTile label={t('mc.probProfit')} value={`${(mc.probProfit * 100).toFixed(0)}%`} cls={mc.probProfit >= 0.5 ? 'pos' : 'neg'} sub={accountSize > 0 ? `${t('mc.ruin')} ${(mc.riskOfRuin * 100).toFixed(1)}%` : undefined} />
-              </div>
             )}
           </ProGate>
         </Panel>
@@ -811,9 +601,6 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
             <RiskTile label="Avg R / trade" value={risk.hasRisk ? `${risk.avgR >= 0 ? '+' : ''}${risk.avgR.toFixed(2)}R` : '—'} cls={risk.avgR >= 0 ? 'pos' : 'neg'} />
             <RiskTile label="Total R" value={risk.hasRisk ? `${risk.totalR >= 0 ? '+' : ''}${risk.totalR.toFixed(1)}R` : '—'} cls={risk.totalR >= 0 ? 'pos' : 'neg'} />
             <RiskTile label="Best / Worst R" value={risk.hasRisk ? `${risk.bestR.toFixed(1)} / ${risk.worstR.toFixed(1)}` : '—'} />
-            <RiskTile label={t('dd.longest')} value={ddDur.longestTrades > 0 ? `${ddDur.longestTrades} ${t('dd.trades')}` : '—'} sub={ddDur.longestDays > 0 ? `${ddDur.longestDays} ${t('dd.days')}` : undefined} cls={ddDur.longestTrades > 0 ? 'neg' : ''} />
-            <RiskTile label={t('dd.current')} value={ddDur.currentTrades > 0 ? `${ddDur.currentTrades} ${t('dd.trades')}` : t('dd.atPeak')} sub={ddDur.currentDays > 0 ? `${ddDur.currentDays} ${t('dd.days')}` : undefined} cls={ddDur.currentTrades > 0 ? 'neg' : 'pos'} />
-            <RiskTile label={t('dd.recovery')} value={ddDur.recovered ? `${ddDur.recoveryTrades} ${t('dd.trades')}` : (ddDur.currentTrades > 0 ? t('dd.ongoing') : '—')} sub={ddDur.recovered && ddDur.recoveryDays > 0 ? `${ddDur.recoveryDays} ${t('dd.days')}` : undefined} cls={ddDur.recovered ? 'pos' : ''} />
           </div>
           <ResponsiveContainer width="100%" height={150}>
             <AreaChart data={ddSeries} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { DailyPnl } from '../types';
-import { dayStreaks, monthProgress, monthBenchmark, yearProgress } from './goals';
+import { dayStreaks, monthProgress, monthBenchmark } from './goals';
 
 function day(date: string, pnl: number): DailyPnl {
   return { date, pnl, tradeCount: 1, wins: pnl > 0 ? 1 : 0, losses: pnl < 0 ? 1 : 0, trades: [] };
@@ -52,17 +52,3 @@ describe('monthProgress', () => {
   });
 });
 
-describe('yearProgress', () => {
-  it('sums P&L and progress across a calendar year', () => {
-    const days = [
-      day('2025-01-10', 100), day('2025-06-02', -40), day('2025-12-30', 240),
-      day('2024-11-01', 999),
-    ];
-    const y = yearProgress(days, 2025, 600);
-    expect(y.pnl).toBe(300);
-    expect(y.tradeDays).toBe(3);
-    expect(y.greenDays).toBe(2);
-    expect(y.redDays).toBe(1);
-    expect(Math.round(y.pct)).toBe(50);
-  });
-});

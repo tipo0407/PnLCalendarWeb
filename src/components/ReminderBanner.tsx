@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, BellRing, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { groupByWeek, weekLabel, weekKeyOf } from '../lib/review';
 import { isReviewed, REVIEW_LOG_EVENT } from '../lib/reviewLog';
 import { getSettings } from '../lib/settings';
 import { formatMoneySigned } from '../lib/metrics';
 import { nextReminder, loadDismissed, markDismissed, type Reminder } from '../lib/reminders';
-import {
-  notificationsSupported, notificationsEnabled, enableNotifications, disableNotifications, notifyDailyReview,
-} from '../lib/notifications';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 
@@ -28,7 +25,6 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
   useLang();
   const [tick, setTick] = useState(0);
   const [dismissed, setDismissed] = useState(0);
-  const [notifyOn, setNotifyOn] = useState(() => notificationsEnabled());
 
   useEffect(() => {
     const bump = () => setTick((n) => n + 1);
@@ -77,17 +73,6 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
     return r;
   }, [trades, sampleMode, tick, dismissed]);
 
-  // Fire a one-per-day OS notification for the daily nudge (no-op unless opted in
-  // and the tab is in the background). Placed before any early return so the hook
-  // order stays stable.
-  useEffect(() => {
-    if (!notifyOn || !reminder || reminder.kind !== 'daily-review') return;
-    const body = t('remind.daily', {
-      date: reminder.date!, pnl: formatMoneySigned(reminder.pnl), n: String(reminder.count),
-    });
-    notifyDailyReview(reminder.dismissKey, t('remind.notifyTitle'), body);
-  }, [notifyOn, reminder]);
-
   if (!reminder) return null;
 
   const isWeekly = reminder.kind === 'weekly-summary';
@@ -104,25 +89,10 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
     setDismissed((n) => n + 1);
   }
 
-  async function toggleNotify() {
-    if (notifyOn) { disableNotifications(); setNotifyOn(false); }
-    else { setNotifyOn(await enableNotifications()); }
-  }
-
   return (
     <div className={`reminder-banner ${isWeekly ? 'is-weekly' : 'is-daily'}`} role="status" aria-live="polite">
       <span className="reminder-icon"><Bell size={15} /></span>
       <span className="reminder-text">{message}</span>
-      {notificationsSupported() && (
-        <button
-          className={`reminder-bell ${notifyOn ? 'on' : ''}`}
-          onClick={toggleNotify}
-          title={notifyOn ? t('remind.notifyOff') : t('remind.notifyOn')}
-          aria-label={notifyOn ? t('remind.notifyOff') : t('remind.notifyOn')}
-        >
-          {notifyOn ? <BellRing size={14} /> : <Bell size={14} />}
-        </button>
-      )}
       <button className="reminder-action" onClick={() => { onReview(); dismiss(); }}>
         {isWeekly ? t('remind.reviewWeek') : t('remind.journalIt')}
       </button>

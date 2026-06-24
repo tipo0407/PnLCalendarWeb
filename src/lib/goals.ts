@@ -77,27 +77,6 @@ export function monthProgress(days: DailyPnl[], year: number, month: number, goa
   };
 }
 
-/** Net P&L and goal progress for a given calendar year. */
-export function yearProgress(days: DailyPnl[], year: number, goal: number): MonthProgress {
-  const prefix = `${year}-`;
-  let pnl = 0, greenDays = 0, redDays = 0, tradeDays = 0;
-  for (const d of days) {
-    if (!d.date.startsWith(prefix)) continue;
-    tradeDays++;
-    pnl += d.pnl;
-    if (d.pnl > 0) greenDays++;
-    else if (d.pnl < 0) redDays++;
-  }
-  return {
-    pnl,
-    goal,
-    pct: goal > 0 ? (pnl / goal) * 100 : 0,
-    greenDays,
-    redDays,
-    tradeDays,
-  };
-}
-
 export interface MonthBenchmark {
   /** Pace projection: avg day P&L × business days in the month. */
   projected: number;

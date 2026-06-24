@@ -9,7 +9,6 @@ import { exportPlaybook, importPlaybook, type PlaybookEntry } from './playbook';
 import { exportReviewed, importReviewed } from './reviewLog';
 import { getActiveProfile } from './profiles';
 import { downloadText } from './exportCsv';
-import { markBackedUp } from './backupReminder';
 
 export interface Backup {
   app: 'pnlcalendar';
@@ -48,7 +47,6 @@ export async function exportBackup(trades: TradeRecord[]) {
   const stamp = new Date().toISOString().slice(0, 10);
   const backup = await buildBackup(trades);
   downloadText(`pnlcalendar-backup-${stamp}.json`, JSON.stringify(backup, null, 2), 'application/json');
-  markBackedUp();
 }
 
 /** Restore a backup into local storage. Returns the trades to apply in the UI. */

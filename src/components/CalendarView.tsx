@@ -143,37 +143,6 @@ export default function CalendarView({
     return max;
   }, [dailyMap, year, month]);
 
-  // Cumulative equity sparkline for the visible month, and same-month last-year net.
-  const { sparkPath, sparkArea, sparkPos, yoyNet, yoyDelta } = useMemo(() => {
-    const cum: number[] = [];
-    let run = 0;
-    for (const day of monthDays) { run += day.pnl; cum.push(run); }
-    const W = 132, H = 30, pad = 2;
-    let path = '', area = '';
-    if (cum.length >= 2) {
-      const lo = Math.min(0, ...cum), hi = Math.max(0, ...cum);
-      const span = hi - lo || 1;
-      const x = (i: number) => pad + (i / (cum.length - 1)) * (W - 2 * pad);
-      const y = (v: number) => H - pad - ((v - lo) / span) * (H - 2 * pad);
-      const pts = cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
-      path = `M${pts.join(' L')}`;
-      area = `M${x(0).toFixed(1)},${(H - pad).toFixed(1)} L${pts.join(' L')} L${x(cum.length - 1).toFixed(1)},${(H - pad).toFixed(1)} Z`;
-    }
-    let prev = 0; let prevHas = false;
-    const daysInMonth = new Date(Date.UTC(year - 1, month + 1, 0)).getUTCDate();
-    for (let d = 1; d <= daysInMonth; d++) {
-      const day = dailyMap.get(iso(year - 1, month, d));
-      if (day) { prev += day.pnl; prevHas = true; }
-    }
-    return {
-      sparkPath: path,
-      sparkArea: area,
-      sparkPos: run >= 0,
-      yoyNet: prevHas ? prev : null,
-      yoyDelta: prevHas ? run - prev : null,
-    };
-  }, [monthDays, dailyMap, year, month]);
-
   function go(delta: number) {
     const m = month + delta;
     const y = year + Math.floor(m / 12);
@@ -213,20 +182,6 @@ export default function CalendarView({
             <MoneyCountUp value={stats.total} />
           </span>
           <span className="hero-lead-sub">{stats.trades} trades · {stats.days} traded days</span>
-          {sparkPath && (
-            <svg className="hero-spark" viewBox="0 0 132 30" preserveAspectRatio="none" aria-hidden="true">
-              <path d={sparkArea} className={sparkPos ? 'spark-area-pos' : 'spark-area-neg'} />
-              <path d={sparkPath} className={sparkPos ? 'spark-line-pos' : 'spark-line-neg'} fill="none" />
-            </svg>
-          )}
-          {yoyNet !== null && (
-            <span className="hero-yoy">
-              {t('cal.vsLastYear')} {formatMoneySigned(yoyNet)}
-              <span className={`hero-yoy-delta ${(yoyDelta ?? 0) >= 0 ? 'pos' : 'neg'}`}>
-                {(yoyDelta ?? 0) >= 0 ? '▲' : '▼'} {formatMoneySigned(Math.abs(yoyDelta ?? 0))}
-              </span>
-            </span>
-          )}
         </div>
 
         <div className="hero-stats">
