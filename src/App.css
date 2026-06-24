@@ -2086,3 +2086,22 @@
 @media (max-width: 640px) {
   .leak-row { grid-template-columns: 40px 1fr auto; grid-template-areas: "rank main net" "meta meta meta" "bar bar bar"; }
 }
+
+/* Screenshot paste affordances */
+.shots-hint { margin-left: 10px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.shot-card.focused { outline: 2px solid var(--accent); outline-offset: 1px; }
+.shot-add-row { display: flex; gap: 6px; align-items: stretch; }
+.shot-add-row .shot-add { flex: 1; }
+.shot-paste {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.shot-paste:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.shots-paste-error { margin-top: 8px; font-size: 12px; color: var(--neg); }

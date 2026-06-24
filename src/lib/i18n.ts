@@ -132,6 +132,10 @@ const EN: Record<string, string> = {
   'modal.winLoss': 'Win / Loss',
   'modal.discipline': 'Discipline',
   'modal.tradesShots': 'Trades & screenshots',
+  'shots.add': 'Add screenshot',
+  'shots.pasteHint': 'tip: copy a chart and paste with ⌘/Ctrl+V',
+  'shots.pasteTitle': 'Paste image from clipboard',
+  'shots.pasteFail': 'No image found on the clipboard. Copy a chart screenshot first.',
   // Import wizard
   'iw.title': 'Import trades',
   'iw.worksheet': 'Worksheet',
@@ -289,6 +293,10 @@ const ZH: Record<string, string> = {
   'modal.winLoss': '盈 / 亏',
   'modal.discipline': '纪律',
   'modal.tradesShots': '交易与截图',
+  'shots.add': '添加截图',
+  'shots.pasteHint': '提示：复制图表后用 ⌘/Ctrl+V 粘贴',
+  'shots.pasteTitle': '从剪贴板粘贴图片',
+  'shots.pasteFail': '剪贴板里没有图片，请先复制一张图表截图。',
   // Import wizard
   'iw.title': '导入交易',
   'iw.worksheet': '工作表',

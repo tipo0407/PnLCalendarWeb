@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, Trash2, Maximize2, Plus } from 'lucide-react';
+import { ImagePlus, Trash2, Maximize2, Plus, ClipboardPaste } from 'lucide-react';
 import type { DailyPnl, TradeRecord } from '../types';
 import { formatMoneySigned } from '../lib/metrics';
 import { putShot, getShot, delShot, shotKey } from '../lib/screenshots';
@@ -15,6 +15,31 @@ function hhmm(secs: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+/** Pull the first image blob out of a clipboard payload, or null. */
+async function imageFromClipboard(items?: DataTransferItemList | null): Promise<Blob | null> {
+  // Prefer a paste event's items when available (works without permissions).
+  if (items) {
+    for (const it of Array.from(items)) {
+      if (it.kind === 'file' && it.type.startsWith('image/')) {
+        const f = it.getAsFile();
+        if (f) return f;
+      }
+    }
+    return null;
+  }
+  // Fall back to the async Clipboard API (needs permission + a user gesture).
+  try {
+    const clip = await navigator.clipboard.read();
+    for (const item of clip) {
+      const type = item.types.find((ty) => ty.startsWith('image/'));
+      if (type) return await item.getType(type);
+    }
+  } catch {
+    /* no permission / not an image */
+  }
+  return null;
+}
+
 interface Props {
   daily: DailyPnl;
 }
@@ -22,6 +47,8 @@ interface Props {
 /** Per-trade screenshot attachments, persisted locally in IndexedDB. */
 export default function TradeShots({ daily }: Props) {
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [pasteError, setPasteError] = useState('');
 
   useEffect(() => {
     let revoked = false;
@@ -45,13 +72,32 @@ export default function TradeShots({ daily }: Props) {
     };
   }, [daily.date, daily.trades]);
 
-  async function attach(t: TradeRecord, file: File) {
+  async function attach(t: TradeRecord, blob: Blob) {
     const key = shotKey(daily.date, t.tradeNumber, t.rowNumber);
-    await putShot(key, file);
+    await putShot(key, blob);
     setUrls((prev) => {
       if (prev[key]) URL.revokeObjectURL(prev[key]);
-      return { ...prev, [key]: URL.createObjectURL(file) };
+      return { ...prev, [key]: URL.createObjectURL(blob) };
     });
+  }
+
+  /** Paste from the clipboard into a specific trade card (button click). */
+  async function pasteInto(t: TradeRecord) {
+    setPasteError('');
+    const blob = await imageFromClipboard();
+    if (blob) await attach(t, blob);
+    else setPasteError(t.tradeNumber ? `#${t.tradeNumber}` : '#');
+  }
+
+  /** Ctrl/Cmd+V anywhere in the panel: attach to the focused (or first empty) card. */
+  async function onPaste(e: React.ClipboardEvent) {
+    const blob = await imageFromClipboard(e.clipboardData?.items);
+    if (!blob) return;
+    e.preventDefault();
+    const target =
+      daily.trades.find((tr) => shotKey(daily.date, tr.tradeNumber, tr.rowNumber) === focusKey) ||
+      daily.trades.find((tr) => !urls[shotKey(daily.date, tr.tradeNumber, tr.rowNumber)]);
+    if (target) await attach(target, blob);
   }
 
   async function remove(t: TradeRecord) {
@@ -66,14 +112,20 @@ export default function TradeShots({ daily }: Props) {
   }
 
   return (
-    <div className="shots">
-      <div className="shots-head">{t('modal.tradesShots')}</div>
+    <div className="shots" onPaste={onPaste}>
+      <div className="shots-head">{t('modal.tradesShots')}<span className="shots-hint">{t('shots.pasteHint')}</span></div>
       <div className="shots-grid">
         {daily.trades.map((t) => {
           const key = shotKey(daily.date, t.tradeNumber, t.rowNumber);
           const url = urls[key];
           return (
-            <div className="shot-card" key={key}>
+            <div
+              className={`shot-card ${focusKey === key ? 'focused' : ''}`}
+              key={key}
+              tabIndex={0}
+              onFocus={() => setFocusKey(key)}
+              onClick={() => setFocusKey(key)}
+            >
               <div className="shot-meta">
                 <span className="shot-num">#{t.tradeNumber || t.rowNumber}</span>
                 <span className="shot-sym">{t.symbol}</span>
@@ -95,28 +147,37 @@ export default function TradeShots({ daily }: Props) {
                   </div>
                 </div>
               ) : (
-                <label className="shot-add">
-                  <ImagePlus size={16} />
-                  <span>Add screenshot</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) attach(t, f);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
+                <div className="shot-add-row">
+                  <label className="shot-add">
+                    <ImagePlus size={16} />
+                    <span>{t2('shots.add')}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) attach(t, f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <button className="shot-paste" onClick={() => pasteInto(t)} title={t2('shots.pasteTitle')}>
+                    <ClipboardPaste size={15} />
+                  </button>
+                </div>
               )}
               <TradeTagEditor trade={t} date={daily.date} />
             </div>
           );
         })}
       </div>
+      {pasteError && <div className="shots-paste-error">{t('shots.pasteFail')}</div>}
     </div>
   );
 }
+
+/** Tiny alias so the per-trade map variable `t` doesn't shadow the i18n `t`. */
+const t2 = t;
 
 /** Toggleable manual mistake/emotion tags for one trade, persisted locally. */
 function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
