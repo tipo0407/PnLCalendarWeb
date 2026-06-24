@@ -207,3 +207,24 @@ test('me reports free plan by default and pro after a verified Stripe checkout',
   // The backend now reports the account as Pro.
   assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'pro');
 });
+
+test('Stripe subscription cancellation downgrades the account to free', async () => {
+  const su = await post('/api/auth/signup', { email: 'churn@example.com', password: 'supersecret' });
+  const { token } = await su.json();
+  const h = { Authorization: `Bearer ${token}` };
+
+  // Grant Pro via an invoice.paid event.
+  await post('/api/stripe/webhook', {
+    type: 'invoice.paid',
+    data: { object: { id: 'in_1', customer_email: 'churn@example.com' } },
+  });
+  assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'pro');
+
+  // Cancellation revokes Pro.
+  const cancel = await post('/api/stripe/webhook', {
+    type: 'customer.subscription.deleted',
+    data: { object: { id: 'sub_1', customer_email: 'churn@example.com' } },
+  });
+  assert.equal((await cancel.json()).downgraded, true);
+  assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'free');
+});

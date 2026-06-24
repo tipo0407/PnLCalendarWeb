@@ -160,8 +160,8 @@ async function handle(req, res) {
     return send(res, 200, { key, plan: 'pro' });
   }
 
-  // Stripe webhook: on checkout.session.completed, mint a license key bound to
-  // the session/customer. Signature is verified when STRIPE_WEBHOOK_SECRET is set.
+  // Stripe webhook: grant/revoke Pro on the buyer's account across the payment
+  // lifecycle. Signature is verified when STRIPE_WEBHOOK_SECRET is set.
   if (req.method === 'POST' && url === '/api/stripe/webhook') {
     const rawBody = await readRaw(req);
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -170,19 +170,32 @@ async function handle(req, res) {
     }
     let event;
     try { event = JSON.parse(rawBody || '{}'); } catch { return send(res, 400, { error: 'bad payload' }); }
-    if (event.type === 'checkout.session.completed') {
-      const session = (event.data && event.data.object) || {};
-      const email = (session.customer_details && session.customer_details.email) || '';
-      const bind = email || session.id || '';
+    const obj = (event.data && event.data.object) || {};
+    const emailOf = (o) =>
+      (o.customer_details && o.customer_details.email) ||
+      o.customer_email || o.receipt_email || '';
+
+    // Events that GRANT Pro.
+    if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
+      const email = emailOf(obj);
+      const bind = email || obj.id || '';
       const payload = String(bind).replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
       const key = generateKey(payload.length >= 4 ? payload : undefined);
-      // Grant Pro server-side when the buyer matches a registered account, so the
-      // entitlement is enforced by the backend (not just a client-held key).
       const granted = email ? auth.setPlan(email, 'pro') : false;
-      // In production: email `key` to the buyer / store it. Here we log + return it.
-      console.log(`[stripe] issued license ${key} for ${bind || 'unknown'}${granted ? ' (account upgraded)' : ''}`);
+      console.log(`[stripe] ${event.type}: license ${key} for ${bind || 'unknown'}${granted ? ' (account upgraded)' : ''}`);
       return send(res, 200, { received: true, key, upgraded: granted });
     }
+
+    // Events that REVOKE Pro (cancellation, full refund, terminal payment failure).
+    if (event.type === 'customer.subscription.deleted' ||
+        event.type === 'charge.refunded' ||
+        event.type === 'invoice.payment_failed') {
+      const email = emailOf(obj);
+      const downgraded = email ? auth.setPlan(email, 'free') : false;
+      console.log(`[stripe] ${event.type}: ${email || 'unknown'}${downgraded ? ' (account downgraded)' : ''}`);
+      return send(res, 200, { received: true, downgraded });
+    }
+
     return send(res, 200, { received: true });
   }
 

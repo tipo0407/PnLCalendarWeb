@@ -72,16 +72,22 @@ function bearer(req) {
 
 /**
  * Set (or clear) a user's entitlement plan by email. Called server-side by the
- * Stripe webhook after a verified payment so Pro is granted by the backend, not
- * just by a client-held license key. Returns true if the user existed.
+ * Stripe webhook after a verified payment (or cancellation/refund) so Pro is
+ * granted/revoked by the backend, not just a client-held license key. Records
+ * when Pro began for display. Returns true if the user existed.
  */
 function setPlan(email, plan) {
   const key = String(email || '').toLowerCase();
   const users = loadUsers();
   const user = users[key];
   if (!user) return false;
-  if (plan === 'pro') user.plan = 'pro';
-  else delete user.plan;
+  if (plan === 'pro') {
+    if (user.plan !== 'pro') user.planSince = new Date().toISOString();
+    user.plan = 'pro';
+  } else {
+    delete user.plan;
+    delete user.planSince;
+  }
   saveUsers(users);
   return true;
 }
