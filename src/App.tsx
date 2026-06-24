@@ -20,6 +20,7 @@ const WeeklyReview = lazy(() => import('./components/WeeklyReview'));
 import SettingsModal from './components/SettingsModal';
 import PricingModal from './components/PricingModal';
 import OnboardingChecklist from './components/OnboardingChecklist';
+import TourOverlay from './components/TourOverlay';
 import Dashboard from './components/Dashboard';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
@@ -69,6 +70,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   // Bumped on any settings change so money/labels re-render with new prefs.
   const [, setSettingsTick] = useState(0);
 
@@ -90,6 +92,23 @@ export default function App() {
     window.addEventListener(AUTOSYNC_EVENT, refresh);
     return () => window.removeEventListener(AUTOSYNC_EVENT, refresh);
   }, []);
+
+  // First-run guided tour (once real data exists), plus a manual replay trigger.
+  useEffect(() => {
+    const TOUR_KEY = 'pnlcalendar.tour.v1';
+    const start = () => setShowTour(true);
+    window.addEventListener('pnlcalendar:tour', start);
+    if (trades.length > 0 && !sampleMode && localStorage.getItem(TOUR_KEY) !== '1') {
+      const id = window.setTimeout(() => setShowTour(true), 800);
+      return () => { clearTimeout(id); window.removeEventListener('pnlcalendar:tour', start); };
+    }
+    return () => window.removeEventListener('pnlcalendar:tour', start);
+  }, [trades.length, sampleMode]);
+
+  function closeTour() {
+    setShowTour(false);
+    try { localStorage.setItem('pnlcalendar.tour.v1', '1'); } catch { /* ignore */ }
+  }
 
   // Debounced background cloud push when signed in with auto-sync on.
   useEffect(() => {
@@ -371,6 +390,8 @@ export default function App() {
           onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
         />
       )}
+
+      {showTour && <TourOverlay onClose={closeTour} />}
 
       {trades.length === 0 ? (
         <div className="landing">

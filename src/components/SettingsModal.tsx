@@ -338,7 +338,10 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
         </div>
 
         <div className="settings-foot">
-          <span className="set-note">{t('settings.savedLocal')}</span>
+          <span className="set-note">
+            {t('settings.savedLocal')}
+            <button className="tour-link" onClick={() => { onClose(); window.dispatchEvent(new Event('pnlcalendar:tour')); }}>Take a tour</button>
+          </span>
           <button className="btn btn-upload" onClick={onClose}>{t('settings.done')}</button>
         </div>
       </motion.div>
