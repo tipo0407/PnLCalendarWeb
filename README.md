@@ -30,9 +30,9 @@ convention: it reads **only the 3rd worksheet**, with the same column names as t
 - **Portfolio Lens sidebar** — total P&L, equity curve, win-rate bar, profit factor,
   expectancy, best/worst day, best week, monthly breakdown bars, and key insights
 - **Trade Atlas** — equity curve, daily P&L, win/loss donut, setup edge, time-of-day edge,
-  trade-by-trade P&L, P&L distribution histogram, **R-multiple distribution**, **Leak Finder**
-  (where money drains, ranked), **discipline trend**, clickable tag drill-down, risk/drawdown,
-  and key metrics
+  trade-by-trade P&L, P&L distribution histogram, **R-multiple distribution**, **rolling expectancy**,
+  **risk-of-ruin & Kelly**, a **GitHub-style year heatmap**, **Leak Finder** (where money drains,
+  ranked), **discipline trend**, clickable tag drill-down, drawdown duration/recovery, and key metrics
 - **Day detail modal** — a per-trade breakdown for the selected day, with paste-from-clipboard
   screenshots and per-trade mistake/emotion tags
 - **Weekly, monthly & annual review** — toggle period, find your single biggest leak, and export a

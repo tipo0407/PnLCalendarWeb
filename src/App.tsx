@@ -463,7 +463,7 @@ export default function App() {
               <div className="lf">
                 <span className="lf-icon"><CalendarRange size={18} /></span>
                 <h3>See your edge at a glance</h3>
-                <p>P&amp;L calendar, 12-month heatmap, equity curve, win rate, profit factor, expectancy and an R-multiple distribution.</p>
+                <p>P&amp;L calendar, year heatmap, equity curve, win rate, profit factor, R-multiple distribution, rolling expectancy and risk-of-ruin.</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><Brain size={18} /></span>
