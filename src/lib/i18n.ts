@@ -56,6 +56,9 @@ const EN: Record<string, string> = {
   'plan.proKey': 'Pro is active via license key',
   'plan.since': 'Pro since',
   'plan.manageBilling': 'Manage billing',
+  'plan.lifetime': 'Lifetime',
+  'plan.subscription': 'Subscription',
+  'plan.renews': 'Renews',
   // Sidebar
   'side.totalPnl': 'TOTAL P&L',
   'side.winDays': 'Win Days',
@@ -266,6 +269,9 @@ const ZH: Record<string, string> = {
   'plan.proKey': 'Pro 已通过授权码激活',
   'plan.since': 'Pro 自',
   'plan.manageBilling': '管理订阅',
+  'plan.lifetime': '永久',
+  'plan.subscription': '订阅',
+  'plan.renews': '续费于',
   // Sidebar
   'side.totalPnl': '总盈亏',
   'side.winDays': '盈利天数',

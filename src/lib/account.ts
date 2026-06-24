@@ -103,13 +103,18 @@ export async function fetchPlan(): Promise<'free' | 'pro' | null> {
 }
 
 /** Fetch full entitlement status (plan + when Pro began), or null when offline. */
-export async function fetchPlanStatus(): Promise<{ plan: 'free' | 'pro'; planSince: string | null } | null> {
+export async function fetchPlanStatus(): Promise<{ plan: 'free' | 'pro'; planSince: string | null; planType: 'lifetime' | 'subscription' | null; planUntil: string | null } | null> {
   if (!isSignedIn()) return null;
   try {
     const res = await fetch('/api/auth/me', { headers: { ...authHeader() } });
     if (!res.ok) return null;
-    const data = (await res.json()) as { plan?: string; planSince?: string | null };
-    return { plan: data.plan === 'pro' ? 'pro' : 'free', planSince: data.planSince ?? null };
+    const data = (await res.json()) as { plan?: string; planSince?: string | null; planType?: string | null; planUntil?: string | null };
+    return {
+      plan: data.plan === 'pro' ? 'pro' : 'free',
+      planSince: data.planSince ?? null,
+      planType: data.planType === 'subscription' ? 'subscription' : data.planType === 'lifetime' ? 'lifetime' : null,
+      planUntil: data.planUntil ?? null,
+    };
   } catch {
     return null;
   }

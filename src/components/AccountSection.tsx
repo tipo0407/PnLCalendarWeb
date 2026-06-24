@@ -10,12 +10,12 @@ import { t } from '../lib/i18n';
 export default function AccountSection() {
   const account = useAccount();
   const pro = useIsPro();
-  const [planSince, setPlanSince] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ planSince: string | null; planType: 'lifetime' | 'subscription' | null; planUntil: string | null } | null>(null);
 
   useEffect(() => {
     if (!account) return;
     let cancelled = false;
-    fetchPlanStatus().then((s) => { if (!cancelled) setPlanSince(s?.planSince ?? null); });
+    fetchPlanStatus().then((s) => { if (!cancelled) setStatus(s ? { planSince: s.planSince, planType: s.planType, planUntil: s.planUntil } : null); });
     return () => { cancelled = true; };
   }, [account, pro]);
   const [email, setEmail] = useState('');
@@ -45,8 +45,15 @@ export default function AccountSection() {
           <span className={`acct-plan-badge ${pro ? 'pro' : 'free'}`} title={pro ? (planSource() === 'account' ? t('plan.proAccount') : t('plan.proKey')) : ''}>
             {pro ? t('plan.pro') : 'Free'}
           </span>
-          {pro && planSince && (
-            <span className="acct-plan-since">{t('plan.since')} {new Date(planSince).toLocaleDateString()}</span>
+          {pro && status?.planSince && (
+            <span className="acct-plan-since">{t('plan.since')} {new Date(status.planSince).toLocaleDateString()}</span>
+          )}
+          {pro && status?.planType && (
+            <span className="acct-plan-type">
+              {status.planType === 'subscription'
+                ? (status.planUntil ? `${t('plan.renews')} ${new Date(status.planUntil).toLocaleDateString()}` : t('plan.subscription'))
+                : t('plan.lifetime')}
+            </span>
           )}
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>

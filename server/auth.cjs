@@ -74,9 +74,10 @@ function bearer(req) {
  * Set (or clear) a user's entitlement plan by email. Called server-side by the
  * Stripe webhook after a verified payment (or cancellation/refund) so Pro is
  * granted/revoked by the backend, not just a client-held license key. Records
- * when Pro began for display. Returns true if the user existed.
+ * when Pro began, the billing type ('lifetime' | 'subscription') and an optional
+ * current-period-end for subscriptions. Returns true if the user existed.
  */
-function setPlan(email, plan) {
+function setPlan(email, plan, opts = {}) {
   const key = String(email || '').toLowerCase();
   const users = loadUsers();
   const user = users[key];
@@ -84,9 +85,14 @@ function setPlan(email, plan) {
   if (plan === 'pro') {
     if (user.plan !== 'pro') user.planSince = new Date().toISOString();
     user.plan = 'pro';
+    if (opts.planType) user.planType = opts.planType === 'subscription' ? 'subscription' : 'lifetime';
+    if (opts.planUntil) user.planUntil = opts.planUntil;
+    else if (opts.planType === 'lifetime') delete user.planUntil;
   } else {
     delete user.plan;
     delete user.planSince;
+    delete user.planType;
+    delete user.planUntil;
   }
   saveUsers(users);
   return true;
@@ -142,7 +148,12 @@ async function route(req, res, { send, readBody }) {
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     const user = loadUsers()[session.email] || {};
     const plan = user.plan === 'pro' ? 'pro' : 'free';
-    return send(res, 200, { email: session.email, plan, planSince: plan === 'pro' ? (user.planSince || null) : null }), true;
+    return send(res, 200, {
+      email: session.email, plan,
+      planSince: plan === 'pro' ? (user.planSince || null) : null,
+      planType: plan === 'pro' ? (user.planType || 'lifetime') : null,
+      planUntil: plan === 'pro' ? (user.planUntil || null) : null,
+    }), true;
   }
 
   // GDPR-style: download everything stored for this account.

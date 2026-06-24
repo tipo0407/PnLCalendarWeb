@@ -143,6 +143,23 @@ function isProPurchase(obj, allowedCsv) {
   return ids.some((id) => allowed.includes(id));
 }
 
+/**
+ * Derive billing type + expiry from a Stripe webhook object. Checkout sessions
+ * carry `mode` ('subscription' | 'payment'); invoices/subscriptions carry a
+ * current-period end. Defaults to a one-off 'lifetime' purchase.
+ */
+function billingFromObject(obj) {
+  if (!obj || typeof obj !== 'object') return { planType: 'lifetime', planUntil: null };
+  let planUntil = null;
+  const end = obj.current_period_end
+    || (obj.lines && obj.lines.data && obj.lines.data[0] && obj.lines.data[0].period && obj.lines.data[0].period.end);
+  if (typeof end === 'number' && end > 0) planUntil = new Date(end * 1000).toISOString();
+  let planType = 'lifetime';
+  if (obj.mode === 'subscription' || obj.subscription || planUntil || obj.billing_reason) planType = 'subscription';
+  if (obj.mode === 'payment') planType = 'lifetime';
+  return { planType, planUntil };
+}
+
 /** Route a request; exported so it can be embedded in another server too. */
 async function handle(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -244,7 +261,7 @@ async function handle(req, res) {
       const bind = email || obj.id || '';
       const payload = String(bind).replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
       const key = generateKey(payload.length >= 4 ? payload : undefined);
-      const granted = email ? auth.setPlan(email, 'pro') : false;
+      const granted = email ? auth.setPlan(email, 'pro', billingFromObject(obj)) : false;
       console.log(`[stripe] ${event.type}: license ${key} for ${bind || 'unknown'}${granted ? ' (account upgraded)' : ''}`);
       return send(res, 200, { received: true, key, upgraded: granted });
     }
@@ -265,7 +282,7 @@ async function handle(req, res) {
   return send(res, 404, { error: 'not found' });
 }
 
-module.exports = { handle, verifyKey, generateKey, sigFor, verifyStripeSignature, extractPriceIds, isProPurchase };
+module.exports = { handle, verifyKey, generateKey, sigFor, verifyStripeSignature, extractPriceIds, isProPurchase, billingFromObject };
 
 // CLI: key generator + standalone server.
 if (require.main === module) {

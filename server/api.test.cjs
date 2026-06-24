@@ -239,6 +239,16 @@ test('price->tier mapping: extractPriceIds + isProPurchase', () => {  const invo
   assert.equal(api.isProPurchase(session, 'price_pro_monthly,price_pro_yearly'), false);
 });
 
+test('billingFromObject derives lifetime vs subscription + expiry', () => {
+  assert.deepEqual(api.billingFromObject({ mode: 'payment' }), { planType: 'lifetime', planUntil: null });
+  const sub = api.billingFromObject({ mode: 'subscription' });
+  assert.equal(sub.planType, 'subscription');
+  const end = Math.floor(Date.UTC(2026, 0, 1) / 1000);
+  const inv = api.billingFromObject({ current_period_end: end });
+  assert.equal(inv.planType, 'subscription');
+  assert.equal(inv.planUntil, new Date(end * 1000).toISOString());
+});
+
 test('billing portal requires auth and reports unconfigured state', async () => {
   // Unauthenticated is rejected.
   assert.equal((await post('/api/billing/portal', {})).status, 401);

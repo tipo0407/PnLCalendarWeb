@@ -2278,3 +2278,6 @@
 
 /* Landing price teaser */
 .landing-price-teaser { display: block; width: 100%; text-align: center; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+/* Account: plan type chip */
+.acct-plan-type { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
