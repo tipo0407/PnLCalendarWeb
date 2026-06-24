@@ -3,11 +3,13 @@ import { ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoney, formatMoneySigned } from '../lib/metrics';
 import { setupStats, getPlaybookEntry, setPlaybookEntry } from '../lib/playbook';
+import { getSettings } from '../lib/settings';
 import { t } from '../lib/i18n';
 
 export default function Playbook({ trades }: { trades: TradeRecord[] }) {
   const stats = useMemo(() => setupStats(trades), [trades]);
   const [open, setOpen] = useState<string | null>(null);
+  const risk = getSettings().riskPerTrade;
 
   if (stats.length === 0) {
     return <div className="atlas-empty">No setups yet. Fill the <b>Setup</b> column to build your playbook.</div>;
@@ -33,7 +35,10 @@ export default function Playbook({ trades }: { trades: TradeRecord[] }) {
               <span>{s.count}</span>
               <span>{(s.winRate * 100).toFixed(0)}%</span>
               <span className={s.net >= 0 ? 'pos' : 'neg'}>{formatMoneySigned(s.net)}</span>
-              <span className={s.expectancy >= 0 ? 'pos' : 'neg'}>{formatMoneySigned(s.expectancy)}</span>
+              <span className={s.expectancy >= 0 ? 'pos' : 'neg'}>
+                {formatMoneySigned(s.expectancy)}
+                {risk > 0 && <small className="pb-r"> ({(s.expectancy / risk).toFixed(2)}R)</small>}
+              </span>
               <span>{s.profitFactor === Infinity ? '∞' : s.profitFactor.toFixed(2)}</span>
               <span className="pb-caret">{isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span>
             </button>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
+import { getSettings } from '../lib/settings';
 import { t } from '../lib/i18n';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
@@ -19,6 +20,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [dir, setDir] = useState<'asc' | 'desc'>('desc');
   const [q, setQ] = useState('');
+  const risk = getSettings().riskPerTrade;
 
   const rows = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -70,11 +72,12 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
               <Th label={t('tt.side')} k="direction" cur={sortKey} Caret={Caret} onClick={sortBy} />
               <Th label={t('tt.size')} k="size" cur={sortKey} Caret={Caret} onClick={sortBy} num />
               <Th label={t('tt.pnl')} k="profitLoss" cur={sortKey} Caret={Caret} onClick={sortBy} num />
+              {risk > 0 && <th className="tt-num">{t('tt.r')}</th>}
               <Th label={t('tt.setup')} k="setup" cur={sortKey} Caret={Caret} onClick={sortBy} />
             </tr>
           </thead>
           <tbody>
-            {shown.length === 0 && <tr><td colSpan={7} className="ttable-empty">No matching trades.</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={risk > 0 ? 8 : 7} className="ttable-empty">No matching trades.</td></tr>}
             {shown.map((t, i) => (
               <tr key={`${t.date}-${t.rowNumber}-${i}`} onClick={() => onSelectDay(t.date)} className="ttable-row">
                 <td>{shortDate(t.date)}</td>
@@ -83,6 +86,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
                 <td>{t.direction || '—'}</td>
                 <td className="tt-num">{t.size || ''}</td>
                 <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(t.profitLoss)}</td>
+                {risk > 0 && <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{(t.profitLoss / risk).toFixed(2)}R</td>}
                 <td className="tt-dim">{t.setup || ''}</td>
               </tr>
             ))}
@@ -94,6 +98,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
                 <td className={`tt-num ${rows.reduce((s, t) => s + t.profitLoss, 0) >= 0 ? 'pos' : 'neg'}`}>
                   {formatMoney(rows.reduce((s, t) => s + t.profitLoss, 0))}
                 </td>
+                {risk > 0 && <td />}
                 <td />
               </tr>
             </tfoot>
