@@ -134,3 +134,29 @@ test('filter the All Trades table', async ({ page }) => {
   await filter.fill('zzzzzznomatch');
   await expect(page.getByText('No matching trades.')).toBeVisible();
 });
+
+test('sign in and push to cloud (mocked API)', async ({ page }) => {
+  // Mock the auth + sync endpoints so the client flow runs without a backend.
+  await page.route('**/api/auth/login', (route) =>
+    route.fulfill({ json: { token: 'test-token', email: 'e2e@example.com' } }));
+  await page.route('**/api/sync/pull', (route) =>
+    route.fulfill({ json: { blob: null, updatedAt: null } }));
+  await page.route('**/api/sync/push', (route) =>
+    route.fulfill({ json: { ok: true, updatedAt: '2026-06-23T00:00:00.000Z' } }));
+
+  await page.goto('/');
+  await page.getByRole('button', { name: /Explore with sample data/i }).click();
+
+  // Open Settings and sign in via the Account section.
+  await page.getByTitle('Settings').click();
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+  await page.getByPlaceholder('you@example.com').fill('e2e@example.com');
+  await page.getByPlaceholder(/Password \(min 8\)/).fill('supersecret');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+
+  await expect(page.getByText(/Signed in as/i)).toBeVisible();
+
+  // Push to cloud and confirm the success message.
+  await page.getByRole('button', { name: /Push to cloud/i }).click();
+  await expect(page.getByText(/Pushed to cloud/i)).toBeVisible();
+});
