@@ -2227,3 +2227,6 @@
 .goal-ring circle:last-of-type { transition: stroke-dashoffset 0.6s ease; }
 .goal-ring-text { font-size: 15px; font-weight: 700; fill: var(--text); }
 .dash-month-goal { color: var(--muted); font-weight: 500; }
+
+/* Playbook export toolbar */
+.pb-toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }

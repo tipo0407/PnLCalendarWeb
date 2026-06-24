@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
+import { ChevronDown, ChevronRight, ListChecks, Download } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoney, formatMoneySigned } from '../lib/metrics';
 import { setupStats, getPlaybookEntry, setPlaybookEntry } from '../lib/playbook';
+import { playbookMarkdown } from '../lib/playbookExport';
+import { downloadText } from '../lib/exportCsv';
 import { getSettings } from '../lib/settings';
 import { t } from '../lib/i18n';
 
@@ -15,8 +17,18 @@ export default function Playbook({ trades }: { trades: TradeRecord[] }) {
     return <div className="atlas-empty">No setups yet. Fill the <b>Setup</b> column to build your playbook.</div>;
   }
 
+  function exportMd() {
+    const md = playbookMarkdown(stats, getPlaybookEntry, { riskPerTrade: risk });
+    downloadText(`playbook-${new Date().toISOString().slice(0, 10)}.md`, md, 'text/markdown');
+  }
+
   return (
     <div className="playbook">
+      <div className="pb-toolbar">
+        <button className="atlas-export" onClick={exportMd} title={t('pb.exportTitle')}>
+          <Download size={14} /> {t('pb.export')}
+        </button>
+      </div>
       <div className="pb-row pb-head">
         <span className="pb-c-setup">{t('pb.setup')}</span>
         <span>{t('pb.trades')}</span>

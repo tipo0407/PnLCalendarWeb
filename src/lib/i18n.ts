@@ -213,6 +213,7 @@ const EN: Record<string, string> = {
   // Playbook columns
   'pb.setup': 'Setup', 'pb.trades': 'Trades', 'pb.winPct': 'Win%', 'pb.net': 'Net',
   'pb.expectancy': 'Expectancy', 'pb.pf': 'PF',
+  'pb.export': 'Export playbook', 'pb.exportTitle': 'Download your playbook as Markdown',
 };
 
 const ZH: Record<string, string> = {
@@ -418,6 +419,7 @@ const ZH: Record<string, string> = {
   // Playbook columns
   'pb.setup': '套路', 'pb.trades': '交易数', 'pb.winPct': '胜率', 'pb.net': '净额',
   'pb.expectancy': '期望值', 'pb.pf': '盈亏比',
+  'pb.export': '导出策略手册', 'pb.exportTitle': '将策略手册导出为 Markdown',
 };
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };
