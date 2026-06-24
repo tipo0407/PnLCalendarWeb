@@ -46,6 +46,25 @@ function tradesFilePlugin() {
 // The frontend fetches `/gsheet/spreadsheets/d/<id>/export?format=xlsx`.
 export default defineConfig({
   plugins: [react(), tradesFilePlugin()],
+  build: {
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        // Split heavy third-party libraries into their own long-cached chunks so
+        // app updates don't force users to re-download vendor code, and the
+        // initial bundle isn't dominated by the spreadsheet/chart parsers.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('xlsx')) return 'vendor-xlsx'
+          if (id.includes('lightweight-charts')) return 'vendor-lwcharts'
+          if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory-vendor')) return 'vendor-recharts'
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion'
+          if (id.includes('/react') || id.includes('/scheduler')) return 'vendor-react'
+          return 'vendor'
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api/checkout': { target: 'http://localhost:8788', changeOrigin: true },
