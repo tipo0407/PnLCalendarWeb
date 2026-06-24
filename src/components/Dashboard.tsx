@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import {
   CalendarRange, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, ArrowRight, Flame, Target, Lightbulb,
+  Shield, Trophy, Sun, TrendingUp,
 } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { groupByDay, formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { dayStreaks, monthProgress } from '../lib/goals';
+import { earnedBadges } from '../lib/badges';
+import { groupByWeek } from '../lib/review';
+import { reviewStreak as reviewStreakOf } from '../lib/reviewLog';
 import { generateInsights } from '../lib/insights';
 import { useUserTags } from '../lib/useUserTags';
 import { getSettings } from '../lib/settings';
@@ -46,6 +50,14 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
   const monthName = lastDate
     ? new Date(`${lastDate}T00:00:00`).toLocaleString('en-US', { month: 'long' })
     : '';
+
+  const badges = useMemo(() => earnedBadges({
+    winStreak: streak.currentType === 'win' ? streak.current : 0,
+    reviewStreak: reviewStreakOf(groupByWeek(trades).map((w) => w.key)),
+    days,
+    monthPnl: month?.pnl ?? 0,
+    goalMet: !!month && monthlyGoal > 0 && month.pnl >= monthlyGoal,
+  }), [streak, trades, days, month, monthlyGoal]);
 
   return (
     <div className="dash">
@@ -91,6 +103,20 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
         </div>
       )}
 
+      {badges.length > 0 && (
+        <div className="dash-badges">
+          {badges.map((b) => (
+            <div key={b.id} className={`dash-badge ${b.tone}`} title={b.detail}>
+              <span className="db-icon"><BadgeIcon icon={b.icon} /></span>
+              <span className="db-text">
+                <span className="db-title">{b.title}</span>
+                <span className="db-detail">{b.detail}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {insights.length > 0 && (
         <div className="dash-insights">
           <h3 className="dash-h"><Lightbulb size={14} /> Insights</h3>
@@ -132,6 +158,19 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
       </div>
     </div>
   );
+}
+
+function BadgeIcon({ icon }: { icon: string }) {
+  const size = 16;
+  switch (icon) {
+    case 'flame': return <Flame size={size} />;
+    case 'shield': return <Shield size={size} />;
+    case 'target': return <Target size={size} />;
+    case 'trophy': return <Trophy size={size} />;
+    case 'sun': return <Sun size={size} />;
+    case 'trending': return <TrendingUp size={size} />;
+    default: return <Sparkles size={size} />;
+  }
 }
 
 function GoalRing({ pct, positive }: { pct: number; positive: boolean }) {
