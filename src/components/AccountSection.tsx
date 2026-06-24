@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
 import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
+import { useIsPro } from '../lib/usePlan';
+import { planSource } from '../lib/plan';
+import { t } from '../lib/i18n';
 
 /** Optional cloud account sign-in / sign-up, shown inside Settings. */
 export default function AccountSection() {
   const account = useAccount();
+  const pro = useIsPro();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,6 +34,9 @@ export default function AccountSection() {
         <div className="set-section-head"><UserCircle2 size={14} /> Account</div>
         <div className="acct-signed">
           <span>Signed in as <b>{account.email}</b></span>
+          <span className={`acct-plan-badge ${pro ? 'pro' : 'free'}`} title={pro ? (planSource() === 'account' ? t('plan.proAccount') : t('plan.proKey')) : ''}>
+            {pro ? t('plan.pro') : 'Free'}
+          </span>
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
         <ChangePassword />

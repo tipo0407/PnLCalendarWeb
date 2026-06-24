@@ -207,6 +207,18 @@
 }
 .pro-pill:hover { transform: translateY(-1px); filter: brightness(1.06); }
 .pro-pill.is-pro { background: var(--pos-soft); color: var(--pos); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pos) 40%, transparent); }
+.pro-pill.is-free { animation: proPulse 3.2s ease-in-out infinite; }
+@keyframes proPulse {
+  0%, 100% { box-shadow: var(--shadow-sm); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+}
+.acct-plan-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.acct-plan-badge.pro { background: var(--pos-soft); color: var(--pos); }
+.acct-plan-badge.free { background: var(--accent-soft); color: var(--accent); }
 
 /* ===== Pricing modal ===== */
 .pricing-card {

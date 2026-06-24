@@ -28,7 +28,7 @@ import ReminderBanner from './components/ReminderBanner';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
-import { applyAccountPlan } from './lib/plan';
+import { applyAccountPlan, planSource } from './lib/plan';
 import { fetchPlan } from './lib/account';
 import { useAccount } from './lib/useAccount';
 import { getAutoSync, AUTOSYNC_EVENT, pushBackup } from './lib/cloudSync';
@@ -364,8 +364,14 @@ export default function App() {
 
           <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
 
-          <button className={`pro-pill ${pro ? 'is-pro' : ''}`} onClick={() => setShowPricing(true)} title={pro ? 'Pro is active' : 'Plans & pricing'}>
-            {pro ? <Check size={13} /> : <Sparkles size={13} />} {pro ? 'Pro' : 'Pro'}
+          <button
+            className={`pro-pill ${pro ? 'is-pro' : 'is-free'}`}
+            onClick={() => setShowPricing(true)}
+            title={pro
+              ? (planSource() === 'account' ? t('plan.proAccount') : t('plan.proKey'))
+              : t('plan.upgradeTitle')}
+          >
+            {pro ? <Check size={13} /> : <Sparkles size={13} />} {pro ? t('plan.pro') : t('plan.upgrade')}
           </button>
 
           <button

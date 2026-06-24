@@ -92,6 +92,11 @@ export function planKey(): string | undefined {
   return load().key;
 }
 
+/** How the current Pro entitlement was granted, if any. */
+export function planSource(): 'key' | 'account' | undefined {
+  return load().source;
+}
+
 /**
  * Verify a key against the backend (POST /api/license/verify). Falls back to the
  * offline format check when the API is unreachable, so the app keeps working

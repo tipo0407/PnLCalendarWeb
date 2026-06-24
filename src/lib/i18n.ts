@@ -34,6 +34,11 @@ const EN: Record<string, string> = {
   'landing.tagline': 'Not to predict the market — to help you stop repeating the same trading mistake.',
   'landing.cta': 'Explore with sample data',
   'landing.plans': 'See plans & pricing',
+  'plan.pro': 'Pro',
+  'plan.upgrade': 'Upgrade',
+  'plan.upgradeTitle': 'Unlock Pro — plans & pricing',
+  'plan.proAccount': 'Pro is active on your account',
+  'plan.proKey': 'Pro is active via license key',
   // Sidebar
   'side.totalPnl': 'TOTAL P&L',
   'side.winDays': 'Win Days',
@@ -202,6 +207,11 @@ const ZH: Record<string, string> = {
   'landing.tagline': '不是帮你预测市场，而是帮你停止重复犯同一个交易错误。',
   'landing.cta': '用示例数据体验',
   'landing.plans': '查看套餐与价格',
+  'plan.pro': 'Pro',
+  'plan.upgrade': '升级',
+  'plan.upgradeTitle': '解锁 Pro——套餐与价格',
+  'plan.proAccount': 'Pro 已在你的账户上激活',
+  'plan.proKey': 'Pro 已通过授权码激活',
   // Sidebar
   'side.totalPnl': '总盈亏',
   'side.winDays': '盈利天数',
