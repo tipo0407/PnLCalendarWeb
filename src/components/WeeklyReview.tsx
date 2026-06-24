@@ -9,7 +9,7 @@ import { emotionEdge } from '../lib/emotions';
 import { useUserTags } from '../lib/useUserTags';
 import { avgDiscipline } from '../lib/discipline';
 import { evaluateRules, loadRules } from '../lib/rules';
-import { groupByWeek, weekLabel } from '../lib/review';
+import { groupByWeek, groupByMonth, weekLabel, monthLabel } from '../lib/review';
 import { findLeaks } from '../lib/leaks';
 import { isReviewed, setReviewed, reviewStreak, REVIEW_LOG_EVENT } from '../lib/reviewLog';
 import { t } from '../lib/i18n';
@@ -17,7 +17,9 @@ import { useLang } from '../lib/useLang';
 
 export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   useLang();
-  const weeks = useMemo(() => groupByWeek(trades), [trades]);
+  const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const weeks = useMemo(() => (period === 'week' ? groupByWeek(trades) : groupByMonth(trades)), [trades, period]);
+  const labelOf = period === 'week' ? weekLabel : monthLabel;
   const userTags = useUserTags();
   const [idx, setIdx] = useState(0);
   const [, bumpLog] = useState(0);
@@ -82,7 +84,11 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
       <aside className="review-rail">
         <div className="review-rail-head">
           <span>History</span>
-          {streak > 0 && <span className="review-streak" title="Consecutive reviewed weeks"><Flame size={12} /> {streak}</span>}
+          {streak > 0 && <span className="review-streak" title="Consecutive reviewed periods"><Flame size={12} /> {streak}</span>}
+        </div>
+        <div className="review-period-toggle">
+          <button className={period === 'week' ? 'on' : ''} onClick={() => { setPeriod('week'); setIdx(0); }}>{t('review.week')}</button>
+          <button className={period === 'month' ? 'on' : ''} onClick={() => { setPeriod('month'); setIdx(0); }}>{t('review.month')}</button>
         </div>
         <div className="review-rail-list">
           {weeks.map((w, i) => {
@@ -94,7 +100,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
                 onClick={() => setIdx(i)}
               >
                 <span className="rri-check">{isReviewed(w.key) ? <CheckCircle2 size={13} /> : <Circle size={13} />}</span>
-                <span className="rri-label">{weekLabel(w.key).replace(/, \d{4}$/, '')}</span>
+                <span className="rri-label">{period === 'week' ? labelOf(w.key).replace(/, \d{4}$/, '') : labelOf(w.key)}</span>
                 <span className={`rri-net ${net >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(net)}</span>
               </button>
             );
@@ -104,17 +110,17 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
 
       <div className="review">
         <div className="review-print-header">
-          <span className="rph-brand">PnL Calendar — {t('review.reportTitle')}</span>
-          <span className="rph-meta">{weekLabel(week.key)} · {t('review.generated')} {new Date().toLocaleDateString()}</span>
+          <span className="rph-brand">PnL Calendar — {period === 'week' ? t('review.reportTitle') : t('review.reportTitleM')}</span>
+          <span className="rph-meta">{labelOf(week.key)} · {t('review.generated')} {new Date().toLocaleDateString()}</span>
         </div>
         <div className="review-nav">
-          <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older week"><ChevronLeft size={16} /></button>
+          <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older period"><ChevronLeft size={16} /></button>
           <div className="review-week">
-            <span className="review-eyebrow">WEEKLY REVIEW</span>
-            <h2>{weekLabel(week.key)}</h2>
+            <span className="review-eyebrow">{period === 'week' ? t('review.eyebrow') : t('review.eyebrowM')}</span>
+            <h2>{labelOf(week.key)}</h2>
           </div>
-          <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer week"><ChevronRight size={16} /></button>
-          <button className={`review-reviewed ${reviewed ? 'on' : ''}`} onClick={() => setReviewed(week.key, !reviewed)} title="Mark this week reviewed">
+          <button className="edge-nav sm" onClick={() => setIdx(Math.max(0, clamped - 1))} disabled={clamped <= 0} aria-label="Newer period"><ChevronRight size={16} /></button>
+          <button className={`review-reviewed ${reviewed ? 'on' : ''}`} onClick={() => setReviewed(week.key, !reviewed)} title="Mark this period reviewed">
             {reviewed ? <CheckCircle2 size={14} /> : <Circle size={14} />} {reviewed ? 'Reviewed' : 'Mark reviewed'}
           </button>
           <button className="review-export" onClick={exportPdf} title="Export this week as PDF"><Printer size={14} /> Export PDF</button>
@@ -162,7 +168,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
         )}
         {weekLeaks.length > 0 && (
           <div className="review-leaks">
-            <h3>{t('review.topLeaks')}</h3>
+            <h3>{period === 'week' ? t('review.topLeaks') : t('review.topLeaksM')}</h3>
             <ul>
               {weekLeaks.map((l) => (
                 <li key={`${l.dimension}-${l.value}`}>

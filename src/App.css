@@ -2171,3 +2171,19 @@
 }
 .reminder-bell:hover { color: var(--accent); border-color: var(--accent); }
 .reminder-bell.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+/* Weekly/Monthly review period toggle */
+.review-period-toggle { display: flex; gap: 4px; margin: 8px 0 10px; }
+.review-period-toggle button {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.review-period-toggle button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media print { .review-period-toggle { display: none !important; } }

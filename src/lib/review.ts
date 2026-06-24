@@ -40,3 +40,25 @@ export function groupByWeek(trades: TradeRecord[]): { key: string; trades: Trade
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([key, ts]) => ({ key, trades: ts }));
 }
+
+/** Group trades by calendar month (key = YYYY-MM-01), newest month first. */
+export function groupByMonth(trades: TradeRecord[]): { key: string; trades: TradeRecord[] }[] {
+  const map = new Map<string, TradeRecord[]>();
+  for (const t of trades) {
+    const k = `${t.date.slice(0, 7)}-01`;
+    const arr = map.get(k) ?? [];
+    arr.push(t);
+    map.set(k, arr);
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([key, ts]) => ({ key, trades: ts }));
+}
+
+/** "March 2025" label for a month-start key. */
+export function monthLabel(startIso: string): string {
+  const [y, m] = startIso.split('-').map(Number);
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${MONTHS[(m - 1) % 12]} ${y}`;
+}
+
