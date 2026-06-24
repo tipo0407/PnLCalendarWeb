@@ -1942,6 +1942,7 @@
     color: #fff !important;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
+  body.printing-review .review-print-header { display: flex !important; }
   @page { margin: 14mm; }
 }
 
@@ -2105,3 +2106,17 @@
 }
 .shot-paste:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .shots-paste-error { margin-top: 8px; font-size: 12px; color: var(--neg); }
+
+/* Weekly review: print header, leaks section, disclaimer */
+.review-print-header { display: none; flex-direction: column; gap: 2px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #222; }
+.rph-brand { font-weight: 800; font-size: 16px; }
+.rph-meta { font-size: 12px; color: #555; }
+.review-leaks { margin-top: 16px; }
+.review-leaks h3 { margin: 0 0 8px; font-size: 13px; }
+.review-leaks ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.review-leaks li { display: grid; grid-template-columns: 84px 1fr auto auto; align-items: center; gap: 10px; font-size: 13px; padding: 6px 8px; border-radius: 8px; background: var(--accent-soft); }
+.rl-dim { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.rl-val { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-meta { font-size: 12px; color: var(--muted); }
+.rl-net { font-weight: 700; font-variant-numeric: tabular-nums; }
+.review-disclaimer { margin-top: 18px; font-size: 11px; line-height: 1.5; color: var(--muted); }

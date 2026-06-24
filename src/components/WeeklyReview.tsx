@@ -10,9 +10,13 @@ import { useUserTags } from '../lib/useUserTags';
 import { avgDiscipline } from '../lib/discipline';
 import { evaluateRules, loadRules } from '../lib/rules';
 import { groupByWeek, weekLabel } from '../lib/review';
+import { findLeaks } from '../lib/leaks';
 import { isReviewed, setReviewed, reviewStreak, REVIEW_LOG_EVENT } from '../lib/reviewLog';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
+  useLang();
   const weeks = useMemo(() => groupByWeek(trades), [trades]);
   const userTags = useUserTags();
   const [idx, setIdx] = useState(0);
@@ -59,6 +63,7 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
   const recommendation = candidates[0]?.text;
 
   const winners = setups.slice().reverse().filter((x) => x.pnl > 0).slice(0, 3);
+  const weekLeaks = findLeaks(wt, userTags, { minCount: 2, limit: 3 });
 
   function exportPdf() {
     document.body.classList.add('printing-review');
@@ -98,6 +103,10 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
       </aside>
 
       <div className="review">
+        <div className="review-print-header">
+          <span className="rph-brand">PnL Calendar — {t('review.reportTitle')}</span>
+          <span className="rph-meta">{weekLabel(week.key)} · {t('review.generated')} {new Date().toLocaleDateString()}</span>
+        </div>
         <div className="review-nav">
           <button className="edge-nav sm" onClick={() => setIdx(Math.min(weeks.length - 1, clamped + 1))} disabled={clamped >= weeks.length - 1} aria-label="Older week"><ChevronLeft size={16} /></button>
           <div className="review-week">
@@ -151,6 +160,23 @@ export default function WeeklyReview({ trades }: { trades: TradeRecord[] }) {
             </div>
           </div>
         )}
+        {weekLeaks.length > 0 && (
+          <div className="review-leaks">
+            <h3>{t('review.topLeaks')}</h3>
+            <ul>
+              {weekLeaks.map((l) => (
+                <li key={`${l.dimension}-${l.value}`}>
+                  <span className="rl-dim">{l.dimensionLabel}</span>
+                  <span className="rl-val">{l.value}</span>
+                  <span className="rl-meta">{l.count}× · {Math.round(l.winRate * 100)}%</span>
+                  <span className="rl-net neg">{formatMoneySigned(l.net)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="review-disclaimer">{t('review.disclaimer')}</div>
       </div>
     </div>
   );

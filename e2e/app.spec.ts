@@ -25,7 +25,7 @@ test('landing → sample data → switch views', async ({ page }) => {
 
   // Switch to the Weekly Review.
   await page.getByRole('button', { name: /^Review$/i }).click();
-  await expect(page.getByText(/WEEKLY REVIEW/i)).toBeVisible();
+  await expect(page.locator('.review-eyebrow')).toHaveText(/WEEKLY REVIEW/i);
 });
 
 test('open a day detail modal from the calendar', async ({ page }) => {
