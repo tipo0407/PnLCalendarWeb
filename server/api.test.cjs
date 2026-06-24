@@ -228,8 +228,7 @@ test('Stripe subscription cancellation downgrades the account to free', async ()
   assert.equal((await (await get('/api/auth/me', h)).json()).plan, 'free');
 });
 
-test('price->tier mapping: extractPriceIds + isProPurchase', () => {
-  const invoice = { lines: { data: [{ price: { id: 'price_pro_monthly' } }] } };
+test('price->tier mapping: extractPriceIds + isProPurchase', () => {  const invoice = { lines: { data: [{ price: { id: 'price_pro_monthly' } }] } };
   const session = { line_items: { data: [{ price: { id: 'price_other' } }] } };
   assert.deepEqual(api.extractPriceIds(invoice), ['price_pro_monthly']);
 
@@ -238,4 +237,18 @@ test('price->tier mapping: extractPriceIds + isProPurchase', () => {
   // Allow-list match / miss.
   assert.equal(api.isProPurchase(invoice, 'price_pro_monthly,price_pro_yearly'), true);
   assert.equal(api.isProPurchase(session, 'price_pro_monthly,price_pro_yearly'), false);
+});
+
+test('billing portal requires auth and reports unconfigured state', async () => {
+  // Unauthenticated is rejected.
+  assert.equal((await post('/api/billing/portal', {})).status, 401);
+
+  const su = await post('/api/auth/signup', { email: 'billing@example.com', password: 'supersecret' });
+  const { token } = await su.json();
+  const r = await post('/api/billing/portal', {}, { Authorization: `Bearer ${token}` });
+  assert.equal(r.status, 200);
+  // STRIPE_PORTAL_URL isn't set in tests, so it reports ok:false with a message.
+  const data = await r.json();
+  assert.equal(data.ok, false);
+  assert.ok(data.message);
 });

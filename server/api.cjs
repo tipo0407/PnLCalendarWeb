@@ -181,6 +181,24 @@ async function handle(req, res) {
     return send(res, 200, { ok: true, url: 'https://checkout.stripe.com/pay/REPLACE_ME' });
   }
 
+  // Billing portal: returns a URL where a Pro user can manage/cancel their
+  // subscription. Auth-scoped. Returns ok:false (with guidance) until Stripe is
+  // configured, so the client can show an appropriate message.
+  if (req.method === 'POST' && url === '/api/billing/portal') {
+    const session = auth.verifySession(auth.bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' });
+    const configured = Boolean(process.env.STRIPE_SECRET_KEY) && Boolean(process.env.STRIPE_PORTAL_URL);
+    if (!configured) {
+      return send(res, 200, {
+        ok: false,
+        message: 'Billing management is not configured on this server yet.',
+      });
+    }
+    // STRIPE_PORTAL_URL is a configured Customer Portal link; in a fuller setup
+    // you would create a per-customer billing portal session via the Stripe API.
+    return send(res, 200, { ok: true, url: process.env.STRIPE_PORTAL_URL });
+  }
+
   if (req.method === 'POST' && url === '/api/license/verify') {
     const body = await readBody(req);
     const valid = verifyKey(body && body.key);

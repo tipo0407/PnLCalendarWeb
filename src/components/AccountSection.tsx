@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
-import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, fetchPlanStatus, EMAIL_RE } from '../lib/account';
+import { UserCircle2, LogOut, KeyRound, CreditCard } from 'lucide-react';
+import { signup, login, logout, changePassword, signOutAll, exportAccountData, deleteAccount, fetchPlanStatus, openBillingPortal, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
 import { useIsPro } from '../lib/usePlan';
 import { planSource } from '../lib/plan';
@@ -51,6 +51,14 @@ export default function AccountSection() {
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
         <ChangePassword />
+        {pro && planSource() === 'account' && (
+          <div className="acct-billing">
+            <button className="acct-link" onClick={async () => {
+              const msg = await openBillingPortal();
+              if (msg) window.alert(msg);
+            }}><CreditCard size={13} /> {t('plan.manageBilling')}</button>
+          </div>
+        )}
         <div className="acct-row-links">
           <button className="acct-link" onClick={() => { if (window.confirm('Sign out of all other devices?')) signOutAll(); }}>Sign out everywhere</button>
           <button className="acct-link" onClick={() => exportAccountData()}>Export my data</button>

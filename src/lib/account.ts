@@ -163,8 +163,22 @@ export async function exportAccountData(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** Permanently delete the account and all server-side data (needs password). */
-export async function deleteAccount(password: string): Promise<void> {
+/** Open the billing portal to manage/cancel the subscription. Returns a message
+ * to show when billing isn't configured server-side. */
+export async function openBillingPortal(): Promise<string | null> {
+  let res: Response;
+  try {
+    res = await fetch('/api/billing/portal', { method: 'POST', headers: { ...authHeader() } });
+  } catch {
+    return 'Billing service is unreachable.';
+  }
+  const data = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string; message?: string; error?: string };
+  if (!res.ok) return data.error || `Request failed (${res.status})`;
+  if (data.ok && data.url) { window.open(data.url, '_blank', 'noopener'); return null; }
+  return data.message || 'Billing management is not available yet.';
+}
+
+/** Permanently delete the account and all server-side data (needs password). */export async function deleteAccount(password: string): Promise<void> {
   let res: Response;
   try {
     res = await fetch('/api/auth/delete', {

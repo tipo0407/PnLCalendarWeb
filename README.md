@@ -204,6 +204,7 @@ The image builds the frontend and serves it via `server/serve.cjs` on port 4173,
 | `STRIPE_SECRET_KEY` | When set, `/api/checkout` returns a real Checkout URL |
 | `STRIPE_WEBHOOK_SECRET` | When set, `/api/stripe/webhook` verifies signatures |
 | `STRIPE_PRO_PRICE_IDS` | Comma-separated Stripe price IDs that grant Pro. When unset, any successful payment grants Pro (single-product mode) |
+| `STRIPE_PORTAL_URL` | Stripe Customer Portal link; enables the "Manage billing" button via `/api/billing/portal` |
 | `USERS_FILE` / `BLOB_DIR` | Where accounts and cloud blobs persist |
 
 **docker-compose** (persists accounts + cloud data in a volume):
