@@ -91,6 +91,16 @@ const EN: Record<string, string> = {
   'panel.tbt': 'Trade-by-Trade P&L',
   'panel.allTrades': 'All Trades',
   'panel.tagInsights': 'Tag Insights',
+  // FAQ
+  'faq.title': 'Frequently asked',
+  'faq.q1': 'Do I have to connect my broker?',
+  'faq.a1': 'No. You import an xlsx/CSV file or paste a Google Sheet link. There are no broker credentials and nothing is required to leave your browser.',
+  'faq.q2': 'Where is my data stored?',
+  'faq.a2': 'Locally, in your browser. Trades, tags, screenshots and settings live on your device. You can export a JSON backup anytime and clear everything in one click.',
+  'faq.q3': 'Which formats can I import?',
+  'faq.a3': 'Excel (.xlsx), CSV and Google Sheets. The import wizard auto-detects 10+ broker layouts (IBKR, Tradovate, NinjaTrader, Webull, Rithmic, DAS and more) or lets you map columns yourself.',
+  'faq.q4': 'Is this financial advice?',
+  'faq.a4': 'No. It’s a journaling and review tool to help you understand your own behavior — not a signal service or investment advice.',
   // Pricing
   'pricing.title': 'Stop repeating the same trading mistake',
   'pricing.sub': 'Free forever for the core journal. Upgrade when you want the behavioral edge.',
@@ -215,6 +225,16 @@ const ZH: Record<string, string> = {
   'panel.tbt': '逐笔盈亏',
   'panel.allTrades': '全部交易',
   'panel.tagInsights': '标签洞察',
+  // FAQ
+  'faq.title': '常见问题',
+  'faq.q1': '我必须连接券商吗？',
+  'faq.a1': '不需要。你上传 xlsx/CSV 文件或粘贴 Google Sheet 链接即可，无需券商凭据，数据也无需离开你的浏览器。',
+  'faq.q2': '我的数据存在哪里？',
+  'faq.a2': '存在你浏览器本地。交易、标签、截图和设置都保存在你的设备上。你随时可以导出 JSON 备份，也可一键清除全部。',
+  'faq.q3': '支持导入哪些格式？',
+  'faq.a3': 'Excel (.xlsx)、CSV 和 Google Sheets。导入向导可自动识别 10+ 种券商格式（IBKR、Tradovate、NinjaTrader、Webull、Rithmic、DAS 等），也可手动映射列。',
+  'faq.q4': '这是投资建议吗？',
+  'faq.a4': '不是。它是一个记录与复盘工具，帮助你了解自己的交易行为，并非荐股或投资建议。',
   // Pricing
   'pricing.title': '停止重复同一个交易错误',
   'pricing.sub': '核心日志永久免费。当你需要行为复盘优势时再升级。',

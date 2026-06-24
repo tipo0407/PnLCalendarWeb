@@ -464,25 +464,12 @@ export default function App() {
             </div>
 
             <div className="landing-faq">
-              <h3 className="landing-section-title">Frequently asked</h3>
+              <h3 className="landing-section-title">{t('faq.title')}</h3>
               <div className="faq-grid">
-                <FaqItem q="Do I have to connect my broker?">
-                  No. You import an xlsx/CSV file or paste a Google Sheet link. There are no broker
-                  credentials and nothing is required to leave your browser.
-                </FaqItem>
-                <FaqItem q="Where is my data stored?">
-                  Locally, in your browser. Trades, tags, screenshots and settings live on your
-                  device. You can export a JSON backup anytime and clear everything in one click.
-                </FaqItem>
-                <FaqItem q="Which formats can I import?">
-                  Excel (.xlsx), CSV and Google Sheets. The import wizard auto-detects 10+ broker
-                  layouts (IBKR, Tradovate, NinjaTrader, Webull, Rithmic, DAS and more) or lets you
-                  map columns yourself.
-                </FaqItem>
-                <FaqItem q="Is this financial advice?">
-                  No. It’s a journaling and review tool to help you understand your own behavior —
-                  not a signal service or investment advice.
-                </FaqItem>
+                <FaqItem q={t('faq.q1')}>{t('faq.a1')}</FaqItem>
+                <FaqItem q={t('faq.q2')}>{t('faq.a2')}</FaqItem>
+                <FaqItem q={t('faq.q3')}>{t('faq.a3')}</FaqItem>
+                <FaqItem q={t('faq.q4')}>{t('faq.a4')}</FaqItem>
               </div>
             </div>
 
