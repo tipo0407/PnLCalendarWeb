@@ -11,20 +11,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const rl = require('./ratelimit.cjs');
+const store = require('./store.cjs');
 
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
-const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, '.users.json');
 const TOKEN_TTL = 30 * 24 * 3600; // 30 days
 const MAX_PER_MIN = Number(process.env.AUTH_RATE_MAX || 20); // auth requests per IP per minute
 const MAX_FAILS = 5;              // failed logins before lockout
 const LOCK_MS = 15 * 60 * 1000;   // lockout window
 
-function loadUsers() {
-  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { return {}; }
-}
-function saveUsers(users) {
-  try { fs.writeFileSync(USERS_FILE, JSON.stringify(users)); } catch { /* ignore */ }
-}
+function loadUsers() { return store.getUsers(); }
+function saveUsers(users) { store.saveUsers(users); }
 
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
