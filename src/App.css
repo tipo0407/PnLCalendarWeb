@@ -2203,3 +2203,19 @@
   cursor: pointer;
 }
 .atlas-tagfilter:hover { filter: brightness(1.05); }
+
+/* Import wizard: data-health summary */
+.iw-health { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--accent-soft); }
+.iwh-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; margin-bottom: 4px; }
+.iwh-label { color: var(--muted); min-width: 88px; }
+.iwh-val { font-weight: 600; }
+.iwh-dup { margin-left: auto; font-size: 11px; color: var(--gold-fg, var(--accent)); }
+.iwh-cov { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-top: 8px; }
+.iwh-cov-item { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 8px; }
+.iwh-cov-label { font-size: 11.5px; color: var(--muted); }
+.iwh-cov-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.iwh-cov-fill { display: block; height: 100%; border-radius: 3px; }
+.iwh-cov-fill.ok { background: var(--pos); }
+.iwh-cov-fill.mid { background: var(--accent); }
+.iwh-cov-fill.low { background: var(--neg); }
+.iwh-cov-pct { font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); }

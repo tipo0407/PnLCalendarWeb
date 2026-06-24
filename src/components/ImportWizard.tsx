@@ -7,6 +7,7 @@ import {
   type SheetData, type Mapping, type FieldKey,
 } from '../lib/parseWorkbook';
 import { BROKER_TEMPLATES, applyTemplate, detectTemplate } from '../lib/brokerTemplates';
+import { dataHealth } from '../lib/dataHealth';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
@@ -99,6 +100,7 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
   });
 
   const result = useMemo(() => parseSheet(sheet, mapping), [sheet, mapping]);
+  const health = useMemo(() => dataHealth(result.trades), [result.trades]);
   const canImport = mapping.date !== undefined && result.trades.length > 0;
 
   const options = headerCells.map((c, i) => ({ i, label: String(c ?? '').trim() || `Column ${i + 1}` }));
@@ -158,6 +160,26 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
             </div>
           )}
 
+          {result.trades.length > 0 && (
+            <div className="iw-health">
+              <div className="iwh-row">
+                <span className="iwh-label">{t('iwh.range')}</span>
+                <span className="iwh-val">{health.start ? `${shortDate(health.start)} – ${shortDate(health.end!)}` : '—'}</span>
+              </div>
+              <div className="iwh-row">
+                <span className="iwh-label">{t('iwh.symbols')}</span>
+                <span className="iwh-val">{health.symbols}</span>
+                {health.duplicates > 0 && <span className="iwh-dup">{health.duplicates} {t('iwh.dupes')}</span>}
+              </div>
+              <div className="iwh-cov">
+                <Cov label={t('iwh.symbol')} v={health.coverage.symbol} />
+                <Cov label={t('iwh.side')} v={health.coverage.direction} />
+                <Cov label={t('iwh.time')} v={health.coverage.entryTime} />
+                <Cov label={t('iwh.setup')} v={health.coverage.setup} />
+              </div>
+            </div>
+          )}
+
           <div className="iw-preview-head">{t('iw.preview')}</div>
           <div className="iw-table-wrap">
             <table className="iw-table">
@@ -193,5 +215,18 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
         </button>
       </div>
     </>
+  );
+}
+
+/** A compact field-coverage meter (label + percentage bar). */
+function Cov({ label, v }: { label: string; v: number }) {
+  const pct = Math.round(v * 100);
+  const cls = pct >= 80 ? 'ok' : pct >= 40 ? 'mid' : 'low';
+  return (
+    <div className="iwh-cov-item" title={`${pct}%`}>
+      <span className="iwh-cov-label">{label}</span>
+      <span className="iwh-cov-bar"><span className={`iwh-cov-fill ${cls}`} style={{ width: `${pct}%` }} /></span>
+      <span className="iwh-cov-pct">{pct}%</span>
+    </div>
   );
 }
