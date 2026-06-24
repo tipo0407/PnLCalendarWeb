@@ -36,6 +36,7 @@ import {
   hourEdgeBySymbol,
   distinctSymbols,
   movingWinRate,
+  rollingExpectancy,
   pnlHistogram,
   monthlyBreakdown,
   dayOfWeekEdge,
@@ -109,6 +110,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const holdEdge = useMemo(() => holdTimeEdge(trades), [trades]);
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
+  const rollExp = useMemo(() => rollingExpectancy(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
   const userTags = useUserTags();
   const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
@@ -623,6 +625,31 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   <Tooltip {...TOOLTIP} formatter={(v) => [`${v}/100`, 'Discipline']} />
                   <ReferenceLine y={80} stroke={POS} strokeDasharray="4 4" />
                   <Area type="monotone" dataKey="score" stroke={ACC} strokeWidth={2.5} fill="url(#discFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel title={t('panel.rollExp')} subtitle={t('panel.rollExpSub', { n: String(maWindow) })} span={6}>
+          <ProGate feature="Rolling Expectancy">
+            {rollExp.length < 2 ? (
+              <div className="atlas-empty">{t('rollExp.empty')}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={rollExp} margin={{ top: 6, right: 10, bottom: 0, left: -8 }}>
+                  <defs>
+                    <linearGradient id="rollExpFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor={POS} stopOpacity={0.28} />
+                      <stop offset="1" stopColor={POS} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="i" {...AXIS} minTickGap={28} />
+                  <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
+                  <Tooltip {...TOOLTIP} labelFormatter={(l) => `Trade #${l}`} formatter={(v) => [formatMoneySigned(Number(v)), 'Expectancy']} />
+                  <ReferenceLine y={0} stroke="var(--border-strong)" />
+                  <Area type="monotone" dataKey="expectancy" stroke={ACC} strokeWidth={2.2} fill="url(#rollExpFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}

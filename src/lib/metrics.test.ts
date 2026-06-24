@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TradeRecord } from '../types';
-import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol, dayOfWeekEdge, holdTimeEdge } from './metrics';
+import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol, dayOfWeekEdge, holdTimeEdge, rollingExpectancy } from './metrics';
 
 function trade(p: Partial<TradeRecord>): TradeRecord {
   return {
@@ -98,5 +98,22 @@ describe('hourEdgeBySymbol', () => {
     const mes = hourEdgeBySymbol(SET, 'MES');
     const totalMes = mes.reduce((s, h) => s + h.pnl, 0);
     expect(totalMes).toBe(60); // 100 - 40
+  });
+});
+
+describe('rollingExpectancy', () => {
+  it('averages P&L over a trailing window', () => {
+    const trades = [10, 20, -30, 40, 50].map((p) => trade({ profitLoss: p }));
+    const r = rollingExpectancy(trades, 2);
+    // First point at index 1 (window filled): mean(10,20)=15
+    expect(r[0]).toEqual({ i: 2, expectancy: 15 });
+    // Last point: mean(40,50)=45
+    expect(r[r.length - 1]).toEqual({ i: 5, expectancy: 45 });
+  });
+  it('handles fewer trades than the window', () => {
+    const trades = [10, 30].map((p) => trade({ profitLoss: p }));
+    const r = rollingExpectancy(trades, 20);
+    expect(r).toHaveLength(2);
+    expect(r[1].expectancy).toBe(20);
   });
 });
