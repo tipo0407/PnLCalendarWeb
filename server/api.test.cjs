@@ -55,7 +55,8 @@ test('stripe signature verification', () => {
 
 test('auth token round-trip', () => {
   const token = auth.signToken('a@b.com', 60);
-  assert.deepEqual(auth.verifyToken(token), { email: 'a@b.com' });
+  const claims = auth.verifyToken(token);
+  assert.equal(claims.email, 'a@b.com');
   assert.equal(auth.verifyToken('bad.token'), null);
 });
 
@@ -139,4 +140,30 @@ test('password reset via token', async () => {
   // A reset token cannot be used as an auth token.
   const me = await get('/api/auth/me', { Authorization: `Bearer ${resetToken}` });
   assert.equal(me.status, 401);
+});
+
+test('sign-out-all revokes existing tokens', async () => {
+  const su = await post('/api/auth/signup', { email: 'revoke@example.com', password: 'supersecret' });
+  const { token: oldToken } = await su.json();
+  const h = { Authorization: `Bearer ${oldToken}` };
+
+  assert.equal((await get('/api/auth/me', h)).status, 200);
+
+  const so = await post('/api/auth/signout-all', {}, h);
+  assert.equal(so.status, 200);
+  const { token: newToken } = await so.json();
+
+  // The old token is now revoked; the freshly issued one still works.
+  assert.equal((await get('/api/auth/me', h)).status, 401);
+  assert.equal((await get('/api/auth/me', { Authorization: `Bearer ${newToken}` })).status, 200);
+});
+
+test('reset revokes existing sessions', async () => {
+  const su = await post('/api/auth/signup', { email: 'revreset@example.com', password: 'originalpw' });
+  const { token } = await su.json();
+  assert.equal((await get('/api/auth/me', { Authorization: `Bearer ${token}` })).status, 200);
+  const { resetToken } = await (await post('/api/auth/request-reset', { email: 'revreset@example.com' })).json();
+  await post('/api/auth/reset', { token: resetToken, newPassword: 'afterresetpw' });
+  // Old session token no longer valid after reset.
+  assert.equal((await get('/api/auth/me', { Authorization: `Bearer ${token}` })).status, 401);
 });

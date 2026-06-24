@@ -101,3 +101,21 @@ export async function changePassword(currentPassword: string, newPassword: strin
     throw new Error(data.error || `Request failed (${res.status})`);
   }
 }
+
+/** Revoke all other sessions; keeps this device signed in with a fresh token. */
+export async function signOutAll(): Promise<void> {
+  const acc = getAccount();
+  if (!acc) return;
+  let res: Response;
+  try {
+    res = await fetch('/api/auth/signout-all', { method: 'POST', headers: { ...authHeader() } });
+  } catch {
+    throw new Error('Cloud service is unreachable.');
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  const data = (await res.json()) as { token?: string };
+  if (data.token) store(data.token, acc.email);
+}

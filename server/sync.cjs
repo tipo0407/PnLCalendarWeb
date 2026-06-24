@@ -37,7 +37,7 @@ async function route(req, res, { send }) {
   const url = (req.url || '').split('?')[0];
   if (!url.startsWith('/api/sync/')) return false;
 
-  const session = auth.verifyToken(auth.bearer(req));
+  const session = auth.verifySession(auth.bearer(req));
   if (!session) return send(res, 401, { error: 'unauthorized' }), true;
 
   if (req.method === 'POST' && url === '/api/sync/push') {

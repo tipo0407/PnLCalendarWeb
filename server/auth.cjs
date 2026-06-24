@@ -30,13 +30,14 @@ function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 }
 
-function signToken(email, ttl = TOKEN_TTL, purpose = 'auth') {
+function signToken(email, ttl = TOKEN_TTL, purpose = 'auth', tv = 1) {
   const exp = Math.floor(Date.now() / 1000) + ttl;
-  const payload = Buffer.from(JSON.stringify({ email, exp, purpose })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ email, exp, purpose, tv })).toString('base64url');
   const sig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
 
+/** Low-level token check (signature + expiry + purpose). Returns claims, no store. */
 function verifyToken(token, expectedPurpose = 'auth') {
   if (!token) return null;
   const [payload, sig] = String(token).split('.');
@@ -48,10 +49,24 @@ function verifyToken(token, expectedPurpose = 'auth') {
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
     if (!data.exp || data.exp * 1000 < Date.now()) return null;
     if ((data.purpose || 'auth') !== expectedPurpose) return null;
-    return { email: data.email };
+    return { email: data.email, tv: data.tv || 1 };
   } catch {
     return null;
   }
+}
+
+function tokenVersionOf(email) {
+  const u = loadUsers()[email];
+  return u ? (u.tokenVersion || 1) : null;
+}
+
+/** Full session check: valid token AND matching token version (supports revocation). */
+function verifySession(token, expectedPurpose = 'auth') {
+  const data = verifyToken(token, expectedPurpose);
+  if (!data) return null;
+  const tv = tokenVersionOf(data.email);
+  if (tv === null || data.tv !== tv) return null;
+  return { email: data.email };
 }
 
 function bearer(req) {
@@ -79,9 +94,9 @@ async function route(req, res, { send, readBody }) {
     const key = String(email).toLowerCase();
     if (users[key]) return send(res, 409, { error: 'account already exists' }), true;
     const salt = crypto.randomBytes(16).toString('hex');
-    users[key] = { salt, hash: hashPassword(password, salt), created: Date.now() };
+    users[key] = { salt, hash: hashPassword(password, salt), created: Date.now(), tokenVersion: 1 };
     saveUsers(users);
-    return send(res, 200, { token: signToken(key), email: key }), true;
+    return send(res, 200, { token: signToken(key, TOKEN_TTL, 'auth', 1), email: key }), true;
   }
 
   if (req.method === 'POST' && url === '/api/auth/login') {
@@ -101,17 +116,28 @@ async function route(req, res, { send, readBody }) {
       return send(res, 401, { error: 'invalid credentials' }), true;
     }
     rl.clearFailures(lockKey);
-    return send(res, 200, { token: signToken(key), email: key }), true;
+    return send(res, 200, { token: signToken(key, TOKEN_TTL, 'auth', user.tokenVersion || 1), email: key }), true;
   }
 
   if (req.method === 'GET' && url === '/api/auth/me') {
-    const session = verifyToken(bearer(req));
+    const session = verifySession(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     return send(res, 200, { email: session.email }), true;
   }
 
+  if (req.method === 'POST' && url === '/api/auth/signout-all') {
+    const session = verifySession(bearer(req));
+    if (!session) return send(res, 401, { error: 'unauthorized' }), true;
+    const users = loadUsers();
+    const user = users[session.email];
+    user.tokenVersion = (user.tokenVersion || 1) + 1;
+    saveUsers(users);
+    // Issue a fresh token for the current device so it stays signed in.
+    return send(res, 200, { ok: true, token: signToken(session.email, TOKEN_TTL, 'auth', user.tokenVersion) }), true;
+  }
+
   if (req.method === 'POST' && url === '/api/auth/change-password') {
-    const session = verifyToken(bearer(req));
+    const session = verifySession(bearer(req));
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     const { currentPassword, newPassword } = await readBody(req);
     if (!newPassword || String(newPassword).length < 8) return send(res, 400, { error: 'new password too short (min 8)' }), true;
@@ -131,23 +157,24 @@ async function route(req, res, { send, readBody }) {
   if (req.method === 'POST' && url === '/api/auth/request-reset') {
     const { email } = await readBody(req);
     const key = String(email || '').toLowerCase();
-    const exists = Boolean(loadUsers()[key]);
+    const user = loadUsers()[key];
     // Always 200 to avoid user enumeration; a real deployment emails the token.
     const body = { ok: true };
-    if (exists) body.resetToken = signToken(key, 3600, 'reset');
+    if (user) body.resetToken = signToken(key, 3600, 'reset', user.tokenVersion || 1);
     return send(res, 200, body), true;
   }
 
   if (req.method === 'POST' && url === '/api/auth/reset') {
     const { token, newPassword } = await readBody(req);
-    const session = verifyToken(token, 'reset');
+    const session = verifySession(token, 'reset');
     if (!session) return send(res, 401, { error: 'invalid or expired reset token' }), true;
     if (!newPassword || String(newPassword).length < 8) return send(res, 400, { error: 'new password too short (min 8)' }), true;
     const users = loadUsers();
     const user = users[session.email];
     if (!user) return send(res, 404, { error: 'account not found' }), true;
     const salt = crypto.randomBytes(16).toString('hex');
-    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt) };
+    // Bump token version so a reset invalidates every existing session.
+    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt), tokenVersion: (user.tokenVersion || 1) + 1 };
     saveUsers(users);
     return send(res, 200, { ok: true }), true;
   }
@@ -155,4 +182,4 @@ async function route(req, res, { send, readBody }) {
   return false;
 }
 
-module.exports = { route, verifyToken, signToken, bearer };
+module.exports = { route, verifyToken, verifySession, signToken, bearer };

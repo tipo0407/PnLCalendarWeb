@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UserCircle2, LogOut, KeyRound } from 'lucide-react';
-import { signup, login, logout, changePassword, EMAIL_RE } from '../lib/account';
+import { signup, login, logout, changePassword, signOutAll, EMAIL_RE } from '../lib/account';
 import { useAccount } from '../lib/useAccount';
 
 /** Optional cloud account sign-in / sign-up, shown inside Settings. */
@@ -33,6 +33,7 @@ export default function AccountSection() {
           <button className="set-data-btn" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
         <ChangePassword />
+        <button className="acct-link" onClick={() => { if (window.confirm('Sign out of all other devices?')) signOutAll(); }}>Sign out everywhere</button>
         <p className="set-data-note">Cloud is optional — your data stays local unless you sync it.</p>
       </div>
     );
