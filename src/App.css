@@ -2187,3 +2187,19 @@
 }
 .review-period-toggle button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media print { .review-period-toggle { display: none !important; } }
+
+/* Atlas: active tag filter chip */
+.atlas-tagfilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.atlas-tagfilter:hover { filter: brightness(1.05); }

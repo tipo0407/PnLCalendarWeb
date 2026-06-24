@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, X } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -13,8 +13,8 @@ import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
 import { useUserTags } from '../lib/useUserTags';
-import { tagEdge, taggedTradeCount } from '../lib/tags';
-import { emotionEdge } from '../lib/emotions';
+import { tagEdge, taggedTradeCount, detectTags } from '../lib/tags';
+import { emotionEdge, detectEmotions } from '../lib/emotions';
 import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
 import { disciplineTrend } from '../lib/discipline';
@@ -135,6 +135,13 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
   const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
+  // Click a mistake/emotion bar to filter the All Trades table to that tag.
+  const [tagFilter, setTagFilter] = useState<{ kind: 'mistake' | 'emotion'; key: string; label: string } | null>(null);
+  const tableTrades = useMemo(() => {
+    if (!tagFilter) return trades;
+    const has = tagFilter.kind === 'mistake' ? detectTags : detectEmotions;
+    return trades.filter((tr) => has(tr, userTags).includes(tagFilter.key));
+  }, [trades, tagFilter, userTags]);
   const ddKey = risk.hasAccount ? 'drawdownPct' : 'drawdown';
 
   const showTarget = monthlyGoal > 0;
@@ -467,7 +474,10 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   }}
                 />
                 <ReferenceLine x={0} stroke="var(--border-strong)" />
-                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16} cursor="pointer"
+                  onClick={(d: { payload?: { key?: string; label?: string } }) => {
+                    if (d?.payload?.key) setTagFilter({ kind: 'mistake', key: d.payload.key, label: d.payload.label ?? d.payload.key });
+                  }}>
                   {mistakes.map((d, i) => (
                     <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
                   ))}
@@ -502,7 +512,10 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   }}
                 />
                 <ReferenceLine x={0} stroke="var(--border-strong)" />
-                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16} cursor="pointer"
+                  onClick={(d: { payload?: { key?: string; label?: string } }) => {
+                    if (d?.payload?.key) setTagFilter({ kind: 'emotion', key: d.payload.key, label: d.payload.label ?? d.payload.key });
+                  }}>
                   {emotions.map((d, i) => (
                     <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
                   ))}
@@ -700,8 +713,17 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title={t('panel.allTrades')} subtitle="Sortable, filterable trade log — click a row to open the day" span={12}>
-          <TradeTable trades={trades} onSelectDay={onSelectDay ?? (() => {})} />
+        <Panel
+          title={t('panel.allTrades')}
+          subtitle="Sortable, filterable trade log — click a row to open the day"
+          span={12}
+          action={tagFilter
+            ? <button className="atlas-tagfilter" onClick={() => setTagFilter(null)}>
+                {t('atlas.tagFilter')}: <b>{tagFilter.label}</b> · {tableTrades.length} <X size={12} />
+              </button>
+            : undefined}
+        >
+          <TradeTable trades={tableTrades} onSelectDay={onSelectDay ?? (() => {})} />
         </Panel>
       </div>
     </div>
