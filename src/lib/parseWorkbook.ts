@@ -123,8 +123,59 @@ function toStr(v: unknown): string {
   return v === null || v === undefined ? '' : String(v).trim();
 }
 
+/**
+ * Sniff the most likely delimiter of a delimited-text file by counting how
+ * consistently each candidate splits the first few non-empty lines. Supports
+ * comma, semicolon (common in European locales), tab (TSV) and pipe. Falls back
+ * to comma when nothing stands out.
+ */
+export function sniffDelimiter(sample: string): ',' | ';' | '\t' | '|' {
+  const candidates: (',' | ';' | '\t' | '|')[] = [',', ';', '\t', '|'];
+  const lines = sample.split(/\r?\n/).filter((l) => l.trim() !== '').slice(0, 10);
+  if (lines.length === 0) return ',';
+  let best: ',' | ';' | '\t' | '|' = ',';
+  let bestScore = -1;
+  for (const d of candidates) {
+    const counts = lines.map((l) => l.split(d).length - 1);
+    const total = counts.reduce((a, b) => a + b, 0);
+    if (total === 0) continue;
+    // Reward many delimiters that are consistent across lines.
+    const avg = total / counts.length;
+    const variance = counts.reduce((a, c) => a + (c - avg) ** 2, 0) / counts.length;
+    const score = avg - variance;
+    if (score > bestScore) { bestScore = score; best = d; }
+  }
+  return best;
+}
+
+/** True when the buffer is NOT a binary spreadsheet (xlsx 'PK', xls 0xD0CF). */
+function looksLikeText(bytes: Uint8Array): boolean {
+  if (bytes.length < 2) return false;
+  if (bytes[0] === 0x50 && bytes[1] === 0x4b) return false; // PK → xlsx/zip
+  if (bytes[0] === 0xd0 && bytes[1] === 0xcf) return false; // OLE → legacy xls
+  return true;
+}
+
 /** Read all worksheets of an xlsx/csv buffer into arrays-of-arrays. */
 export function readSheets(data: ArrayBuffer): SheetData[] {
+  const bytes = new Uint8Array(data);
+  // For delimited text, sniff the separator so semicolon/tab/pipe files parse
+  // correctly instead of collapsing into a single column.
+  if (looksLikeText(bytes)) {
+    try {
+      const text = new TextDecoder('utf-8').decode(bytes);
+      const FS = sniffDelimiter(text);
+      const wb = XLSX.read(text, { type: 'string', FS, raw: true });
+      return wb.SheetNames.map((name) => ({
+        name,
+        rows: XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[name], {
+          header: 1, raw: true, blankrows: false, defval: null,
+        }),
+      }));
+    } catch {
+      /* fall through to the binary reader below */
+    }
+  }
   const wb = XLSX.read(data, { type: 'array' });
   return wb.SheetNames.map((name) => ({
     name,

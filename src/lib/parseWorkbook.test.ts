@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseDateCell, parseTimeCell, autoMap, parseSheet, guessSheetIndex, dedupeTrades,
+  sniffDelimiter, readSheets,
   type SheetData,
 } from './parseWorkbook';
 
@@ -114,5 +115,33 @@ describe('dedupeTrades', () => {
       profitLoss: pnl, setup: '', reasonEmotion: '', runningPnl: 0, note: '',
     });
     expect(dedupeTrades([mk(10), mk(10), mk(20)])).toHaveLength(2);
+  });
+});
+
+describe('sniffDelimiter', () => {
+  it('detects comma, semicolon, tab and pipe', () => {
+    expect(sniffDelimiter('a,b,c\n1,2,3')).toBe(',');
+    expect(sniffDelimiter('a;b;c\n1;2;3')).toBe(';');
+    expect(sniffDelimiter('a\tb\tc\n1\t2\t3')).toBe('\t');
+    expect(sniffDelimiter('a|b|c\n1|2|3')).toBe('|');
+  });
+  it('falls back to comma on ambiguous input', () => {
+    expect(sniffDelimiter('singlecolumn')).toBe(',');
+  });
+});
+
+describe('readSheets with delimiter auto-detect', () => {
+  function buf(s: string): ArrayBuffer {
+    return new TextEncoder().encode(s).buffer;
+  }
+  it('parses a semicolon-delimited CSV into columns', () => {
+    const sheets = readSheets(buf('Date;Symbol;P/L\n2025-01-02;MES;125'));
+    const rows = sheets[0].rows;
+    expect(rows[0]).toEqual(['Date', 'Symbol', 'P/L']);
+    expect(rows[1].map(String)).toEqual(['2025-01-02', 'MES', '125']);
+  });
+  it('parses a tab-delimited file into columns', () => {
+    const sheets = readSheets(buf('Date\tSymbol\tP/L\n2025-01-02\tMES\t-40'));
+    expect(sheets[0].rows[0]).toEqual(['Date', 'Symbol', 'P/L']);
   });
 });

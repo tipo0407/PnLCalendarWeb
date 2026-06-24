@@ -127,7 +127,7 @@ const EN: Record<string, string> = {
   'faq.q2': 'Where is my data stored?',
   'faq.a2': 'Locally, in your browser. Trades, tags, screenshots and settings live on your device. You can export a JSON backup anytime and clear everything in one click.',
   'faq.q3': 'Which formats can I import?',
-  'faq.a3': 'Excel (.xlsx), CSV and Google Sheets. The import wizard auto-detects 10+ broker layouts (IBKR, Tradovate, NinjaTrader, Webull, Rithmic, DAS and more) or lets you map columns yourself.',
+  'faq.a3': 'Excel (.xlsx), CSV and Google Sheets. The import wizard auto-detects 14+ broker layouts (IBKR, Tradovate, NinjaTrader, TradeStation, MetaTrader, Webull, Rithmic, DAS and more), sniffs the CSV delimiter, or lets you map columns yourself.',
   'faq.q4': 'Is this financial advice?',
   'faq.a4': 'No. It’s a journaling and review tool to help you understand your own behavior — not a signal service or investment advice.',
   // Pricing
@@ -295,7 +295,7 @@ const ZH: Record<string, string> = {
   'faq.q2': '我的数据存在哪里？',
   'faq.a2': '存在你浏览器本地。交易、标签、截图和设置都保存在你的设备上。你随时可以导出 JSON 备份，也可一键清除全部。',
   'faq.q3': '支持导入哪些格式？',
-  'faq.a3': 'Excel (.xlsx)、CSV 和 Google Sheets。导入向导可自动识别 10+ 种券商格式（IBKR、Tradovate、NinjaTrader、Webull、Rithmic、DAS 等），也可手动映射列。',
+  'faq.a3': 'Excel (.xlsx)、CSV 和 Google Sheets。导入向导可自动识别 14+ 种券商格式（IBKR、Tradovate、NinjaTrader、TradeStation、MetaTrader、Webull、Rithmic、DAS 等），自动识别 CSV 分隔符，也可手动映射列。',
   'faq.q4': '这是投资建议吗？',
   'faq.a4': '不是。它是一个记录与复盘工具，帮助你了解自己的交易行为，并非荐股或投资建议。',
   // Pricing
