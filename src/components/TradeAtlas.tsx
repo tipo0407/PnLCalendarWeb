@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Printer, X } from 'lucide-react';
+import { Download, Printer, X, FileSpreadsheet } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -24,7 +24,8 @@ import { monteCarlo } from '../lib/monteCarlo';
 import { riskModel } from '../lib/riskModel';
 import { buildYearHeatmap } from '../lib/yearHeatmap';
 import { getSettings } from '../lib/settings';
-import { exportTradesCsv } from '../lib/exportCsv';
+import { exportTradesCsv, downloadText } from '../lib/exportCsv';
+import { taxSummaryCsv } from '../lib/taxSummary';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import ProGate from './ProGate';
@@ -209,6 +210,9 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
         <div className="atlas-actions">
           <button className="atlas-export" onClick={() => exportTradesCsv(trades)} title="Download all trades as CSV">
             <Download size={14} /> CSV
+          </button>
+          <button className="atlas-export" onClick={() => downloadText(`pnl-tax-summary-${new Date().toISOString().slice(0, 10)}.csv`, taxSummaryCsv(trades), 'text/csv')} title={t('atlas.taxTitle')}>
+            <FileSpreadsheet size={14} /> {t('atlas.tax')}
           </button>
           <button className="atlas-export" onClick={printAtlas} title="Export this report as PDF">
             <Printer size={14} /> PDF

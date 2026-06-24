@@ -70,6 +70,7 @@ const EN: Record<string, string> = {
   'side.worstDay': 'Worst Day',
   // Atlas KPIs
   'atlas.netPnl': 'Net P&L',
+  'atlas.tax': 'Tax CSV', 'atlas.taxTitle': 'Realized P&L summary by year & symbol (CSV)',
   'atlas.trades': 'Trades',
   'atlas.winRate': 'Win Rate',
   'atlas.avgTrade': 'Avg Trade',
@@ -320,6 +321,7 @@ const ZH: Record<string, string> = {
   'side.worstDay': '最差单日',
   // Atlas KPIs
   'atlas.netPnl': '净盈亏',
+  'atlas.tax': '税务 CSV', 'atlas.taxTitle': '按年份与品种的已实现盈亏汇总（CSV）',
   'atlas.trades': '交易数',
   'atlas.winRate': '胜率',
   'atlas.avgTrade': '每笔均值',
