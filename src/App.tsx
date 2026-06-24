@@ -458,22 +458,22 @@ export default function App() {
               <div className="lf">
                 <span className="lf-icon"><CalendarRange size={18} /></span>
                 <h3>See your edge at a glance</h3>
-                <p>P&amp;L calendar, 12-month heatmap, equity curve, win rate, profit factor and expectancy.</p>
+                <p>P&amp;L calendar, 12-month heatmap, equity curve, win rate, profit factor, expectancy and an R-multiple distribution.</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><Brain size={18} /></span>
                 <h3>Behavioral review, not just charts</h3>
-                <p>Auto-detected mistakes, emotion edge, a daily discipline score and rule-break tracking.</p>
+                <p>A Leak Finder that ranks where money drains, mistake/emotion edge, a discipline-trend curve and rule-break tracking.</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><Target size={18} /></span>
                 <h3>Change one thing each week</h3>
-                <p>The weekly review finds your single biggest leak and exports a clean PDF report.</p>
+                <p>Weekly and monthly reviews surface your single biggest leak and export a clean, branded PDF report.</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><ShieldCheck size={18} /></span>
                 <h3>Your data stays with you</h3>
-                <p>Read in your browser. No broker credentials, no required cloud, no account.</p>
+                <p>Read in your browser. No broker credentials, no required cloud, no account — optional sync when you want it.</p>
               </div>
             </div>
 
