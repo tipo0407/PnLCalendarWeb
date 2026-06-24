@@ -240,6 +240,7 @@ const EN: Record<string, string> = {
   'iwh.setup': 'Setup',
   'iw.cancel': 'Cancel',
   'iw.import': 'Import',
+  'iw.replace': 'Replace with', 'iw.append': 'Append to existing', 'iw.appendTitle': 'Add these trades to your existing ones (duplicates skipped, tags kept)',
   'iw.tradesWord': 'trades',
   // Settings data section
   'settings.exportBackup': 'Export backup',
@@ -495,6 +496,7 @@ const ZH: Record<string, string> = {
   'iwh.setup': '套路',
   'iw.cancel': '取消',
   'iw.import': '导入',
+  'iw.replace': '替换为', 'iw.append': '追加到现有', 'iw.appendTitle': '将这些交易追加到现有数据（重复跳过，标签保留）',
   'iw.tradesWord': '笔交易',
   // Settings data section
   'settings.exportBackup': '导出备份',

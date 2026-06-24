@@ -15,11 +15,12 @@ import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface Props {
   sheets: SheetData[];
-  onImport: (trades: TradeRecord[]) => void;
+  onImport: (trades: TradeRecord[], mode: 'replace' | 'append') => void;
   onClose: () => void;
+  existingCount?: number;
 }
 
-export default function ImportWizard({ sheets, onImport, onClose }: Props) {
+export default function ImportWizard({ sheets, onImport, onClose, existingCount = 0 }: Props) {
   useLang();
   const trapRef = useFocusTrap<HTMLDivElement>(onClose);
   const [sheetIdx, setSheetIdx] = useState(() => guessSheetIndex(sheets));
@@ -82,13 +83,13 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
         </div>
 
         {/* Remounts (and re-detects mapping) whenever the chosen sheet or template changes. */}
-        <SheetStep key={`${sheetIdx}:${templateId}`} sheet={sheets[sheetIdx]} templateId={templateId} onImport={onImport} onClose={onClose} />
+        <SheetStep key={`${sheetIdx}:${templateId}`} sheet={sheets[sheetIdx]} templateId={templateId} onImport={onImport} onClose={onClose} existingCount={existingCount} />
       </motion.div>
     </motion.div>
   );
 }
 
-function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData; templateId: string; onImport: (t: TradeRecord[]) => void; onClose: () => void }) {
+function SheetStep({ sheet, templateId, onImport, onClose, existingCount }: { sheet: SheetData; templateId: string; onImport: (t: TradeRecord[], mode: 'replace' | 'append') => void; onClose: () => void; existingCount: number }) {
   const hIdx = useMemo(() => headerRowIndex(sheet.rows), [sheet]);
   const headerCells = (sheet.rows[hIdx] ?? []) as unknown[];
   const [mapping, setMapping] = useState<Mapping>(() => {
@@ -206,12 +207,22 @@ function SheetStep({ sheet, templateId, onImport, onClose }: { sheet: SheetData;
 
       <div className="iw-foot">
         <button className="btn iw-cancel" onClick={onClose}>{t('iw.cancel')}</button>
+        {existingCount > 0 && (
+          <button
+            className="btn iw-append"
+            disabled={!canImport}
+            onClick={() => onImport(result.trades, 'append')}
+            title={t('iw.appendTitle')}
+          >
+            {t('iw.append')} ({existingCount})
+          </button>
+        )}
         <button
           className="btn btn-upload iw-import"
           disabled={!canImport}
-          onClick={() => onImport(result.trades)}
+          onClick={() => onImport(result.trades, 'replace')}
         >
-          {t('iw.import')} {result.trades.length} {t('iw.tradesWord')}
+          {existingCount > 0 ? t('iw.replace') : t('iw.import')} {result.trades.length} {t('iw.tradesWord')}
         </button>
       </div>
     </>

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check, Database, Zap, FileDown } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary, distinctAccounts } from './lib/metrics';
-import { parseWorkbook } from './lib/parseWorkbook';
+import { parseWorkbook, dedupeTrades } from './lib/parseWorkbook';
 import type { SheetData } from './lib/parseWorkbook';
 import { sampleTrades } from './data/sampleTrades';
 import { savePersistedTrades, loadPersistedTrades } from './lib/persist';
@@ -262,8 +262,12 @@ export default function App() {
     savePersistedTrades(loaded);
   }
 
-  function handleLoaded(loaded: TradeRecord[]) {
-    applyTrades(loaded);
+  function handleLoaded(loaded: TradeRecord[], mode: 'replace' | 'append' = 'replace') {
+    if (mode === 'append' && !sampleMode && trades.length > 0) {
+      applyTrades(dedupeTrades([...trades, ...loaded]));
+    } else {
+      applyTrades(loaded);
+    }
   }
 
   function reloadProfile() {
@@ -620,8 +624,9 @@ export default function App() {
         {importSheets && (
           <ImportWizard
             sheets={importSheets}
+            existingCount={sampleMode ? 0 : trades.length}
             onClose={() => setImportSheets(null)}
-            onImport={(t) => { handleLoaded(t); setImportSheets(null); }}
+            onImport={(t, mode) => { handleLoaded(t, mode); setImportSheets(null); }}
           />
         )}
       </AnimatePresence>

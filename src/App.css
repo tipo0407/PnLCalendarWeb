@@ -2344,3 +2344,8 @@
 .dmc-val { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .dash-mom-chip.pos .dmc-val { color: var(--pos); }
 .dash-mom-chip.neg .dmc-val { color: var(--neg); }
+
+/* Import wizard append button */
+.iw-append { background: transparent; border: 1px solid var(--accent); color: var(--accent); font-weight: 600; }
+.iw-append:hover:not(:disabled) { background: var(--accent-soft); }
+.iw-append:disabled { opacity: 0.5; cursor: not-allowed; }
