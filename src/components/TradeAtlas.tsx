@@ -19,7 +19,7 @@ import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
 import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
-import { riskStats, drawdownSeries, rMultipleHistogram } from '../lib/risk';
+import { riskStats, drawdownSeries, rMultipleHistogram, drawdownDuration } from '../lib/risk';
 import { riskModel } from '../lib/riskModel';
 import { buildYearHeatmap } from '../lib/yearHeatmap';
 import { getSettings } from '../lib/settings';
@@ -138,6 +138,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
+  const ddDur = useMemo(() => drawdownDuration(ddSeries), [ddSeries]);
   const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
   const rm = useMemo(() => {
     const units = accountSize > 0 && riskPerTrade > 0 ? Math.max(1, Math.round(accountSize / riskPerTrade)) : 20;
@@ -756,6 +757,9 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
             <RiskTile label="Avg R / trade" value={risk.hasRisk ? `${risk.avgR >= 0 ? '+' : ''}${risk.avgR.toFixed(2)}R` : '—'} cls={risk.avgR >= 0 ? 'pos' : 'neg'} />
             <RiskTile label="Total R" value={risk.hasRisk ? `${risk.totalR >= 0 ? '+' : ''}${risk.totalR.toFixed(1)}R` : '—'} cls={risk.totalR >= 0 ? 'pos' : 'neg'} />
             <RiskTile label="Best / Worst R" value={risk.hasRisk ? `${risk.bestR.toFixed(1)} / ${risk.worstR.toFixed(1)}` : '—'} />
+            <RiskTile label={t('dd.longest')} value={ddDur.longestTrades > 0 ? `${ddDur.longestTrades} ${t('dd.trades')}` : '—'} sub={ddDur.longestDays > 0 ? `${ddDur.longestDays} ${t('dd.days')}` : undefined} cls={ddDur.longestTrades > 0 ? 'neg' : ''} />
+            <RiskTile label={t('dd.current')} value={ddDur.currentTrades > 0 ? `${ddDur.currentTrades} ${t('dd.trades')}` : t('dd.atPeak')} sub={ddDur.currentDays > 0 ? `${ddDur.currentDays} ${t('dd.days')}` : undefined} cls={ddDur.currentTrades > 0 ? 'neg' : 'pos'} />
+            <RiskTile label={t('dd.recovery')} value={ddDur.recovered ? `${ddDur.recoveryTrades} ${t('dd.trades')}` : (ddDur.currentTrades > 0 ? t('dd.ongoing') : '—')} sub={ddDur.recovered && ddDur.recoveryDays > 0 ? `${ddDur.recoveryDays} ${t('dd.days')}` : undefined} cls={ddDur.recovered ? 'pos' : ''} />
           </div>
           <ResponsiveContainer width="100%" height={150}>
             <AreaChart data={ddSeries} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TradeRecord } from '../types';
-import { riskStats, drawdownSeries, rMultipleHistogram } from './risk';
+import { riskStats, drawdownSeries, rMultipleHistogram, drawdownDuration } from './risk';
 
 function trade(pnl: number, i: number): TradeRecord {
   return {
@@ -57,5 +57,35 @@ describe('rMultipleHistogram', () => {
     const edges = rMultipleHistogram([-2, 3]);
     expect(edges[0].count).toBe(1);
     expect(edges[6].count).toBe(1);
+  });
+});
+
+describe('drawdownDuration', () => {
+  it('measures longest underwater stretch and recovery', () => {
+    // equity path via trade pnls: +100 (peak), -40, -30 (trough), +20, +60 (new peak)
+    const trades = [100, -40, -30, 20, 60].map((p, i) => trade(p, i));
+    // Spread dates one day apart for day math.
+    trades.forEach((t, i) => { t.date = `2025-01-0${i + 1}`; });
+    const dd = drawdownSeries(trades);
+    const d = drawdownDuration(dd);
+    expect(d.longestTrades).toBeGreaterThanOrEqual(3);
+    expect(d.recovered).toBe(true);
+    expect(d.recoveryTrades).toBeGreaterThanOrEqual(2);
+    expect(d.recoveryDays).toBeGreaterThan(0);
+  });
+
+  it('reports an ongoing drawdown that never recovered', () => {
+    const trades = [100, -50, -10].map((p, i) => trade(p, i));
+    trades.forEach((t, i) => { t.date = `2025-02-0${i + 1}`; });
+    const d = drawdownDuration(drawdownSeries(trades));
+    expect(d.currentTrades).toBeGreaterThan(0);
+    expect(d.recovered).toBe(false);
+  });
+
+  it('is all zeros with no drawdown', () => {
+    const trades = [10, 20, 30].map((p, i) => trade(p, i));
+    const d = drawdownDuration(drawdownSeries(trades));
+    expect(d.longestTrades).toBe(0);
+    expect(d.currentTrades).toBe(0);
   });
 });
