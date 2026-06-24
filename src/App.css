@@ -2311,3 +2311,16 @@
 .de-pnl { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .de-meta { font-size: 12px; color: var(--muted); }
 @media (max-width: 560px) { .dash-extremes { grid-template-columns: 1fr; } }
+
+/* Trade table: inline mistake tags */
+.tt-tags-cell { white-space: nowrap; }
+.rt-wrap { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rt-chip { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; border: none; cursor: pointer; font-weight: 600; }
+.rt-chip.on { background: color-mix(in srgb, var(--neg) 18%, transparent); color: var(--neg); }
+.rt-chip.auto { background: var(--accent-soft); color: var(--accent); cursor: default; }
+.rt-pop-wrap { position: relative; display: inline-flex; }
+.rt-add { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; padding: 2px 7px; border-radius: 999px; border: 1px dashed var(--border-strong); background: transparent; color: var(--muted); cursor: pointer; }
+.rt-add:hover, .rt-add.on { color: var(--accent); border-color: var(--accent); }
+.rt-pop { position: absolute; top: 100%; right: 0; z-index: 30; margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px; min-width: 220px; background: var(--card); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: var(--shadow-md); }
+.rt-pop-item { font-size: 11.5px; padding: 5px 8px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; text-align: left; }
+.rt-pop-item.on { background: color-mix(in srgb, var(--neg) 16%, transparent); border-color: var(--neg); color: var(--neg); }

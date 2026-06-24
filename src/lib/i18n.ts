@@ -237,6 +237,7 @@ const EN: Record<string, string> = {
   'tt.size': 'Size', 'tt.pnl': 'P&L', 'tt.setup': 'Setup', 'tt.filter': 'Filter by symbol, setup, note…',
   'tt.r': 'R',
   'tt.export': 'CSV', 'tt.exportTitle': 'Export the filtered, sorted trades to CSV',
+  'tt.tags': 'Tags', 'tt.tag': 'Tag', 'tt.addTag': 'Add a mistake tag', 'tt.removeTag': 'Remove tag', 'tt.autoTag': 'Auto-detected from your note',
   // Playbook columns
   'pb.setup': 'Setup', 'pb.trades': 'Trades', 'pb.winPct': 'Win%', 'pb.net': 'Net',
   'pb.expectancy': 'Expectancy', 'pb.pf': 'PF',
@@ -470,6 +471,7 @@ const ZH: Record<string, string> = {
   'tt.size': '数量', 'tt.pnl': '盈亏', 'tt.setup': '套路', 'tt.filter': '按品种、套路、备注筛选…',
   'tt.r': 'R',
   'tt.export': 'CSV', 'tt.exportTitle': '导出筛选并排序后的交易为 CSV',
+  'tt.tags': '标签', 'tt.tag': '标签', 'tt.addTag': '添加错误标签', 'tt.removeTag': '移除标签', 'tt.autoTag': '根据备注自动识别',
   // Playbook columns
   'pb.setup': '套路', 'pb.trades': '交易数', 'pb.winPct': '胜率', 'pb.net': '净额',
   'pb.expectancy': '期望值', 'pb.pf': '盈亏比',

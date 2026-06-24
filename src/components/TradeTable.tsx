@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUp, ArrowDown, Search, Download } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, Download, Tag, Plus } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { getSettings } from '../lib/settings';
 import { getTablePrefs, saveTablePrefs } from '../lib/tablePrefs';
 import { downloadText, tradesToCsv } from '../lib/exportCsv';
+import { detectTags, allMistakeTags } from '../lib/tags';
+import { tradeTagKey, getTradeTags, toggleTag } from '../lib/userTags';
 import { t } from '../lib/i18n';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
@@ -87,10 +89,11 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
               <Th label={t('tt.pnl')} k="profitLoss" cur={sortKey} Caret={Caret} onClick={sortBy} num />
               {risk > 0 && <th className="tt-num">{t('tt.r')}</th>}
               <Th label={t('tt.setup')} k="setup" cur={sortKey} Caret={Caret} onClick={sortBy} />
+              <th>{t('tt.tags')}</th>
             </tr>
           </thead>
           <tbody>
-            {shown.length === 0 && <tr><td colSpan={risk > 0 ? 8 : 7} className="ttable-empty">No matching trades.</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={risk > 0 ? 9 : 8} className="ttable-empty">No matching trades.</td></tr>}
             {shown.map((t, i) => (
               <tr key={`${t.date}-${t.rowNumber}-${i}`} onClick={() => onSelectDay(t.date)} className="ttable-row">
                 <td>{shortDate(t.date)}</td>
@@ -101,6 +104,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
                 <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(t.profitLoss)}</td>
                 {risk > 0 && <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{(t.profitLoss / risk).toFixed(2)}R</td>}
                 <td className="tt-dim">{t.setup || ''}</td>
+                <td className="tt-tags-cell" onClick={(e) => e.stopPropagation()}><RowTags trade={t} /></td>
               </tr>
             ))}
           </tbody>
@@ -112,6 +116,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
                   {formatMoney(rows.reduce((s, t) => s + t.profitLoss, 0))}
                 </td>
                 {risk > 0 && <td />}
+                <td />
                 <td />
               </tr>
             </tfoot>
@@ -131,3 +136,50 @@ function Th({ label, k, cur, Caret, onClick, num }: {
     </th>
   );
 }
+
+/** Compact, inline mistake-tagging for one trade row (manual tags + quick menu). */
+function RowTags({ trade }: { trade: TradeRecord }) {
+  const key = tradeTagKey(trade.date, trade.tradeNumber, trade.rowNumber);
+  const [tags, setTags] = useState(() => getTradeTags(key));
+  const [open, setOpen] = useState(false);
+
+  // Auto-detected mistakes (from notes) shown read-only; manual tags are toggleable.
+  const auto = useMemo(() => new Set(detectTags(trade)), [trade]);
+  const defs = allMistakeTags();
+  const labelOf = new Map(defs.map((d) => [d.key, d.label]));
+
+  function flip(tagKey: string) { setTags(toggleTag(key, 'mistake', tagKey)); }
+
+  const manual = tags.mistakes;
+  const shownAuto = [...auto].filter((k) => !manual.includes(k));
+
+  return (
+    <span className="rt-wrap">
+      {manual.map((m) => (
+        <button key={`m-${m}`} className="rt-chip on" onClick={() => flip(m)} title={t('tt.removeTag')}>{labelOf.get(m) ?? m}</button>
+      ))}
+      {shownAuto.map((m) => (
+        <span key={`a-${m}`} className="rt-chip auto" title={t('tt.autoTag')}>{labelOf.get(m) ?? m}</span>
+      ))}
+      <span className="rt-pop-wrap">
+        <button className={`rt-add ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)} title={t('tt.addTag')}>
+          {manual.length || shownAuto.length ? <Plus size={11} /> : <><Tag size={11} /> {t('tt.tag')}</>}
+        </button>
+        {open && (
+          <span className="rt-pop" onMouseLeave={() => setOpen(false)}>
+            {defs.map((d) => (
+              <button
+                key={d.key}
+                className={`rt-pop-item ${manual.includes(d.key) ? 'on' : ''}`}
+                onClick={() => flip(d.key)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
+
