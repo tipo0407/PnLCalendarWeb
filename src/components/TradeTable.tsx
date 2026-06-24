@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, formatMoney, shortDate } from '../lib/metrics';
 import { getSettings } from '../lib/settings';
+import { getTablePrefs, saveTablePrefs } from '../lib/tablePrefs';
 import { t } from '../lib/i18n';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
@@ -17,10 +18,13 @@ function hhmm(secs: number | null): string {
 const MAX_ROWS = 1000;
 
 export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecord[]; onSelectDay: (date: string) => void }) {
-  const [sortKey, setSortKey] = useState<SortKey>('date');
-  const [dir, setDir] = useState<'asc' | 'desc'>('desc');
+  const [sortKey, setSortKey] = useState<SortKey>(() => getTablePrefs().sortKey);
+  const [dir, setDir] = useState<'asc' | 'desc'>(() => getTablePrefs().dir);
   const [q, setQ] = useState('');
   const risk = getSettings().riskPerTrade;
+
+  // Persist the sort preference (per active profile) so it survives reloads.
+  useEffect(() => { saveTablePrefs({ sortKey, dir }); }, [sortKey, dir]);
 
   const rows = useMemo(() => {
     const query = q.trim().toLowerCase();
