@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, Laptop, Cloud, Merge } from 'lucide-react';
 import type { Backup } from '../lib/backup';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface Props {
   local: Backup;
@@ -15,6 +16,7 @@ interface Props {
 export default function SyncConflictModal({ local, cloud, cloudUpdatedAt, onKeepLocal, onKeepCloud, onMerge, onClose }: Props) {
   const localCount = local.trades.length;
   const cloudCount = cloud.trades.length;
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
 
   return (
     <motion.div
@@ -27,6 +29,7 @@ export default function SyncConflictModal({ local, cloud, cloudUpdatedAt, onKeep
     >
       <motion.div
         className="conflict-card"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Sync conflict"

@@ -18,12 +18,22 @@ interface Props {
 export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
   useLang();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const titleId = `day-detail-${daily.date}`;
 
   useEffect(() => {
-    // Close on Escape and lock background scroll while open.
+    // Close on Escape, trap Tab within the dialog, and lock background scroll.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab' || !modalRef.current) return;
+      const items = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+      ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -49,6 +59,7 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
     >
       <motion.div
         className="modal"
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

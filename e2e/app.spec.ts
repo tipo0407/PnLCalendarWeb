@@ -173,3 +173,22 @@ test('keyboard shortcuts overlay opens with ? and closes with Escape', async ({ 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 });
+
+test('Settings modal traps focus and closes on Escape', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Explore with sample data/i }).click();
+
+  await page.getByTitle('Settings').click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog).toBeVisible();
+
+  // Focus moved into the dialog on open.
+  await expect.poll(() => page.evaluate(() => {
+    const card = document.querySelector('.settings-card');
+    return card ? card.contains(document.activeElement) : false;
+  })).toBe(true);
+
+  // Escape closes it (focus-trap hook behavior).
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+});

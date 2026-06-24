@@ -13,6 +13,7 @@ import TagsManager from './TagsManager';
 import SyncConflictModal from './SyncConflictModal';
 import { useAccount } from '../lib/useAccount';
 import { pullBackup, pushBackup, isRemoteNewer, getLastSynced, markSynced, getAutoSync, setAutoSync } from '../lib/cloudSync';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface Props {
   onClose: () => void;
@@ -35,6 +36,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
   const [auto, setAuto] = useState(() => getAutoSync());
   const [conflict, setConflict] = useState<{ local: Backup; cloud: Backup; updatedAt: string | null } | null>(null);
   const lang = useLang();
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
 
   async function cloudPush() {
     setSyncing(true); setSyncMsg('Checking cloud…');
@@ -154,6 +156,7 @@ export default function SettingsModal({ onClose, trades, onReplaceTrades }: Prop
     >
       <motion.div
         className="settings-card"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Settings"

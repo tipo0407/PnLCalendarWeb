@@ -6,6 +6,7 @@ import { deactivatePro, activateProOnline, isValidKey, DEMO_KEY, planKey } from 
 import { startCheckout, PRICE_IDS } from '../lib/checkout';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface Props {
   onClose: () => void;
@@ -79,6 +80,7 @@ const TIERS: Tier[] = [
 export default function PricingModal({ onClose }: Props) {
   const pro = useIsPro();
   useLang(); // re-render on language change
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
   const [keyInput, setKeyInput] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [msgKind, setMsgKind] = useState<'ok' | 'err' | 'info'>('info');
@@ -121,6 +123,7 @@ export default function PricingModal({ onClose }: Props) {
     >
       <motion.div
         className="pricing-card"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Plans & pricing"

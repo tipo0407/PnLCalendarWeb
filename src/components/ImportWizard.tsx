@@ -10,6 +10,7 @@ import { BROKER_TEMPLATES, applyTemplate, detectTemplate } from '../lib/brokerTe
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 interface Props {
   sheets: SheetData[];
@@ -19,6 +20,7 @@ interface Props {
 
 export default function ImportWizard({ sheets, onImport, onClose }: Props) {
   useLang();
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
   const [sheetIdx, setSheetIdx] = useState(() => guessSheetIndex(sheets));
   // 'auto' = alias auto-mapping; otherwise a broker template id.
   const [templateId, setTemplateId] = useState<string>(() => {
@@ -39,6 +41,7 @@ export default function ImportWizard({ sheets, onImport, onClose }: Props) {
     >
       <motion.div
         className="import-card"
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
