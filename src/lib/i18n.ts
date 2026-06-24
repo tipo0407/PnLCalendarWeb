@@ -98,6 +98,7 @@ const EN: Record<string, string> = {
   'sc.close': 'Close dialogs',
   // Dashboard
   'dash.netPnl': 'Net P&L',
+  'dash.setGoal': 'Set a goal',
   'dash.winRate': 'Win rate',
   'dash.profitFactor': 'Profit factor',
   'dash.dayStreak': 'Day streak',
@@ -297,6 +298,7 @@ const ZH: Record<string, string> = {
   'sc.close': '关闭弹窗',
   // Dashboard
   'dash.netPnl': '净盈亏',
+  'dash.setGoal': '设定目标',
   'dash.winRate': '胜率',
   'dash.profitFactor': '盈亏比',
   'dash.dayStreak': '连续天数',

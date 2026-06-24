@@ -2219,3 +2219,11 @@
 .iwh-cov-fill.mid { background: var(--accent); }
 .iwh-cov-fill.low { background: var(--neg); }
 .iwh-cov-pct { font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); }
+
+/* Dashboard monthly goal ring */
+.dash-month-ring-wrap { display: flex; align-items: center; gap: 16px; }
+.dash-month-info { display: flex; flex-direction: column; gap: 3px; }
+.goal-ring { flex-shrink: 0; }
+.goal-ring circle:last-of-type { transition: stroke-dashoffset 0.6s ease; }
+.goal-ring-text { font-size: 15px; font-weight: 700; fill: var(--text); }
+.dash-month-goal { color: var(--muted); font-weight: 500; }

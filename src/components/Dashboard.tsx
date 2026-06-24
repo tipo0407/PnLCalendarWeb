@@ -63,20 +63,31 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
 
       {month && (
         <div className="dash-month">
-          <div className="dash-month-head">
-            <Target size={15} />
-            <span>{monthName} so far</span>
-            <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>
-              {formatMoneySigned(month.pnl)}{monthlyGoal > 0 && <> / {formatMoney(monthlyGoal)}</>}
-            </span>
-            {monthlyGoal <= 0 && <button className="dash-link-sm" onClick={onOpenSettings}>Set a goal</button>}
-          </div>
-          {monthlyGoal > 0 && (
-            <div className="dash-month-bar">
-              <div className={`dash-month-fill ${month.pnl >= 0 ? 'pos' : 'neg'}`} style={{ width: `${Math.max(0, Math.min(100, month.pct))}%` }} />
+          {monthlyGoal > 0 ? (
+            <div className="dash-month-ring-wrap">
+              <GoalRing pct={month.pct} positive={month.pnl >= 0} />
+              <div className="dash-month-info">
+                <div className="dash-month-head">
+                  <Target size={15} />
+                  <span>{monthName} so far</span>
+                </div>
+                <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>
+                  {formatMoneySigned(month.pnl)} <span className="dash-month-goal">/ {formatMoney(monthlyGoal)}</span>
+                </span>
+                <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="dash-month-head">
+                <Target size={15} />
+                <span>{monthName} so far</span>
+                <span className={`dash-month-net ${month.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(month.pnl)}</span>
+                <button className="dash-link-sm" onClick={onOpenSettings}>{t('dash.setGoal')}</button>
+              </div>
+              <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
+            </>
           )}
-          <div className="dash-month-sub"><b className="pos">{month.greenDays}</b> green · <b className="neg">{month.redDays}</b> red days</div>
         </div>
       )}
 
@@ -120,6 +131,24 @@ export default function Dashboard({ trades, summary, onSetView, onSelectDay, onO
         </div>
       </div>
     </div>
+  );
+}
+
+function GoalRing({ pct, positive }: { pct: number; positive: boolean }) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const R = 26;
+  const C = 2 * Math.PI * R;
+  const offset = C * (1 - clamped / 100);
+  const stroke = positive ? 'var(--pos)' : 'var(--neg)';
+  return (
+    <svg className="goal-ring" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label={`${Math.round(pct)}% of goal`}>
+      <circle cx="32" cy="32" r={R} fill="none" stroke="var(--border)" strokeWidth="6" />
+      <circle
+        cx="32" cy="32" r={R} fill="none" stroke={stroke} strokeWidth="6" strokeLinecap="round"
+        strokeDasharray={C} strokeDashoffset={offset} transform="rotate(-90 32 32)"
+      />
+      <text x="32" y="36" textAnchor="middle" className="goal-ring-text">{Math.round(clamped)}%</text>
+    </svg>
   );
 }
 
