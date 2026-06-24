@@ -54,6 +54,7 @@ const EN: Record<string, string> = {
   'cal.worstDay': 'Worst Day',
   'cal.projected': 'Projected',
   'cal.consistency': 'Consistency',
+  'cal.vsLastYear': 'vs last year',
   // Dashboard
   'dash.netPnl': 'Net P&L',
   'dash.winRate': 'Win rate',
@@ -189,6 +190,7 @@ const ZH: Record<string, string> = {
   'cal.worstDay': '最差单日',
   'cal.projected': '预计',
   'cal.consistency': '稳定度',
+  'cal.vsLastYear': '对比去年',
   // Dashboard
   'dash.netPnl': '净盈亏',
   'dash.winRate': '胜率',
