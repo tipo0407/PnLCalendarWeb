@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Calendar, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, SunMoon, CornerDownLeft, LayoutDashboard } from 'lucide-react';
+import { Search, Calendar, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, SunMoon, CornerDownLeft, LayoutDashboard, Keyboard } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
 
@@ -13,6 +13,7 @@ interface Props {
   onOpenSettings: () => void;
   onOpenPricing: () => void;
   onToggleTheme: () => void;
+  onShowShortcuts: () => void;
 }
 
 interface Item {
@@ -25,7 +26,7 @@ interface Item {
 }
 
 export default function CommandPalette({
-  trades, onClose, onSelectDay, onSetView, onOpenSettings, onOpenPricing, onToggleTheme,
+  trades, onClose, onSelectDay, onSetView, onOpenSettings, onOpenPricing, onToggleTheme, onShowShortcuts,
 }: Props) {
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
@@ -41,7 +42,8 @@ export default function CommandPalette({
     { id: 'settings', icon: <SlidersHorizontal size={15} />, label: 'Open Settings', group: 'Actions', run: onOpenSettings },
     { id: 'pricing', icon: <Sparkles size={15} />, label: 'Plans & pricing', group: 'Actions', run: onOpenPricing },
     { id: 'theme', icon: <SunMoon size={15} />, label: 'Toggle light / dark theme', group: 'Actions', run: onToggleTheme },
-  ], [onSetView, onOpenSettings, onOpenPricing, onToggleTheme]);
+    { id: 'shortcuts', icon: <Keyboard size={15} />, label: 'Keyboard shortcuts', hint: '?', group: 'Actions', run: onShowShortcuts },
+  ], [onSetView, onOpenSettings, onOpenPricing, onToggleTheme, onShowShortcuts]);
 
   const items: Item[] = useMemo(() => {
     const query = q.trim().toLowerCase();

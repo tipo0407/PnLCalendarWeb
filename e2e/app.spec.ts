@@ -160,3 +160,16 @@ test('sign in and push to cloud (mocked API)', async ({ page }) => {
   await page.getByRole('button', { name: /Push to cloud/i }).click();
   await expect(page.getByText(/Pushed to cloud/i)).toBeVisible();
 });
+
+test('keyboard shortcuts overlay opens with ? and closes with Escape', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Explore with sample data/i }).click();
+
+  await page.keyboard.press('?');
+  const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Command palette')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+});

@@ -25,6 +25,7 @@ import Dashboard from './components/Dashboard';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
 import ReminderBanner from './components/ReminderBanner';
+import ShortcutsOverlay from './components/ShortcutsOverlay';
 import { SETTINGS_EVENT } from './lib/settings';
 import { useIsPro } from './lib/usePlan';
 import { useAccount } from './lib/useAccount';
@@ -72,6 +73,7 @@ export default function App() {
   const [showPricing, setShowPricing] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   // Bumped on any settings change so money/labels re-render with new prefs.
   const [, setSettingsTick] = useState(0);
 
@@ -156,6 +158,7 @@ export default function App() {
         case '4': if (hasData) setView('review'); break;
         case 't': case 'T': setTheme((t) => (t === 'dark' ? 'light' : 'dark')); break;
         case ',': setShowSettings(true); break;
+        case '?': setShowShortcuts((v) => !v); break;
         default: return;
       }
     };
@@ -392,10 +395,12 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
           onOpenPricing={() => setShowPricing(true)}
           onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          onShowShortcuts={() => { setShowPalette(false); setShowShortcuts(true); }}
         />
       )}
 
       {showTour && <TourOverlay onClose={closeTour} />}
+      {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
 
       {trades.length === 0 ? (
         <div className="landing">
