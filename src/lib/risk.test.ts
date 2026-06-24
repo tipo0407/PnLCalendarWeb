@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TradeRecord } from '../types';
-import { riskStats, drawdownSeries } from './risk';
+import { riskStats, drawdownSeries, rMultipleHistogram } from './risk';
 
 function trade(pnl: number, i: number): TradeRecord {
   return {
@@ -43,5 +43,19 @@ describe('riskStats', () => {
     const s = riskStats([trade(50, 0)], 0, 0);
     expect(s.hasRisk).toBe(false);
     expect(s.rMultiples).toEqual([]);
+  });
+});
+
+describe('rMultipleHistogram', () => {
+  it('returns empty when no R-multiples', () => {
+    expect(rMultipleHistogram([])).toEqual([]);
+  });
+  it('buckets R-multiples across the fixed ranges', () => {
+    const h = rMultipleHistogram([-3, -1.5, -0.5, 0.5, 1.5, 2.5, 4]);
+    expect(h.map((b) => b.count)).toEqual([1, 1, 1, 1, 1, 1, 1]);
+    // Boundaries: exactly -2 goes to the lowest bucket; exactly +3 to the top.
+    const edges = rMultipleHistogram([-2, 3]);
+    expect(edges[0].count).toBe(1);
+    expect(edges[6].count).toBe(1);
   });
 });

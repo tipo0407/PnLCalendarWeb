@@ -71,3 +71,41 @@ export function riskStats(trades: TradeRecord[], accountSize = 0, riskPerTrade =
     winRate: rMultiples.length ? wins / rMultiples.length : 0,
   };
 }
+
+export interface RBucket {
+  /** Bucket label, e.g. "≤ -2R", "-1–0R", "≥ +3R". */
+  label: string;
+  count: number;
+  /** True for non-negative (winning) buckets, for coloring. */
+  win: boolean;
+}
+
+/**
+ * Bucket R-multiples into a fixed distribution from ≤ -2R up to ≥ +3R in 1R
+ * steps. Shows whether the trader's edge comes from many small wins, a few big
+ * ones, or fat-tailed losses. Returns empty when there are no R-multiples.
+ */
+export function rMultipleHistogram(rMultiples: number[]): RBucket[] {
+  if (rMultiples.length === 0) return [];
+  const buckets: RBucket[] = [
+    { label: '≤ -2R', count: 0, win: false },
+    { label: '-2–-1R', count: 0, win: false },
+    { label: '-1–0R', count: 0, win: false },
+    { label: '0–1R', count: 0, win: true },
+    { label: '1–2R', count: 0, win: true },
+    { label: '2–3R', count: 0, win: true },
+    { label: '≥ +3R', count: 0, win: true },
+  ];
+  for (const r of rMultiples) {
+    let i: number;
+    if (r <= -2) i = 0;
+    else if (r < -1) i = 1;
+    else if (r < 0) i = 2;
+    else if (r < 1) i = 3;
+    else if (r < 2) i = 4;
+    else if (r < 3) i = 5;
+    else i = 6;
+    buckets[i].count += 1;
+  }
+  return buckets;
+}

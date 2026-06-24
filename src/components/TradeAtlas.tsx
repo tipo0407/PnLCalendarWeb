@@ -19,7 +19,7 @@ import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
 import { disciplineTrend } from '../lib/discipline';
 import { weekKeyOf, weekLabel } from '../lib/review';
-import { riskStats, drawdownSeries } from '../lib/risk';
+import { riskStats, drawdownSeries, rMultipleHistogram } from '../lib/risk';
 import { getSettings } from '../lib/settings';
 import { exportTradesCsv } from '../lib/exportCsv';
 import { t } from '../lib/i18n';
@@ -134,6 +134,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
   const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
   const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
+  const rHist = useMemo(() => rMultipleHistogram(risk.rMultiples), [risk.rMultiples]);
   const ddKey = risk.hasAccount ? 'drawdownPct' : 'drawdown';
 
   const showTarget = monthlyGoal > 0;
@@ -535,7 +536,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ProGate>
         </Panel>
 
-        <Panel title={t('panel.disciplineTrend')} subtitle={t('panel.disciplineTrendSub')} span={12}>
+        <Panel title={t('panel.disciplineTrend')} subtitle={t('panel.disciplineTrendSub')} span={6}>
           <ProGate feature="Discipline Trend">
             {discTrend.length < 2 ? (
               <div className="atlas-empty">{t('disc.empty')}</div>
@@ -555,6 +556,33 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                   <ReferenceLine y={80} stroke={POS} strokeDasharray="4 4" />
                   <Area type="monotone" dataKey="score" stroke={ACC} strokeWidth={2.5} fill="url(#discFill)" />
                 </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </ProGate>
+        </Panel>
+
+        <Panel
+          title={t('panel.rDist')}
+          subtitle={t('panel.rDistSub')}
+          span={6}
+          action={(!risk.hasRisk) && onOpenSettings
+            ? <button className="atlas-link" onClick={onOpenSettings}>{t('panel.setRisk')}</button>
+            : undefined}
+        >
+          <ProGate feature="R-Multiple Distribution">
+            {!risk.hasRisk || rHist.length === 0 ? (
+              <div className="atlas-empty">{t('rdist.empty')}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={rHist} barCategoryGap="14%" margin={{ top: 6, right: 10, bottom: 0, left: -16 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                  <XAxis dataKey="label" {...AXIS} interval={0} angle={-30} textAnchor="end" height={48} />
+                  <YAxis {...AXIS} width={32} allowDecimals={false} />
+                  <Tooltip {...TOOLTIP} formatter={(v) => [String(v), 'Trades']} />
+                  <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={46}>
+                    {rHist.map((b, i) => <Cell key={i} fill={b.win ? POS : NEG} />)}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </ProGate>
