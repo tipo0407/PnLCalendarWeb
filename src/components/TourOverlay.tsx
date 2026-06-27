@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
-interface Step {
-  selector: string;
-  title: string;
-  body: string;
-}
-
-const STEPS: Step[] = [
-  { selector: '.view-tabs', title: 'Your views', body: 'Switch between Home, Calendar, Trade Atlas and the Weekly Review. Shortcuts 1–4.' },
-  { selector: '.profile-switch', title: 'Profiles', body: 'Keep separate journals (e.g. funded vs personal) — each with its own data & settings.' },
-  { selector: '.pro-pill', title: 'Pro analytics', body: 'Unlock behavioral analytics, risk and the playbook. Try the demo key to explore.' },
-  { selector: '.icon-btn', title: 'Settings', body: 'Currency, goals, account, cloud sync, themes and your data all live here.' },
+const STEP_DEFS = [
+  { selector: '.view-tabs', titleKey: 'tour.views.title', bodyKey: 'tour.views.body' },
+  { selector: '.icon-btn', titleKey: 'tour.settings.title', bodyKey: 'tour.settings.body' },
 ];
 
 interface Props {
@@ -20,9 +14,15 @@ interface Props {
 
 /** Lightweight spotlight tour: dims the page and highlights key UI in turn. */
 export default function TourOverlay({ onClose }: Props) {
+  const lang = useLang();
   const steps = useMemo(
-    () => STEPS.filter((s) => document.querySelector(s.selector)),
-    [],
+    () => {
+      void lang;
+      return STEP_DEFS
+        .filter((s) => document.querySelector(s.selector))
+        .map((s) => ({ selector: s.selector, title: t(s.titleKey), body: t(s.bodyKey) }));
+    },
+    [lang],
   );
   const [i, setI] = useState(0);
   const [, force] = useState(0);
@@ -60,19 +60,19 @@ export default function TourOverlay({ onClose }: Props) {
   const last = i >= steps.length - 1;
 
   return (
-    <div className="tour" role="dialog" aria-modal="true" aria-label="Guided tour">
+    <div className="tour" role="dialog" aria-modal="true" aria-label={t('tour.title')}>
       <div className="tour-spot" style={spot} />
       <div className="tour-tip" style={{ top: tipTop, left: tipLeft }}>
-        <button className="tour-close" onClick={onClose} aria-label="Close tour"><X size={15} /></button>
+        <button className="tour-close" onClick={onClose} aria-label={t('tour.close')}><X size={15} /></button>
         <div className="tour-title">{step.title}</div>
         <div className="tour-body">{step.body}</div>
         <div className="tour-foot">
           <span className="tour-progress">{i + 1} / {steps.length}</span>
           <div className="tour-btns">
-            {i > 0 && <button className="tour-btn" onClick={() => setI((x) => x - 1)}>Back</button>}
+            {i > 0 && <button className="tour-btn" onClick={() => setI((x) => x - 1)}>{t('tour.back')}</button>}
             {last
-              ? <button className="tour-btn primary" onClick={onClose}>Done</button>
-              : <button className="tour-btn primary" onClick={() => setI((x) => x + 1)}>Next</button>}
+              ? <button className="tour-btn primary" onClick={onClose}>{t('tour.done')}</button>
+              : <button className="tour-btn primary" onClick={() => setI((x) => x + 1)}>{t('tour.next')}</button>}
           </div>
         </div>
       </div>

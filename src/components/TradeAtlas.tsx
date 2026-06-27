@@ -1,39 +1,28 @@
 import { useMemo, useState } from 'react';
-import { Download, Printer, X, FileSpreadsheet } from 'lucide-react';
+import { Download, Printer, FileSpreadsheet } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart, Area,
-  ComposedChart, Line,
-  LineChart,
+  ComposedChart,
   BarChart, Bar,
   PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid, Legend,
+  XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid,
 } from 'recharts';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import { useThemeColors } from '../lib/useThemeColors';
 import { useUserTags } from '../lib/useUserTags';
-import { tagEdge, taggedTradeCount, detectTags } from '../lib/tags';
-import { emotionEdge, detectEmotions } from '../lib/emotions';
-import { tagTrend, tagCooccurrence } from '../lib/tagAnalytics';
 import { findLeaks } from '../lib/leaks';
-import { riskStats, drawdownSeries } from '../lib/risk';
-import { getSettings } from '../lib/settings';
 import { exportTradesCsv, downloadText } from '../lib/exportCsv';
 import { taxSummaryCsv } from '../lib/taxSummary';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
-import ProGate from './ProGate';
-import Playbook from './Playbook';
-import TradeTable from './TradeTable';
-import RulesPanel from './RulesPanel';
 import {
   dailyEquityCurve,
   edgeByField,
   hourEdgeBySymbol,
   distinctSymbols,
   movingWinRate,
-  pnlHistogram,
   monthlyBreakdown,
   dayOfWeekEdge,
   holdTimeEdge,
@@ -48,8 +37,6 @@ import {
 interface Props {
   trades: TradeRecord[];
   summary: Summary;
-  onOpenSettings?: () => void;
-  onSelectDay?: (date: string) => void;
 }
 
 const AXIS = { stroke: '#9aa6ba', fontSize: 11, tickLine: false, axisLine: false };
@@ -73,8 +60,8 @@ function printAtlas() {
   setTimeout(cleanup, 1000);
 }
 
-export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDay }: Props) {
-  useLang(); // re-render on language change
+export default function TradeAtlas({ trades, summary }: Props) {
+  const lang = useLang(); // re-render on language change
   const theme = useThemeColors();
   const POS = theme.pos;
   const NEG = theme.neg;
@@ -100,55 +87,28 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
     if (hourSymbol === 'All') return 'All';
     return symbols.includes(hourSymbol) ? hourSymbol : (symbols.includes('MES') ? 'MES' : 'All');
   }, [hourSymbol, symbols]);
-  const hourEdge = useMemo(() => hourEdgeBySymbol(trades, effectiveHourSymbol), [trades, effectiveHourSymbol]);
-  const histogram = useMemo(() => pnlHistogram(trades), [trades]);
-  const dowEdge = useMemo(() => dayOfWeekEdge(trades), [trades]);
+  const hourEdge = useMemo(
+    () => hourEdgeBySymbol(trades, effectiveHourSymbol).map((h) => ({ ...h, key: `${String(h.hour).padStart(2, '0')}:00` })),
+    [trades, effectiveHourSymbol],
+  );
+  const dowEdge = useMemo(() => {
+    void lang;
+    return dayOfWeekEdge(trades).map((d) => ({ ...d, key: weekdayLabel(d.key) }));
+  }, [trades, lang]);
   const holdEdge = useMemo(() => holdTimeEdge(trades), [trades]);
   const [maWindow, setMaWindow] = useState<number>(20);
   const maWinRate = useMemo(() => movingWinRate(trades, maWindow), [trades, maWindow]);
   const tradePnls = useMemo(() => trades.map((t, i) => ({ i: i + 1, pnl: t.profitLoss })), [trades]);
   const userTags = useUserTags();
-  const mistakes = useMemo(() => tagEdge(trades, userTags), [trades, userTags]);
-  const taggedCount = useMemo(() => taggedTradeCount(trades, userTags), [trades, userTags]);
-  const emotions = useMemo(() => emotionEdge(trades, userTags), [trades, userTags]);
-  const trend = useMemo(() => tagTrend(trades, userTags), [trades, userTags]);
-  const cooccur = useMemo(() => tagCooccurrence(trades, userTags), [trades, userTags]);
   const leaks = useMemo(() => findLeaks(trades, userTags), [trades, userTags]);
-  const trendData = useMemo(
-    () => trend.months.map((m, i) => {
-      const row: Record<string, number | string> = { month: m };
-      trend.series.forEach((s) => { row[s.label] = s.counts[i]; });
-      return row;
-    }),
-    [trend],
-  );
 
-  const { accountSize, riskPerTrade, monthlyGoal } = getSettings();
-  const risk = useMemo(() => riskStats(trades, accountSize, riskPerTrade), [trades, accountSize, riskPerTrade]);
-  const ddSeries = useMemo(() => drawdownSeries(trades, accountSize), [trades, accountSize]);
-  // Click a mistake/emotion bar to filter the All Trades table to that tag.
-  const [tagFilter, setTagFilter] = useState<{ kind: 'mistake' | 'emotion'; key: string; label: string } | null>(null);
-  const tableTrades = useMemo(() => {
-    if (!tagFilter) return trades;
-    const has = tagFilter.kind === 'mistake' ? detectTags : detectEmotions;
-    return trades.filter((tr) => has(tr, userTags).includes(tagFilter.key));
-  }, [trades, tagFilter, userTags]);
-  const ddKey = risk.hasAccount ? 'drawdownPct' : 'drawdown';
-
-  const showTarget = monthlyGoal > 0;
-  const equityData = useMemo(() => {
-    if (!showTarget) return equity;
-    const dailyTarget = monthlyGoal / 21; // ~business days per month
-    return equity.map((p, i) => ({ ...p, target: (i + 1) * dailyTarget }));
-  }, [equity, showTarget, monthlyGoal]);
-
-  const monthlyGoalData = useMemo(() => {
-    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyData = useMemo(() => {
+    void lang;
     return monthlyBreakdown(trades).map((m) => ({
-      label: `${MON[m.month]} '${String(m.year).slice(2)}`,
+      label: `${t(`month.short.${m.month}`)} '${String(m.year).slice(2)}`,
       pnl: m.pnl,
     }));
-  }, [trades]);
+  }, [trades, lang]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
   const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
@@ -156,8 +116,8 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
   const eqZero = eqMax <= 0 ? 0 : eqMin >= 0 ? 1 : eqMax / (eqMax - eqMin);
 
   const donut = [
-    { name: 'Wins', value: summary.winTrades, color: POS },
-    { name: 'Losses', value: summary.lossTrades, color: NEG },
+    { name: t('atlas.wins'), value: summary.winTrades, color: POS },
+    { name: t('atlas.losses'), value: summary.lossTrades, color: NEG },
   ];
 
   const range =
@@ -169,19 +129,19 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
     <div className="atlas">
       <div className="atlas-hero">
         <div className="atlas-hero-head">
-          <span className="atlas-eyebrow">ANALYTICS · {range}</span>
-          <h2>Trade Atlas</h2>
-          <p className="atlas-sub">Performance, behavior, and trend review</p>
+          <span className="atlas-eyebrow">{t('atlas.eyebrow')} · {range}</span>
+          <h2>{t('tab.atlas')}</h2>
+          <p className="atlas-sub">{t('atlas.sub')}</p>
         </div>
         <div className="atlas-actions">
-          <button className="atlas-export" onClick={() => exportTradesCsv(trades)} title="Download all trades as CSV">
-            <Download size={14} /> CSV
+          <button className="atlas-export" onClick={() => exportTradesCsv(trades)} title={t('atlas.exportCsvTitle')}>
+            <Download size={14} /> {t('common.csv')}
           </button>
           <button className="atlas-export" onClick={() => downloadText(`pnl-tax-summary-${new Date().toISOString().slice(0, 10)}.csv`, taxSummaryCsv(trades), 'text/csv')} title={t('atlas.taxTitle')}>
             <FileSpreadsheet size={14} /> {t('atlas.tax')}
           </button>
-          <button className="atlas-export" onClick={printAtlas} title="Export this report as PDF">
-            <Printer size={14} /> PDF
+          <button className="atlas-export" onClick={printAtlas} title={t('atlas.exportPdfTitle')}>
+            <Printer size={14} /> {t('common.pdf')}
           </button>
         </div>
         <div className="kpi-row">
@@ -195,9 +155,9 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
       </div>
 
       <div className="atlas-grid">
-        <Panel title={t('panel.equity')} subtitle={showTarget ? 'Cumulative result vs goal pace' : 'Cumulative result by trading day'} span={3}>
-          <ResponsiveContainer width="100%" height={180}>
-            <ComposedChart data={equityData} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+        <Panel title={t('panel.equity')} subtitle={t('atlas.cumulative')} span={3}>
+          <ResponsiveContainer width="100%" height={158}>
+            <ComposedChart data={equity} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="atlEqStroke" x1="0" y1="0" x2="0" y2="1">
                   <stop offset={eqZero} stopColor={POS} />
@@ -213,34 +173,27 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="date" {...AXIS} minTickGap={50} tickFormatter={(d) => shortDate(String(d))} />
               <YAxis {...AXIS} width={50} tickFormatter={(v) => compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v, n) => [formatMoneySigned(Number(v)), n === 'target' ? 'Goal pace' : 'Cumulative']} />
+              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [formatMoneySigned(Number(v)), t('atlas.cumulative')]} />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
               <Area type="monotone" dataKey="cumulative" stroke="url(#atlEqStroke)" strokeWidth={2.5} fill="url(#atlEqFill)" />
-              {showTarget && <Line type="monotone" dataKey="target" stroke={ACC} strokeWidth={1.5} strokeDasharray="5 4" dot={false} />}
             </ComposedChart>
           </ResponsiveContainer>
         </Panel>
 
         <Panel
-          title={t('panel.monthlyGoal')}
-          subtitle={monthlyGoal > 0 ? 'Net P&L per month vs your goal' : 'Net P&L per month'}
-          span={6}
-          action={monthlyGoal <= 0 && onOpenSettings
-            ? <button className="atlas-link" onClick={onOpenSettings}>Set a monthly goal →</button>
-            : undefined}
+          title={t('atlas.monthlyPnl')}
+          subtitle={t('atlas.monthlyPnlSub')}
+          span={3}
         >
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={monthlyGoalData} barCategoryGap="22%">
+          <ResponsiveContainer width="100%" height={168}>
+            <BarChart data={monthlyData} barCategoryGap="22%">
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="label" {...AXIS} minTickGap={10} />
               <YAxis {...AXIS} width={50} tickFormatter={(v) => compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), 'Net']} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), t('atlas.net')]} />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
-              {monthlyGoal > 0 && (
-                <ReferenceLine y={monthlyGoal} stroke={ACC} strokeDasharray="5 4" label={{ value: 'Goal', position: 'insideTopRight', fill: ACC, fontSize: 11 }} />
-              )}
               <Bar dataKey="pnl" radius={[3, 3, 0, 0]} maxBarSize={46}>
-                {monthlyGoalData.map((d, i) => (
+                {monthlyData.map((d, i) => (
                   <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
                 ))}
               </Bar>
@@ -248,13 +201,13 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title={t('panel.dailyPnl')} subtitle="Net result by trading day" span={3}>
-          <ResponsiveContainer width="100%" height={180}>
+        <Panel title={t('panel.dailyPnl')} subtitle={t('atlas.dailyPnlSub')} span={3}>
+          <ResponsiveContainer width="100%" height={158}>
             <BarChart data={dailyBars} barCategoryGap="8%" margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="date" {...AXIS} minTickGap={50} tickFormatter={(d) => shortDate(String(d))} />
               <YAxis {...AXIS} width={50} tickFormatter={(v) => compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [formatMoneySigned(Number(v)), 'P&L']} />
+              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [formatMoneySigned(Number(v)), t('tt.pnl')]} />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
               <Bar dataKey="pnl" radius={[2, 2, 0, 0]} maxBarSize={40}>
                 {dailyBars.map((d, i) => (
@@ -265,12 +218,12 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title={t('panel.setupEdge')} subtitle="Top setup P&L distribution" span={3}>
-          <ResponsiveContainer width="100%" height={180}>
+        <Panel title={t('panel.setupEdge')} subtitle={t('atlas.setupEdgeSub')} span={3}>
+          <ResponsiveContainer width="100%" height={158}>
             <BarChart data={setupEdge} layout="vertical" margin={{ left: 6, right: 8, top: 4, bottom: 0 }}>
               <XAxis type="number" {...AXIS} />
               <YAxis type="category" dataKey="key" {...AXIS} width={80} />
-              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), 'P&L']} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), t('tt.pnl')]} />
               <ReferenceLine x={0} stroke="var(--border-strong)" />
               <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={11}>
                 {setupEdge.map((d, i) => (
@@ -281,53 +234,18 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel
-          title="MA Win Rate"
-          subtitle={`${maWindow}-trade rolling win rate (%)`}
-          span={3}
-          action={
-            <select
-              className="panel-select"
-              value={maWindow}
-              onChange={(e) => setMaWindow(Number(e.target.value))}
-              aria-label="Moving average window size"
-            >
-              {[10, 20, 30, 50].map((w) => (
-                <option key={w} value={w}>{w}-trade</option>
-              ))}
-            </select>
-          }
-        >
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={maWinRate} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="atlWr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={ACC} stopOpacity={0.22} />
-                  <stop offset="100%" stopColor={ACC} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-              <XAxis dataKey="i" {...AXIS} minTickGap={30} />
-              <YAxis {...AXIS} width={36} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} />
-              <Tooltip {...TOOLTIP} formatter={(v) => [`${Number(v).toFixed(1)}%`, 'Win rate']} labelFormatter={(l) => `Trade #${l}`} />
-              <ReferenceLine y={50} stroke="var(--border-strong)" strokeDasharray="4 4" />
-              <Area type="monotone" dataKey="rate" stroke={ACC} strokeWidth={2.5} fill="url(#atlWr)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Panel>
-
-        <Panel title={t('panel.dowEdge')} subtitle="Net P&L by weekday" span={6}>
-          <ResponsiveContainer width="100%" height={200}>
+        <Panel title={t('panel.dowEdge')} subtitle={t('atlas.dowEdgeSub')} span={3}>
+          <ResponsiveContainer width="100%" height={168}>
             <BarChart data={dowEdge} barCategoryGap="28%">
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="key" {...AXIS} />
               <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
               <Tooltip
                 {...TOOLTIP}
-                formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
+                formatter={(v) => [formatMoneySigned(Number(v)), t('atlas.net')]}
                 labelFormatter={(l) => {
                   const g = dowEdge.find((x) => x.key === String(l));
-                  return g ? `${l} · ${g.count} trades · ${(g.winRate * 100).toFixed(0)}% win` : String(l);
+                  return g ? `${l} · ${t('atlas.tradesWin', { n: g.count, pct: (g.winRate * 100).toFixed(0) })}` : String(l);
                 }}
               />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
@@ -340,22 +258,21 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title={t('panel.holdEdge')} subtitle="Net P&L by trade duration" span={6}>
-          <ProGate feature="Hold-Time Edge">
+        <Panel title={t('panel.holdEdge')} subtitle={t('atlas.holdEdgeSub')} span={3}>
             {holdEdge.length === 0 ? (
-              <div className="atlas-empty">No trade durations found. Map a <b>Duration</b> column on import to see which hold-times pay.</div>
+              <div className="atlas-empty">{t('atlas.holdEmpty')}</div>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={168}>
                 <BarChart data={holdEdge} barCategoryGap="28%">
                   <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                   <XAxis dataKey="key" {...AXIS} />
                   <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
                   <Tooltip
                     {...TOOLTIP}
-                    formatter={(v) => [formatMoneySigned(Number(v)), 'Net']}
+                    formatter={(v) => [formatMoneySigned(Number(v)), t('atlas.net')]}
                     labelFormatter={(l) => {
                       const g = holdEdge.find((x) => x.key === String(l));
-                      return g ? `${l} · ${g.count} trades · ${(g.winRate * 100).toFixed(0)}% win` : String(l);
+                      return g ? `${l} · ${t('atlas.tradesWin', { n: g.count, pct: (g.winRate * 100).toFixed(0) })}` : String(l);
                     }}
                   />
                   <ReferenceLine y={0} stroke="var(--border-strong)" />
@@ -367,36 +284,35 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </ProGate>
         </Panel>
 
         <Panel
           title={t('panel.hourEdge')}
-          subtitle="Avg P&L per trade by entry hour, filtered by future"
-          span={4}
+          subtitle={t('atlas.hourEdgeSub')}
+          span={3}
           action={
             <select
               className="panel-select"
               value={effectiveHourSymbol}
               onChange={(e) => setHourSymbol(e.target.value)}
-              aria-label="Filter hour-of-day edge by future"
+              aria-label={t('atlas.hourFilterAria')}
             >
-              <option value="All">All</option>
+              <option value="All">{t('common.all')}</option>
               {symbols.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           }
         >
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={168}>
             <BarChart data={hourEdge} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="key" {...AXIS} />
               <YAxis {...AXIS} width={48} tickFormatter={(v) => compactMoney(Number(v))} />
               <Tooltip
                 {...TOOLTIP}
-                formatter={(v) => [formatMoneySigned(Number(v)), 'Avg/trade']}
-                labelFormatter={(l) => `${l} · ${hourEdge.find((h) => h.key === String(l))?.count ?? 0} trades`}
+                formatter={(v) => [formatMoneySigned(Number(v)), t('atlas.avgTradeTooltip')]}
+                labelFormatter={(l) => `${l} · ${t('cal.tradesCount', { n: hourEdge.find((h) => h.key === String(l))?.count ?? 0 })}`}
               />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
               <Bar dataKey="avg" radius={[2, 2, 0, 0]} maxBarSize={22}>
@@ -408,21 +324,9 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title={t('panel.distribution')} subtitle="Histogram of trade outcomes" span={4}>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={histogram} barCategoryGap="22%">
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-              <XAxis dataKey="label" {...AXIS} />
-              <YAxis {...AXIS} width={32} />
-              <Tooltip {...TOOLTIP} formatter={(v) => [Number(v), 'Trades']} />
-              <Bar dataKey="count" fill={ACC} radius={[3, 3, 0, 0]} maxBarSize={26} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Panel>
-
-        <Panel title="Winning vs Losing" subtitle="Trade-count split" span={4}>
+        <Panel title={t('atlas.winningLosing')} subtitle={t('atlas.winningLosingSub')} span={3}>
           <div className="donut-wrap">
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={168}>
               <PieChart>
                 <Pie data={donut} dataKey="value" innerRadius={54} outerRadius={78} paddingAngle={2} stroke="none">
                   {donut.map((d, i) => (
@@ -434,94 +338,51 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
             </ResponsiveContainer>
             <div className="donut-center">
               <span className="dc-value">{(summary.winRateTrades * 100).toFixed(0)}%</span>
-              <span className="dc-label">Win rate</span>
+              <span className="dc-label">{t('atlas.winRate')}</span>
             </div>
           </div>
           <div className="donut-legend">
-            <span><i className="dot" style={{ background: POS }} /> Wins {summary.winTrades}</span>
-            <span><i className="dot" style={{ background: NEG }} /> Losses {summary.lossTrades}</span>
+            <span><i className="dot" style={{ background: POS }} /> {t('atlas.wins')} {summary.winTrades}</span>
+            <span><i className="dot" style={{ background: NEG }} /> {t('atlas.losses')} {summary.lossTrades}</span>
           </div>
         </Panel>
 
         <Panel
-          title={t('panel.mistakeEdge')}
-          subtitle={`P&L by behavioral mistake auto-detected from your notes · ${taggedCount}/${trades.length} trades tagged`}
+          title={t('atlas.maWinRate')}
+          subtitle={t('atlas.maWinRateSub', { n: maWindow })}
           span={6}
+          action={
+            <select
+              className="panel-select"
+              value={maWindow}
+              onChange={(e) => setMaWindow(Number(e.target.value))}
+              aria-label={t('atlas.maWindowAria')}
+            >
+              {[10, 20, 30, 50].map((w) => (
+                <option key={w} value={w}>{t('atlas.nTrade', { n: w })}</option>
+              ))}
+            </select>
+          }
         >
-          {mistakes.length === 0 ? (
-            <div className="atlas-empty">
-              No mistakes detected yet. Note what went wrong in <b>Reason&amp;Emotion</b> or
-              <b> Note</b> (e.g. “FOMO”, “revenge”, “no stop”, “追高”, “手痒”) to see where your
-              behavior costs you.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={Math.max(150, mistakes.length * 34)}>
-              <BarChart data={mistakes} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 0 }}>
-                <XAxis type="number" {...AXIS} tickFormatter={(v) => compactMoney(Number(v))} />
-                <YAxis type="category" dataKey="label" {...AXIS} width={96} />
-                <Tooltip
-                  {...TOOLTIP}
-                  formatter={(v) => [formatMoneySigned(Number(v)), 'Impact']}
-                  labelFormatter={(l) => {
-                    const m = mistakes.find((x) => x.label === String(l));
-                    return m ? `${l} · ${m.count} trades · ${(m.winRate * 100).toFixed(0)}% win` : String(l);
-                  }}
-                />
-                <ReferenceLine x={0} stroke="var(--border-strong)" />
-                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16} cursor="pointer"
-                  onClick={(d: { payload?: { key?: string; label?: string } }) => {
-                    if (d?.payload?.key) setTagFilter({ kind: 'mistake', key: d.payload.key, label: d.payload.label ?? d.payload.key });
-                  }}>
-                  {mistakes.map((d, i) => (
-                    <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          <ResponsiveContainer width="100%" height="100%" minHeight={158}>
+            <AreaChart data={maWinRate} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="atlWr" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={ACC} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={ACC} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+              <XAxis dataKey="i" {...AXIS} minTickGap={30} />
+              <YAxis {...AXIS} width={36} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [`${Number(v).toFixed(1)}%`, t('atlas.winRate')]} labelFormatter={(l) => t('atlas.tradeN', { n: l })} />
+              <ReferenceLine y={50} stroke="var(--border-strong)" strokeDasharray="4 4" />
+              <Area type="monotone" dataKey="rate" stroke={ACC} strokeWidth={2.5} fill="url(#atlWr)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </Panel>
 
-        <Panel
-          title={t('panel.emotionEdge')}
-          subtitle="P&L by emotional state detected in your notes"
-          span={6}
-        >
-          <ProGate feature="Emotion Edge">
-          {emotions.length === 0 ? (
-            <div className="atlas-empty">
-              No emotions detected yet. Jot how you felt in <b>Reason&amp;Emotion</b>
-              (e.g. “confident”, “fearful”, “greedy”, “手痒”, “犹豫”) to see which states pay.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={Math.max(150, emotions.length * 34)}>
-              <BarChart data={emotions} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 0 }}>
-                <XAxis type="number" {...AXIS} tickFormatter={(v) => compactMoney(Number(v))} />
-                <YAxis type="category" dataKey="label" {...AXIS} width={110} />
-                <Tooltip
-                  {...TOOLTIP}
-                  formatter={(v) => [formatMoneySigned(Number(v)), 'Impact']}
-                  labelFormatter={(l) => {
-                    const m = emotions.find((x) => x.label === String(l));
-                    return m ? `${l} · ${m.count} trades · ${(m.winRate * 100).toFixed(0)}% win` : String(l);
-                  }}
-                />
-                <ReferenceLine x={0} stroke="var(--border-strong)" />
-                <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={16} cursor="pointer"
-                  onClick={(d: { payload?: { key?: string; label?: string } }) => {
-                    if (d?.payload?.key) setTagFilter({ kind: 'emotion', key: d.payload.key, label: d.payload.label ?? d.payload.key });
-                  }}>
-                  {emotions.map((d, i) => (
-                    <Cell key={i} fill={d.pnl >= 0 ? POS : NEG} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-          </ProGate>
-        </Panel>
-
-        <Panel title={t('panel.leaks')} subtitle={t('panel.leaksSub')} span={12}>
-          <ProGate feature="Leak Finder">
+        <Panel title={t('panel.leaks')} subtitle={t('panel.leaksSub')} span={6}>
             {leaks.length === 0 ? (
               <div className="atlas-empty">{t('leaks.empty')}</div>
             ) : (
@@ -533,118 +394,21 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
                       <span className="leak-dim">{l.dimensionLabel}</span>
                       <span className="leak-val">{l.value}</span>
                     </span>
-                    <span className="leak-meta">{l.count}× · {Math.round(l.winRate * 100)}% win · {formatMoneySigned(l.avg)}/trade</span>
+                    <span className="leak-meta">{t('atlas.leakMeta', { count: l.count, win: Math.round(l.winRate * 100), avg: formatMoneySigned(l.avg) })}</span>
                     <span className="leak-net neg">{formatMoneySigned(l.net)}</span>
                     <span className="leak-bar"><span className="leak-bar-fill" style={{ width: `${Math.round(l.shareOfLosses * 100)}%` }} /></span>
                   </li>
                 ))}
               </ul>
             )}
-          </ProGate>
         </Panel>
 
-        <Panel title={t('panel.tagInsights')} subtitle="When mistakes happen and which cluster together" span={12}>
-          <ProGate feature="Tag Insights">
-            {cooccur.length === 0 && trend.series.length === 0 ? (
-              <div className="atlas-empty">Tag some trades (auto-detected or manual) to see trends and clusters.</div>
-            ) : (
-              <div className="taginsight">
-                <div className="taginsight-chart">
-                  <div className="taginsight-h">Frequency by month</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={trendData} margin={{ top: 6, right: 10, bottom: 0, left: -10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                      <XAxis dataKey="month" {...AXIS} minTickGap={20} />
-                      <YAxis {...AXIS} width={30} allowDecimals={false} />
-                      <Tooltip {...TOOLTIP} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      {trend.series.map((s, i) => (
-                        <Line key={s.key} type="monotone" dataKey={s.label} stroke={[NEG, ACC, POS, '#a855f7'][i % 4]} strokeWidth={2} dot={false} />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="taginsight-co">
-                  <div className="taginsight-h">Common pairs</div>
-                  {cooccur.length === 0 ? (
-                    <div className="atlas-empty">No co-occurring tags yet.</div>
-                  ) : (
-                    <ul className="cooccur-list">
-                      {cooccur.map((p) => (
-                        <li key={`${p.a}-${p.b}`}>
-                          <span className="co-pair">{p.labelA} <span className="co-plus">+</span> {p.labelB}</span>
-                          <span className="co-count">×{p.count}</span>
-                          <span className={`co-pnl ${p.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(p.pnl)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )}
-          </ProGate>
-        </Panel>
-
-        <Panel
-          title={t('panel.risk')}
-          subtitle={risk.hasAccount ? 'Underwater equity (% of account peak)' : 'Underwater equity (account currency)'}
-          span={12}
-          action={(!risk.hasAccount || !risk.hasRisk) && onOpenSettings
-            ? <button className="atlas-link" onClick={onOpenSettings}>Set account &amp; risk →</button>
-            : undefined}
-        >
-          <ProGate feature="Risk & Drawdown">
-          <div className="risk-tiles">
-            <RiskTile label="Max Drawdown" value={formatMoney(risk.maxDrawdown)} sub={risk.hasAccount ? `${risk.maxDrawdownPct.toFixed(1)}%` : undefined} cls="neg" />
-            <RiskTile label="Current Drawdown" value={formatMoney(risk.currentDrawdown)} cls={risk.currentDrawdown < 0 ? 'neg' : 'pos'} />
-            <RiskTile label="Return on Account" value={risk.hasAccount ? `${risk.returnPct >= 0 ? '+' : ''}${risk.returnPct.toFixed(1)}%` : '—'} cls={risk.returnPct >= 0 ? 'pos' : 'neg'} />
-            <RiskTile label="Avg R / trade" value={risk.hasRisk ? `${risk.avgR >= 0 ? '+' : ''}${risk.avgR.toFixed(2)}R` : '—'} cls={risk.avgR >= 0 ? 'pos' : 'neg'} />
-            <RiskTile label="Total R" value={risk.hasRisk ? `${risk.totalR >= 0 ? '+' : ''}${risk.totalR.toFixed(1)}R` : '—'} cls={risk.totalR >= 0 ? 'pos' : 'neg'} />
-            <RiskTile label="Best / Worst R" value={risk.hasRisk ? `${risk.bestR.toFixed(1)} / ${risk.worstR.toFixed(1)}` : '—'} />
-          </div>
-          <ResponsiveContainer width="100%" height={150}>
-            <AreaChart data={ddSeries} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="atlDdFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor={NEG} stopOpacity={0.05} />
-                  <stop offset="1" stopColor={NEG} stopOpacity={0.35} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-              <XAxis dataKey="date" {...AXIS} minTickGap={50} tickFormatter={(d) => shortDate(String(d))} />
-              <YAxis {...AXIS} width={50} tickFormatter={(v) => risk.hasAccount ? `${Number(v).toFixed(0)}%` : compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} labelFormatter={(l) => shortDate(String(l))} formatter={(v) => [risk.hasAccount ? `${Number(v).toFixed(1)}%` : formatMoney(Number(v)), 'Drawdown']} />
-              <ReferenceLine y={0} stroke="var(--border-strong)" />
-              <Area type="monotone" dataKey={ddKey} stroke={NEG} strokeWidth={2} fill="url(#atlDdFill)" />
-            </AreaChart>
-          </ResponsiveContainer>
-          </ProGate>
-        </Panel>
-
-        <Panel
-          title={t('panel.playbook')}
-          subtitle="Per-setup expectancy, plus an editable entry checklist and notes"
-          span={12}
-        >
-          <ProGate feature="Playbook">
-            <Playbook trades={trades} />
-          </ProGate>
-        </Panel>
-
-        <Panel
-          title={t('panel.rules')}
-          subtitle="Set your rules; see how often you broke them and what it cost"
-          span={12}
-        >
-          <RulesPanel trades={trades} />
-        </Panel>
-
-        <Panel title={t('panel.tbt')} subtitle="Result of each individual trade" span={12}>
-          <ResponsiveContainer width="100%" height={200}>
+        <Panel title={t('panel.tbt')} subtitle={t('atlas.tbtSub')} span={12}>
+          <ResponsiveContainer width="100%" height={168}>
             <BarChart data={tradePnls}>
               <XAxis dataKey="i" {...AXIS} minTickGap={30} />
               <YAxis {...AXIS} width={52} tickFormatter={(v) => compactMoney(Number(v))} />
-              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), 'P&L']} labelFormatter={(l) => `Trade #${l}`} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [formatMoneySigned(Number(v)), t('tt.pnl')]} labelFormatter={(l) => t('atlas.tradeN', { n: l })} />
               <ReferenceLine y={0} stroke="var(--border-strong)" />
               <Bar dataKey="pnl">
                 {tradePnls.map((d, i) => (
@@ -654,29 +418,7 @@ export default function TradeAtlas({ trades, summary, onOpenSettings, onSelectDa
             </BarChart>
           </ResponsiveContainer>
         </Panel>
-
-        <Panel
-          title={t('panel.allTrades')}
-          subtitle="Sortable, filterable trade log — click a row to open the day"
-          span={12}
-          action={tagFilter
-            ? <button className="atlas-tagfilter" onClick={() => setTagFilter(null)}>
-                {t('atlas.tagFilter')}: <b>{tagFilter.label}</b> · {tableTrades.length} <X size={12} />
-              </button>
-            : undefined}
-        >
-          <TradeTable trades={tableTrades} onSelectDay={onSelectDay ?? (() => {})} />
-        </Panel>
       </div>
-    </div>
-  );
-}
-
-function RiskTile({ label, value, sub, cls }: { label: string; value: string; sub?: string; cls?: string }) {
-  return (
-    <div className="risk-tile">
-      <span className="risk-tile-label">{label}</span>
-      <span className={`risk-tile-value ${cls ?? ''}`}>{value}{sub && <small> · {sub}</small>}</span>
     </div>
   );
 }
@@ -705,5 +447,18 @@ function Kpi({ dot, label, value, cls }: { dot: string; label: string; value: st
       <span className={`kpi-value ${cls ?? ''}`}>{value}</span>
     </div>
   );
+}
+
+function weekdayLabel(key: string): string {
+  const map: Record<string, string> = {
+    Sun: 'weekday.sun',
+    Mon: 'weekday.mon',
+    Tue: 'weekday.tue',
+    Wed: 'weekday.wed',
+    Thu: 'weekday.thu',
+    Fri: 'weekday.fri',
+    Sat: 'weekday.sat',
+  };
+  return map[key] ? t(map[key]) : key;
 }
 

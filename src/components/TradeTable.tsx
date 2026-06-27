@@ -8,6 +8,7 @@ import { downloadText, tradesToCsv } from '../lib/exportCsv';
 import { detectTags, allMistakeTags } from '../lib/tags';
 import { tradeTagKey, getTradeTags, toggleTag } from '../lib/userTags';
 import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 type SortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
 
@@ -21,6 +22,7 @@ function hhmm(secs: number | null): string {
 const MAX_ROWS = 1000;
 
 export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecord[]; onSelectDay: (date: string) => void }) {
+  useLang();
   const [sortKey, setSortKey] = useState<SortKey>(() => getTablePrefs().sortKey);
   const [dir, setDir] = useState<'asc' | 'desc'>(() => getTablePrefs().dir);
   const [q, setQ] = useState('');
@@ -65,9 +67,9 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
       <div className="ttable-bar">
         <div className="ttable-search">
           <Search size={14} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tt.filter')} aria-label="Filter trades" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tt.filter')} aria-label={t('tt.filterAria')} />
         </div>
-        <span className="ttable-count">{rows.length} trade{rows.length === 1 ? '' : 's'}{rows.length > MAX_ROWS && ` · showing ${MAX_ROWS}`}</span>
+        <span className="ttable-count">{rows.length} {t(rows.length === 1 ? 'common.trade' : 'common.trades')}{rows.length > MAX_ROWS && ` · ${t('tt.showing', { n: MAX_ROWS })}`}</span>
         <button
           className="ttable-export"
           onClick={() => downloadText(`trades-filtered-${new Date().toISOString().slice(0, 10)}.csv`, tradesToCsv(rows), 'text/csv')}
@@ -93,13 +95,13 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
             </tr>
           </thead>
           <tbody>
-            {shown.length === 0 && <tr><td colSpan={risk > 0 ? 9 : 8} className="ttable-empty">No matching trades.</td></tr>}
+            {shown.length === 0 && <tr><td colSpan={risk > 0 ? 9 : 8} className="ttable-empty">{t('tt.noMatches')}</td></tr>}
             {shown.map((t, i) => (
               <tr key={`${t.date}-${t.rowNumber}-${i}`} onClick={() => onSelectDay(t.date)} className="ttable-row">
                 <td>{shortDate(t.date)}</td>
                 <td className="tt-dim">{hhmm(t.entryTime)}</td>
                 <td className="tt-strong">{t.symbol || '—'}</td>
-                <td>{t.direction || '—'}</td>
+                <td>{formatSide(t.direction)}</td>
                 <td className="tt-num">{t.size || ''}</td>
                 <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(t.profitLoss)}</td>
                 {risk > 0 && <td className={`tt-num ${t.profitLoss >= 0 ? 'pos' : 'neg'}`}>{(t.profitLoss / risk).toFixed(2)}R</td>}
@@ -111,7 +113,7 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
           {shown.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={5} className="tt-foot-label">Total ({rows.length})</td>
+                <td colSpan={5} className="tt-foot-label">{t('tt.total', { n: rows.length })}</td>
                 <td className={`tt-num ${rows.reduce((s, t) => s + t.profitLoss, 0) >= 0 ? 'pos' : 'neg'}`}>
                   {formatMoney(rows.reduce((s, t) => s + t.profitLoss, 0))}
                 </td>
@@ -125,6 +127,13 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
       </div>
     </div>
   );
+}
+
+function formatSide(side: string): string {
+  if (!side) return '—';
+  if (/short|sell|空/i.test(side)) return t('tt.short');
+  if (/long|buy|多/i.test(side)) return t('tt.long');
+  return side;
 }
 
 function Th({ label, k, cur, Caret, onClick, num }: {
@@ -146,7 +155,7 @@ function RowTags({ trade }: { trade: TradeRecord }) {
   // Auto-detected mistakes (from notes) shown read-only; manual tags are toggleable.
   const auto = useMemo(() => new Set(detectTags(trade)), [trade]);
   const defs = allMistakeTags();
-  const labelOf = new Map(defs.map((d) => [d.key, d.label]));
+  const labelOf = new Map(defs.map((d) => [d.key, tagLabel(d.key, d.label)]));
 
   function flip(tagKey: string) { setTags(toggleTag(key, 'mistake', tagKey)); }
 
@@ -183,3 +192,7 @@ function RowTags({ trade }: { trade: TradeRecord }) {
   );
 }
 
+function tagLabel(key: string, fallback: string): string {
+  const translated = t(`tag.${key}`);
+  return translated === `tag.${key}` ? fallback : translated;
+}

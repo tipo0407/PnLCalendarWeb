@@ -11,8 +11,6 @@ import { useLang } from '../lib/useLang';
 
 interface Props {
   trades: TradeRecord[];
-  sampleMode: boolean;
-  onReview: () => void;
 }
 
 /**
@@ -21,7 +19,7 @@ interface Props {
  * surfaces an in-app reminder to journal the most recent day or review last
  * week. Dismissals are remembered per day/week so it won't nag twice.
  */
-export default function ReminderBanner({ trades, sampleMode, onReview }: Props) {
+export default function ReminderBanner({ trades }: Props) {
   useLang();
   const [tick, setTick] = useState(0);
   const [dismissed, setDismissed] = useState(0);
@@ -33,7 +31,7 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
   }, []);
 
   const reminder = useMemo<Reminder | null>(() => {
-    if (sampleMode || trades.length === 0) return null;
+    if (trades.length === 0) return null;
     void tick; void dismissed;
 
     // Most recent trading day.
@@ -71,7 +69,7 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
     });
     if (r && loadDismissed().has(r.dismissKey)) return null;
     return r;
-  }, [trades, sampleMode, tick, dismissed]);
+  }, [trades, tick, dismissed]);
 
   if (!reminder) return null;
 
@@ -93,7 +91,7 @@ export default function ReminderBanner({ trades, sampleMode, onReview }: Props) 
     <div className={`reminder-banner ${isWeekly ? 'is-weekly' : 'is-daily'}`} role="status" aria-live="polite">
       <span className="reminder-icon"><Bell size={15} /></span>
       <span className="reminder-text">{message}</span>
-      <button className="reminder-action" onClick={() => { onReview(); dismiss(); }}>
+      <button className="reminder-action" onClick={() => { dismiss(); }}>
         {isWeekly ? t('remind.reviewWeek') : t('remind.journalIt')}
       </button>
       <button className="reminder-dismiss" onClick={dismiss} aria-label={t('remind.dismiss')} title={t('remind.dismiss')}>

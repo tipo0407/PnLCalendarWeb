@@ -7,7 +7,7 @@ import { formatMoneySigned, shortDate } from '../lib/metrics';
 import { monthBenchmark } from '../lib/goals';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
-import { dayDiscipline, disciplineColor } from '../lib/discipline';
+
 import MoneyCountUp from './CountUp';
 
 interface Props {
@@ -21,11 +21,7 @@ interface Props {
   onSelectDay: (date: string) => void;
 }
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const WEEKDAY_KEYS = ['weekday.mon', 'weekday.tue', 'weekday.wed', 'weekday.thu', 'weekday.fri'];
 
 function iso(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -174,31 +170,31 @@ export default function CalendarView({
       <div className="hero">
         <div className="hero-lead">
           <div className="hero-month-nav">
-            <button className="hero-nav-btn" onClick={() => go(-1)} title="Previous month" aria-label="Previous month"><ChevronLeft size={16} /></button>
-            <span className="hero-month-title">{MONTH_NAMES[month]} {year}</span>
-            <button className="hero-nav-btn" onClick={() => go(1)} title="Next month" aria-label="Next month"><ChevronRight size={16} /></button>
+            <button className="hero-nav-btn" onClick={() => go(-1)} title={t('cal.prevMonth')} aria-label={t('cal.prevMonth')}><ChevronLeft size={16} /></button>
+            <span className="hero-month-title">{t(`month.long.${month}`)} {year}</span>
+            <button className="hero-nav-btn" onClick={() => go(1)} title={t('cal.nextMonth')} aria-label={t('cal.nextMonth')}><ChevronRight size={16} /></button>
           </div>
           <span className={`hero-big ${stats.total >= 0 ? 'pos-strong' : 'neg-strong'}`}>
             <MoneyCountUp value={stats.total} />
           </span>
-          <span className="hero-lead-sub">{stats.trades} trades · {stats.days} traded days</span>
+          <span className="hero-lead-sub">{t('cal.tradesDays', { trades: stats.trades, days: stats.days })}</span>
         </div>
 
         <div className="hero-stats">
           <div className="hstat">
             <span className="hstat-label">{t('cal.avgDay')}</span>
             <span className="hstat-val">{formatMoneySigned(stats.avgDay)}</span>
-            <span className="hstat-sub">over {stats.days} days</span>
+            <span className="hstat-sub">{t('cal.overDays', { n: stats.days })}</span>
           </div>
           <div className="hstat">
             <span className="hstat-label">{t('cal.winRate')}</span>
             <span className="hstat-val">{(stats.winRate * 100).toFixed(0)}%</span>
-            <span className="hstat-sub">{stats.winDays}W · {stats.lossDays}L</span>
+            <span className="hstat-sub">{t('cal.winLossShort', { w: stats.winDays, l: stats.lossDays })}</span>
           </div>
           <div className="hstat">
             <span className="hstat-label">{t('cal.winStreak')}</span>
             <span className="hstat-val">{stats.streak}</span>
-            <span className="hstat-sub">{stats.streak === 1 ? 'day' : 'days'}</span>
+            <span className="hstat-sub">{t(stats.streak === 1 ? 'common.day' : 'common.days')}</span>
           </div>
           <div className="hstat">
             <span className="hstat-label">{t('cal.bestDay')}</span>
@@ -213,12 +209,12 @@ export default function CalendarView({
           <div className="hstat">
             <span className="hstat-label">{t('cal.projected')}</span>
             <span className={`hstat-val ${benchmark.projected >= 0 ? 'pos' : 'neg'}`}>{stats.days ? formatMoneySigned(benchmark.projected) : '—'}</span>
-            <span className="hstat-sub">at current pace</span>
+            <span className="hstat-sub">{t('cal.atCurrentPace')}</span>
           </div>
           <div className="hstat">
             <span className="hstat-label">{t('cal.consistency')}</span>
             <span className="hstat-val">{stats.days ? `${benchmark.consistency}` : '—'}<span className="hstat-unit">/100</span></span>
-            <span className="hstat-sub">{benchmark.topDayShare > 0 ? `top day ${(benchmark.topDayShare * 100).toFixed(0)}%` : 'spread of gains'}</span>
+            <span className="hstat-sub">{benchmark.topDayShare > 0 ? t('cal.topDay', { pct: (benchmark.topDayShare * 100).toFixed(0) }) : t('cal.spreadOfGains')}</span>
           </div>
         </div>
       </div>
@@ -228,10 +224,10 @@ export default function CalendarView({
         <div className="cal-heatmap">{heatmap}</div>
 
         <div className="cal-grid" ref={gridRef}>
-          {WEEKDAYS.map((w) => (
-            <div key={w} className="cal-weekday">{w}</div>
+          {WEEKDAY_KEYS.map((w) => (
+            <div key={w} className="cal-weekday">{t(w)}</div>
           ))}
-          <div className="cal-weekday week-total-head">Week</div>
+          <div className="cal-weekday week-total-head">{t('common.week')}</div>
 
           {weeks.map((week, wi) => (
             <div key={wi} className="cal-week-row">
@@ -253,7 +249,7 @@ export default function CalendarView({
                       ? {
                           role: 'button',
                           tabIndex: 0,
-                          'aria-label': `${MONTH_NAMES[month]} ${d}, ${formatMoneySigned(day.pnl)}, ${day.tradeCount} trades`,
+                          'aria-label': t('cal.ariaDay', { month: t(`month.long.${month}`), day: d, pnl: formatMoneySigned(day.pnl), trades: day.tradeCount }),
                           onKeyDown: (e: ReactKeyboardEvent) => onGridKey(e, date),
                         }
                       : {})}
@@ -261,22 +257,15 @@ export default function CalendarView({
                     <div className="cell-top">
                       <span className="cell-day-wrap">
                         <span className="cell-day">{d}</span>
-                        {day && (
-                          <span
-                            className="cell-disc"
-                            style={{ background: disciplineColor(dayDiscipline(day)) }}
-                            title={`Discipline ${dayDiscipline(day)}/100`}
-                          />
-                        )}
                       </span>
-                      {day && <span className="cell-trades">{day.tradeCount} trades</span>}
+                      {day && <span className="cell-trades">{t('cal.dayTrades', { n: day.tradeCount })}</span>}
                     </div>
                     {day ? (
                       <div className="cell-body">
                         <span className={`cell-pnl ${day.pnl >= 0 ? 'pos' : 'neg'}`}>
                           {formatMoneySigned(day.pnl)}
                         </span>
-                        {day.trades.some((t) => t.note || t.reasonEmotion) && <span className="cell-note">note</span>}
+                        {day.trades.some((t) => t.note || t.reasonEmotion) && <span className="cell-note">{t('common.note')}</span>}
                       </div>
                     ) : holiday ? (
                       <div className="cell-body">
@@ -287,7 +276,7 @@ export default function CalendarView({
                 );
               })}
               <div className={`cal-cell week-total${week.active ? '' : ' empty'}`}>
-                <span className="wt-label">Week</span>
+                <span className="wt-label">{t('common.week')}</span>
                 {week.active && (
                   <span className={`wt-val ${week.total >= 0 ? 'pos' : 'neg'}`}>
                     {formatMoneySigned(week.total)}

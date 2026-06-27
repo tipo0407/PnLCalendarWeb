@@ -7,14 +7,16 @@ import { playbookMarkdown } from '../lib/playbookExport';
 import { downloadText } from '../lib/exportCsv';
 import { getSettings } from '../lib/settings';
 import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 export default function Playbook({ trades }: { trades: TradeRecord[] }) {
+  useLang();
   const stats = useMemo(() => setupStats(trades), [trades]);
   const [open, setOpen] = useState<string | null>(null);
   const risk = getSettings().riskPerTrade;
 
   if (stats.length === 0) {
-    return <div className="atlas-empty">No setups yet. Fill the <b>Setup</b> column to build your playbook.</div>;
+    return <div className="atlas-empty">{t('pb.empty')}</div>;
   }
 
   function exportMd() {
@@ -76,23 +78,23 @@ function PlaybookEditor({ setup, avgWin, avgLoss }: { setup: string; avgWin: num
   return (
     <div className="pb-editor">
       <div className="pb-edit-stats">
-        <span><ListChecks size={13} /> Avg win <b className="pos">{formatMoney(avgWin)}</b></span>
-        <span>Avg loss <b className="neg">{formatMoney(avgLoss)}</b></span>
+        <span><ListChecks size={13} /> {t('pb.avgWin')} <b className="pos">{formatMoney(avgWin)}</b></span>
+        <span>{t('pb.avgLoss')} <b className="neg">{formatMoney(avgLoss)}</b></span>
       </div>
       <label className="pb-field">
-        <span>Entry checklist (one rule per line)</span>
+        <span>{t('pb.entryChecklist')}</span>
         <textarea
           rows={3}
-          placeholder={'e.g.\nTrend aligned on higher timeframe\nClear stop under structure\nMin 2:1 reward'}
+          placeholder={t('pb.exampleChecklist')}
           value={checkText}
           onChange={(e) => { setCheckText(e.target.value); save(entry.note, e.target.value); }}
         />
       </label>
       <label className="pb-field">
-        <span>Notes</span>
+        <span>{t('pb.notes')}</span>
         <textarea
           rows={2}
-          placeholder="What this setup is, when it works, when to skip it…"
+          placeholder={t('pb.notesPlaceholder')}
           value={entry.note}
           onChange={(e) => save(e.target.value, checkText)}
         />

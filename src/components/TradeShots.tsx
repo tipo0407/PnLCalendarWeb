@@ -8,6 +8,7 @@ import { allEmotions } from '../lib/emotions';
 import { tradeTagKey, getTradeTags, toggleTag, type TradeTags } from '../lib/userTags';
 import { addCustomTag, removeCustomTag, getCustomTags, CUSTOM_TAGS_EVENT } from '../lib/customTags';
 import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 function hhmm(secs: number): string {
   const h = Math.floor(secs / 3600);
@@ -46,6 +47,7 @@ interface Props {
 
 /** Per-trade screenshot attachments, persisted locally in IndexedDB. */
 export default function TradeShots({ daily }: Props) {
+  useLang();
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const [pasteError, setPasteError] = useState('');
@@ -136,12 +138,12 @@ export default function TradeShots({ daily }: Props) {
               </div>
               {url ? (
                 <div className="shot-thumb">
-                  <img src={url} alt={`Trade ${t.tradeNumber} screenshot`} />
+                  <img src={url} alt={t2('tt.tradeShotAlt', { n: t.tradeNumber })} />
                   <div className="shot-actions">
-                    <a className="shot-act" href={url} target="_blank" rel="noreferrer" title="Open full size">
+                    <a className="shot-act" href={url} target="_blank" rel="noreferrer" title={t2('tt.openFullSize')}>
                       <Maximize2 size={14} />
                     </a>
-                    <button className="shot-act" onClick={() => remove(t)} title="Remove">
+                    <button className="shot-act" onClick={() => remove(t)} title={t2('tt.remove')}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -196,12 +198,18 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
 
   const mistakeDefs = allMistakeTags();
   const emotionDefs = allEmotions();
-  const mistakeLabel = new Map(mistakeDefs.map((m) => [m.key, m.label]));
-  const emotionLabel = new Map(emotionDefs.map((e) => [e.key, e.label]));
+  const mistakeLabel = new Map(mistakeDefs.map((m) => [m.key, translatedLabel('tag', m.key, m.label)]));
+  const emotionLabel = new Map(emotionDefs.map((e) => [e.key, translatedLabel('emotion', e.key, e.label)]));
   const customKeys = new Set([...getCustomTags().mistakes, ...getCustomTags().emotions].map((d) => d.key));
 
   function flip(kind: 'mistake' | 'emotion', tagKey: string) {
     setTags(toggleTag(key, kind, tagKey));
+  }
+
+  function translatedLabel(group: 'tag' | 'emotion', key: string, fallback: string): string {
+    const dictKey = `${group}.${key}`;
+    const translated = t(dictKey);
+    return translated === dictKey ? fallback : translated;
   }
 
   function addCustom(kind: 'mistake' | 'emotion', label: string) {
@@ -217,22 +225,22 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
     <div className="shot-tags">
       <div className="shot-tag-row">
         {tags.mistakes.map((m) => (
-          <button key={`m-${m}`} className="utag mistake" onClick={() => flip('mistake', m)} title="Remove tag">
+          <button key={`m-${m}`} className="utag mistake" onClick={() => flip('mistake', m)} title={t('shots.removeTag')}>
             {mistakeLabel.get(m) ?? m}
           </button>
         ))}
         {tags.emotions.map((e) => (
-          <button key={`e-${e}`} className="utag emotion" onClick={() => flip('emotion', e)} title="Remove tag">
+          <button key={`e-${e}`} className="utag emotion" onClick={() => flip('emotion', e)} title={t('shots.removeTag')}>
             {emotionLabel.get(e) ?? e}
           </button>
         ))}
         <button className={`utag add ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)}>
-          <Plus size={11} /> {hasTags ? 'Tag' : 'Add tag'}
+          <Plus size={11} /> {hasTags ? t('shots.tag') : t('shots.addTag')}
         </button>
       </div>
       {open && (
         <div className="shot-tag-picker">
-          <span className="tag-group-label">Mistakes</span>
+          <span className="tag-group-label">{t('shots.mistakes')}</span>
           <div className="tag-chips">
             {mistakeDefs.map((m) => (
               <span key={m.key} className="chip-wrap">
@@ -240,10 +248,10 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
                   className={`chip ${tags.mistakes.includes(m.key) ? 'on mistake' : ''}`}
                   onClick={() => flip('mistake', m.key)}
                 >
-                  {m.label}
+                  {mistakeLabel.get(m.key) ?? m.label}
                 </button>
                 {customKeys.has(m.key) && (
-                  <button className="chip-del" title="Delete custom tag" onClick={() => removeCustomTag('mistake', m.key)}>×</button>
+                  <button className="chip-del" title={t('shots.deleteCustomTag')} onClick={() => removeCustomTag('mistake', m.key)}>×</button>
                 )}
               </span>
             ))}
@@ -251,12 +259,12 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
           <div className="tag-add">
             <input
               value={newMistake}
-              placeholder="+ custom mistake"
+              placeholder={t('shots.customMistake')}
               onChange={(e) => setNewMistake(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') addCustom('mistake', newMistake); }}
             />
           </div>
-          <span className="tag-group-label">Emotions</span>
+          <span className="tag-group-label">{t('shots.emotions')}</span>
           <div className="tag-chips">
             {emotionDefs.map((e) => (
               <span key={e.key} className="chip-wrap">
@@ -264,10 +272,10 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
                   className={`chip ${tags.emotions.includes(e.key) ? 'on emotion' : ''}`}
                   onClick={() => flip('emotion', e.key)}
                 >
-                  {e.label}
+                  {emotionLabel.get(e.key) ?? e.label}
                 </button>
                 {customKeys.has(e.key) && (
-                  <button className="chip-del" title="Delete custom tag" onClick={() => removeCustomTag('emotion', e.key)}>×</button>
+                  <button className="chip-del" title={t('shots.deleteCustomTag')} onClick={() => removeCustomTag('emotion', e.key)}>×</button>
                 )}
               </span>
             ))}
@@ -275,7 +283,7 @@ function TradeTagEditor({ trade, date }: { trade: TradeRecord; date: string }) {
           <div className="tag-add">
             <input
               value={newEmotion}
-              placeholder="+ custom emotion"
+              placeholder={t('shots.customEmotion')}
               onChange={(e) => setNewEmotion(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') addCustom('emotion', newEmotion); }}
             />

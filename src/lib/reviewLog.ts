@@ -35,26 +35,6 @@ export function isReviewed(weekKey: string): boolean {
   return load().has(weekKey);
 }
 
-export function setReviewed(weekKey: string, reviewed: boolean) {
-  const c = load();
-  if (reviewed) c.add(weekKey); else c.delete(weekKey);
-  persist();
-}
-
-/** Count of consecutive most-recent weeks (newest-first keys) marked reviewed. */
-export function reviewStreak(weekKeysNewestFirst: string[]): number {
-  const c = load();
-  let n = 0;
-  for (const k of weekKeysNewestFirst) {
-    if (c.has(k)) n++; else break;
-  }
-  return n;
-}
-
-export function reviewedCount(): number {
-  return load().size;
-}
-
 /** All reviewed week keys for the active profile (backup). */
 export function exportReviewed(): string[] {
   return [...load()];

@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react';
-import { Link2, RefreshCw, Upload, Sparkles } from 'lucide-react';
+import { Link2, RefreshCw, Upload } from 'lucide-react';
 import type { SheetData } from '../lib/parseWorkbook';
 import { readSheets, fetchGoogleSheetBuffer } from '../lib/parseWorkbook';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   onSheets: (sheets: SheetData[]) => void;
   storageKey: string;
-  onSample?: () => void;
 }
 
-export default function DataSourceBar({ onSheets, storageKey, onSample }: Props) {
+export default function DataSourceBar({ onSheets, storageKey }: Props) {
+  useLang();
   const fileRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState<string>(() => localStorage.getItem(storageKey) ?? '');
   const [busy, setBusy] = useState(false);
@@ -21,7 +23,7 @@ export default function DataSourceBar({ onSheets, storageKey, onSample }: Props)
     try {
       const buf = await file.arrayBuffer();
       const sheets = readSheets(buf);
-      if (sheets.length === 0) throw new Error('That file has no readable sheets.');
+      if (sheets.length === 0) throw new Error(t('ds.noReadableSheets'));
       onSheets(sheets);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -32,7 +34,7 @@ export default function DataSourceBar({ onSheets, storageKey, onSample }: Props)
 
   async function handleSync() {
     if (!link.trim()) {
-      setError('Paste a Google Sheet link first.');
+      setError(t('ds.pasteFirst'));
       return;
     }
     setBusy(true);
@@ -57,7 +59,7 @@ export default function DataSourceBar({ onSheets, storageKey, onSample }: Props)
           <input
             className="ds-input"
             type="text"
-            placeholder="Paste Google Sheet link…"
+            placeholder={t('ds.placeholder')}
             value={link}
             onChange={(e) => setLink(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSync()}
@@ -65,7 +67,7 @@ export default function DataSourceBar({ onSheets, storageKey, onSample }: Props)
         </div>
         <button className="btn btn-sync" onClick={handleSync} disabled={busy}>
           <RefreshCw size={15} className={busy ? 'spin' : ''} />
-          {busy ? 'Loading…' : 'Sync'}
+          {busy ? t('common.loading') : t('common.sync')}
         </button>
         <button
           className="btn btn-upload"
@@ -73,14 +75,8 @@ export default function DataSourceBar({ onSheets, storageKey, onSample }: Props)
           disabled={busy}
         >
           <Upload size={15} />
-          Upload
+          {t('common.upload')}
         </button>
-        {onSample && (
-          <button className="btn btn-ghost-sample" onClick={onSample} disabled={busy} title="Load sample data">
-            <Sparkles size={15} />
-            Sample
-          </button>
-        )}
         <input
           ref={fileRef}
           type="file"

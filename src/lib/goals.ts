@@ -1,5 +1,4 @@
 import type { DailyPnl } from '../types';
-import { dayDiscipline } from './discipline';
 
 export interface Streaks {
   current: number;
@@ -34,17 +33,6 @@ export function dayStreaks(days: DailyPnl[]): Streaks {
     } else break;
   }
   return { current, currentType, bestWin, bestLoss };
-}
-
-/** Trailing run of days meeting the discipline threshold. */
-export function disciplineStreak(days: DailyPnl[], threshold = 80): number {
-  const sorted = sortAsc(days);
-  let run = 0;
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    if (dayDiscipline(sorted[i]) >= threshold) run++;
-    else break;
-  }
-  return run;
 }
 
 export interface MonthProgress {

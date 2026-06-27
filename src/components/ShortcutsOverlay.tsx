@@ -44,10 +44,8 @@ export default function ShortcutsOverlay({ onClose }: Props) {
     {
       title: t('sc.navigate'),
       rows: [
-        { keys: ['1'], label: t('sc.home') },
         { keys: ['2'], label: t('sc.calendar') },
         { keys: ['3'], label: t('sc.atlas') },
-        { keys: ['4'], label: t('sc.review') },
         { keys: ['←', '→', '↑', '↓'], label: t('sc.arrows') },
       ],
     },
@@ -75,7 +73,7 @@ export default function ShortcutsOverlay({ onClose }: Props) {
       >
         <div className="sc-head">
           <span className="sc-head-title"><Keyboard size={16} /> {t('sc.title')}</span>
-          <button ref={closeRef} className="sc-close" onClick={onClose} aria-label={t('remind.dismiss')}>
+          <button ref={closeRef} className="sc-close" onClick={onClose} aria-label={t('common.close')}>
             <X size={16} />
           </button>
         </div>

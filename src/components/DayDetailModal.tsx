@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { X, CalendarDays } from 'lucide-react';
 import type { DailyPnl } from '../types';
 import { formatMoneySigned, longDate } from '../lib/metrics';
-import { dayDiscipline, disciplineColor } from '../lib/discipline';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import DayChart from './DayChart';
@@ -74,7 +73,7 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
             <h2 id={titleId}>{longDate(daily.date)}</h2>
             {holidayName && <span className="badge-holiday"><CalendarDays size={12} /> {holidayName}</span>}
           </div>
-          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <button ref={closeRef} className="modal-close" onClick={onClose} aria-label={t('common.close')}><X size={18} /></button>
         </div>
 
         <div className="modal-stats">
@@ -90,12 +89,6 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
             <span className="ms-label">{t('modal.winLoss')}</span>
             <span className="ms-value">
               <span className="pos">{daily.wins}</span> / <span className="neg">{daily.losses}</span>
-            </span>
-          </div>
-          <div className="ms">
-            <span className="ms-label">{t('modal.discipline')}</span>
-            <span className="ms-value" style={{ color: disciplineColor(dayDiscipline(daily)) }}>
-              {dayDiscipline(daily)}<span className="ms-unit">/100</span>
             </span>
           </div>
         </div>

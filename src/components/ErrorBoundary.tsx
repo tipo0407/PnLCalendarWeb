@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { recordError } from '../lib/logger';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   children: ReactNode;
@@ -24,28 +26,33 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      return (
-        <div className="crash">
-          <div className="crash-card">
-            <h2>Something went wrong</h2>
-            <p>The app hit an unexpected error. Your data is safe — try reloading.</p>
-            <pre className="crash-msg">{this.state.error.message}</pre>
-            <div className="crash-actions">
-              <button className="btn btn-upload" onClick={() => window.location.reload()}>Reload</button>
-              <button
-                className="btn"
-                onClick={() => {
-                  try { localStorage.clear(); } catch { /* ignore */ }
-                  window.location.reload();
-                }}
-              >
-                Reset &amp; reload
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+      return <CrashScreen message={this.state.error.message} />;
     }
     return this.props.children;
   }
+}
+
+function CrashScreen({ message }: { message: string }) {
+  useLang();
+  return (
+    <div className="crash">
+      <div className="crash-card">
+        <h2>{t('crash.title')}</h2>
+        <p>{t('crash.body')}</p>
+        <pre className="crash-msg">{message}</pre>
+        <div className="crash-actions">
+          <button className="btn btn-upload" onClick={() => window.location.reload()}>{t('crash.reload')}</button>
+          <button
+            className="btn"
+            onClick={() => {
+              try { localStorage.clear(); } catch { /* ignore */ }
+              window.location.reload();
+            }}
+          >
+            {t('crash.resetReload')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

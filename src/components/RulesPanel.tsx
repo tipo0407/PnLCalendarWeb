@@ -3,8 +3,10 @@ import type { TradeRecord } from '../types';
 import { loadRules, saveRules, evaluateRules, type Rules } from '../lib/rules';
 import { formatMoneySigned } from '../lib/metrics';
 import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 export default function RulesPanel({ trades }: { trades: TradeRecord[] }) {
+  useLang();
   const [rules, setRules] = useState<Rules>(() => loadRules());
 
   function update<K extends keyof Rules>(key: K, value: number) {
@@ -46,7 +48,7 @@ export default function RulesPanel({ trades }: { trades: TradeRecord[] }) {
       <div className="rules-list">
         {violations.map((v) => (
           <div className="rule-row" key={v.key}>
-            <span className="rule-label">{v.label}</span>
+            <span className="rule-label">{ruleLabel(v.key, rules, v.label)}</span>
             <span className={`rule-count ${v.count === 0 ? 'ok' : 'bad'}`}>{v.count}</span>
             <span className={`rule-impact ${v.impact >= 0 ? 'pos' : 'neg'}`}>
               {v.count === 0 ? '—' : formatMoneySigned(v.impact)}
@@ -54,11 +56,21 @@ export default function RulesPanel({ trades }: { trades: TradeRecord[] }) {
           </div>
         ))}
         <div className="rule-row rule-total">
-          <span className="rule-label">P&amp;L tied to rule breaks</span>
+          <span className="rule-label">{t('rules.tiedPnl')}</span>
           <span className="rule-count" />
           <span className={`rule-impact ${totalImpact >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(totalImpact)}</span>
         </div>
       </div>
     </div>
   );
+}
+
+function ruleLabel(key: string, rules: Rules, fallback: string): string {
+  switch (key) {
+    case 'maxLoss': return t('rules.daysPastLoss', { amount: rules.maxDailyLoss });
+    case 'over': return t('rules.daysOverTrades', { n: rules.maxTradesPerDay });
+    case 'revenge': return t('rules.afterStop');
+    case 'off': return t('rules.outsideWindow', { start: rules.windowStart, end: rules.windowEnd });
+    default: return fallback;
+  }
 }

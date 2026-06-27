@@ -57,7 +57,7 @@ export default function ImportWizard({ sheets, onImport, onClose, existingCount 
             <FileSpreadsheet size={18} />
             <h2>{t('iw.title')}</h2>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close')}><X size={18} /></button>
         </div>
 
         <div className="iw-selects">
@@ -66,7 +66,7 @@ export default function ImportWizard({ sheets, onImport, onClose, existingCount 
               <span>{t('iw.worksheet')}</span>
               <select value={sheetIdx} onChange={(e) => setSheetIdx(Number(e.target.value))}>
                 {sheets.map((s, i) => (
-                  <option key={i} value={i}>{s.name || `Sheet ${i + 1}`}</option>
+                  <option key={i} value={i}>{s.name || t('iw.sheetN', { n: i + 1 })}</option>
                 ))}
               </select>
             </label>
@@ -104,7 +104,7 @@ function SheetStep({ sheet, templateId, onImport, onClose, existingCount }: { sh
   const health = useMemo(() => dataHealth(result.trades), [result.trades]);
   const canImport = mapping.date !== undefined && result.trades.length > 0;
 
-  const options = headerCells.map((c, i) => ({ i, label: String(c ?? '').trim() || `Column ${i + 1}` }));
+  const options = headerCells.map((c, i) => ({ i, label: String(c ?? '').trim() || t('iw.columnN', { n: i + 1 }) }));
 
   function setField(key: FieldKey, idx: number) {
     setMapping((m) => {
@@ -124,7 +124,7 @@ function SheetStep({ sheet, templateId, onImport, onClose, existingCount }: { sh
             {FIELDS.map((f) => (
               <div className="iw-row" key={f.key}>
                 <span className="iw-field">
-                  {f.label}{f.required && <span className="iw-req"> *</span>}
+                  {t(`iw.field.${f.key}`)}{f.required && <span className="iw-req"> *</span>}
                 </span>
                 <select
                   className="iw-select"
@@ -155,9 +155,9 @@ function SheetStep({ sheet, templateId, onImport, onClose, existingCount }: { sh
           {result.skipped.length > 0 && (
             <div className="iw-skips">
               {result.skipped.slice(0, 4).map((s, i) => (
-                <div key={i}>Row {s.row}: {s.reason}</div>
+                <div key={i}>{t('iw.rowSkip', { row: s.row, reason: s.reason })}</div>
               ))}
-              {result.skipped.length > 4 && <div>…and {result.skipped.length - 4} more</div>}
+              {result.skipped.length > 4 && <div>{t('iw.andMore', { n: result.skipped.length - 4 })}</div>}
             </div>
           )}
 
@@ -185,19 +185,19 @@ function SheetStep({ sheet, templateId, onImport, onClose, existingCount }: { sh
           <div className="iw-table-wrap">
             <table className="iw-table">
               <thead>
-                <tr><th>Date</th><th>Symbol</th><th>Side</th><th>P&amp;L</th></tr>
+                <tr><th>{t('tt.date')}</th><th>{t('tt.symbol')}</th><th>{t('tt.side')}</th><th>{t('tt.pnl')}</th></tr>
               </thead>
               <tbody>
                 {result.trades.slice(0, 7).map((t, i) => (
                   <tr key={i}>
                     <td>{shortDate(t.date)}</td>
                     <td>{t.symbol || '—'}</td>
-                    <td>{t.direction || '—'}</td>
+                    <td>{formatSide(t.direction)}</td>
                     <td className={t.profitLoss >= 0 ? 'pos' : 'neg'}>{formatMoneySigned(t.profitLoss)}</td>
                   </tr>
                 ))}
                 {result.trades.length === 0 && (
-                  <tr><td colSpan={4} className="iw-empty">No rows parsed yet — check your mapping.</td></tr>
+                  <tr><td colSpan={4} className="iw-empty">{t('iw.noRows')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -240,4 +240,11 @@ function Cov({ label, v }: { label: string; v: number }) {
       <span className="iwh-cov-pct">{pct}%</span>
     </div>
   );
+}
+
+function formatSide(side: string): string {
+  if (!side) return '—';
+  if (/short|sell|空/i.test(side)) return t('tt.short');
+  if (/long|buy|多/i.test(side)) return t('tt.long');
+  return side;
 }

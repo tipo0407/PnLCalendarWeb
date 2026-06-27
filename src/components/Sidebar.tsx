@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Flame, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import type { Summary } from '../lib/metrics';
 import {
@@ -9,9 +9,7 @@ import {
   formatMoneySigned,
   shortDate,
 } from '../lib/metrics';
-import { avgDiscipline } from '../lib/discipline';
-import { dayStreaks, disciplineStreak, monthProgress } from '../lib/goals';
-import { getSettings } from '../lib/settings';
+import { dayStreaks } from '../lib/goals';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import MoneyCountUp from './CountUp';
@@ -21,10 +19,7 @@ interface Props {
   summary: Summary;
   viewMonth: { year: number; month: number };
   onJumpMonth: (year: number, month: number) => void;
-  onOpenSettings?: () => void;
 }
-
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function pct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
@@ -41,7 +36,7 @@ function isoWeekLabel(date: string): string {
     Math.round(
       ((dt.getTime() - firstThursday.getTime()) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7
     );
-  return `W${week} · ${dt.getUTCFullYear()}`;
+  return `${t('common.week')} ${week} · ${dt.getUTCFullYear()}`;
 }
 
 function weekKey(date: string): string {
@@ -54,17 +49,11 @@ function iso(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpenSettings }: Props) {
+export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Props) {
   useLang(); // re-render on language change
   const months = useMemo(() => monthlyBreakdown(trades), [trades]);
   const days = useMemo(() => [...groupByDay(trades).values()], [trades]);
   const streaks = useMemo(() => dayStreaks(days), [days]);
-  const discStreak = useMemo(() => disciplineStreak(days), [days]);
-  const { monthlyGoal } = getSettings();
-  const progress = useMemo(
-    () => monthProgress(days, viewMonth.year, viewMonth.month, monthlyGoal),
-    [days, viewMonth.year, viewMonth.month, monthlyGoal],
-  );
 
   const bestWeek = useMemo(() => {
     const map = new Map<string, { sample: string; pnl: number }>();
@@ -82,18 +71,17 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
   const maxMonthAbs = Math.max(1, ...months.map((m) => Math.abs(m.pnl)));
   const winRate = summary.winRateDays;
   const positive = summary.totalPnl >= 0;
-  const disc = useMemo(() => avgDiscipline([...groupByDay(trades).values()]), [trades]);
 
   return (
     <aside className="sidebar">
       <div className="lens-head">
-        <span className="lens-title">PORTFOLIO SUMMARY</span>
+        <span className="lens-title">{t('side.portfolioSummary')}</span>
         <div className="lens-year-nav">
           <button
             className="edge-nav sm"
             onClick={() => onJumpMonth(viewMonth.year - 1, viewMonth.month)}
-            title="Previous year"
-            aria-label="Previous year"
+            title={t('side.prevYear')}
+            aria-label={t('side.prevYear')}
           >
             <ChevronLeft size={16} />
           </button>
@@ -101,8 +89,8 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
           <button
             className="edge-nav sm"
             onClick={() => onJumpMonth(viewMonth.year + 1, viewMonth.month)}
-            title="Next year"
-            aria-label="Next year"
+            title={t('side.nextYear')}
+            aria-label={t('side.nextYear')}
           >
             <ChevronRight size={16} />
           </button>
@@ -113,47 +101,25 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
         <span className="tc-label">{t('side.totalPnl')}</span>
         <span className="tc-value"><MoneyCountUp value={summary.totalPnl} /></span>
         <div className="tc-meta">
-          <span>{summary.tradingDays} traded days</span>
-          <span>{summary.tradeCount} trades total</span>
+          <span>{t('side.tradedDays', { n: summary.tradingDays })}</span>
+          <span>{t('side.tradesTotal', { n: summary.tradeCount })}</span>
         </div>
-        <span className="tc-since">{summary.daysSinceFirst} days since first trade</span>
+        <span className="tc-since">{t('side.daysSinceFirst', { n: summary.daysSinceFirst })}</span>
       </div>
 
       <div className="lens-block">
         <div className="goals-card">
-          <div className="goals-head">
-            <Target size={13} />
-            <span>{MONTH_SHORT[viewMonth.month]} {viewMonth.year} goal</span>
-            {monthlyGoal > 0
-              ? <span className={`goals-amt ${progress.pnl >= 0 ? 'pos' : 'neg'}`}>{formatMoneySigned(progress.pnl)} / {formatMoney(monthlyGoal)}</span>
-              : <button className="goals-set" onClick={onOpenSettings}>Set goal</button>}
-          </div>
-          {monthlyGoal > 0 && (
-            <>
-              <div className="goals-bar">
-                <div
-                  className={`goals-fill ${progress.pnl >= 0 ? 'pos' : 'neg'}`}
-                  style={{ width: `${Math.max(0, Math.min(100, progress.pct))}%` }}
-                />
-              </div>
-              <div className="goals-sub">
-                <span>{progress.pct >= 0 ? `${progress.pct.toFixed(0)}% of goal` : 'below zero'}</span>
-                <span><b className="pos">{progress.greenDays}</b>G · <b className="neg">{progress.redDays}</b>R</span>
-              </div>
-            </>
-          )}
           <div className="streak-row">
             <div className="streak-chip">
               <Flame size={13} className={streaks.currentType === 'win' ? 'pos' : streaks.currentType === 'loss' ? 'neg' : ''} />
               <span className="streak-val">
                 {streaks.current > 0
-                  ? `${streaks.current}-day ${streaks.currentType === 'win' ? 'win' : 'loss'} streak`
-                  : 'No active streak'}
+                  ? t(streaks.currentType === 'win' ? 'side.winStreakN' : 'side.lossStreakN', { n: streaks.current })
+                  : t('side.noStreak')}
               </span>
             </div>
             <div className="streak-meta">
-              <span title="Best winning-day streak"><b className="pos">{streaks.bestWin}</b> best</span>
-              <span title="Consecutive disciplined days"><b className={discStreak >= 3 ? 'pos' : ''}>{discStreak}</b> disc.</span>
+              <span title={t('side.bestWinningStreak')}><b className="pos">{streaks.bestWin}</b> {t('side.best')}</span>
             </div>
           </div>
         </div>
@@ -169,9 +135,9 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
                 key={`${m.year}-${m.month}`}
                 className="month-row"
                 onClick={() => onJumpMonth(m.year, m.month)}
-                title={`${MONTH_SHORT[m.month]} ${m.year} · ${m.tradeCount} trades`}
+                title={`${t(`month.short.${m.month}`)} ${m.year} · ${t('cal.tradesCount', { n: m.tradeCount })}`}
               >
-                <span className="month-name">{MONTH_SHORT[m.month]}</span>
+                <span className="month-name">{t(`month.short.${m.month}`)}</span>
                 <span className="month-track">
                   <span className="month-center" />
                   <span
@@ -225,24 +191,18 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth, onOpe
           <Insight label={t('side.avgWin')} value={formatMoneySigned(summary.avgWin)} cls="pos" />
           <Insight label={t('side.avgLoss')} value={formatMoneySigned(-summary.avgLoss)} cls="neg" />
           <Insight
-            label="Best Week"
+            label={t('side.bestWeek')}
             value={bestWeek ? formatMoneySigned(bestWeek.pnl) : '—'}
             sub={bestWeek ? isoWeekLabel(bestWeek.sample) : ''}
             cls="pos"
           />
           <Insight
-            label="Profit Factor"
+            label={t('atlas.profitFactor')}
             value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)}
             cls={summary.profitFactor >= 1 ? 'pos' : 'neg'}
           />
-          <Insight label="Expectancy" value={formatMoneySigned(summary.expectancy)} cls={summary.expectancy >= 0 ? 'pos' : 'neg'} />
-          <Insight label="Max Drawdown" value={formatMoney(summary.maxDrawdown)} cls="neg" />
-          <Insight
-            label="Discipline"
-            value={`${disc}`}
-            sub="/100 avg"
-            cls={disc >= 80 ? 'pos' : disc < 60 ? 'neg' : ''}
-          />
+          <Insight label={t('side.expectancy')} value={formatMoneySigned(summary.expectancy)} cls={summary.expectancy >= 0 ? 'pos' : 'neg'} />
+          <Insight label={t('atlas.maxDD')} value={formatMoney(summary.maxDrawdown)} cls="neg" />
         </div>
       </div>
     </aside>

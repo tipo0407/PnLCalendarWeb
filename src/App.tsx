@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CandlestickChart, Sun, Moon, UploadCloud, Sparkles, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Check, Database, Zap, FileDown } from 'lucide-react';
+import { CandlestickChart, Sun, Moon, UploadCloud, ShieldCheck, CalendarRange, Brain, Target, Lock, SlidersHorizontal, Database, Zap, FileDown } from 'lucide-react';
 import type { TradeRecord } from './types';
 import { groupByDay, computeSummary, distinctAccounts } from './lib/metrics';
 import { parseWorkbook, dedupeTrades } from './lib/parseWorkbook';
 import type { SheetData } from './lib/parseWorkbook';
-import { sampleTrades } from './data/sampleTrades';
 import { savePersistedTrades, loadPersistedTrades } from './lib/persist';
 import { loadHolidays, type HolidayMap } from './lib/holidays';
 import DataSourceBar from './components/DataSourceBar';
@@ -16,24 +15,12 @@ import Sidebar from './components/Sidebar';
 import DayDetailModal from './components/DayDetailModal';
 // Code-split the chart-heavy views (recharts) out of the initial bundle.
 const TradeAtlas = lazy(() => import('./components/TradeAtlas'));
-const WeeklyReview = lazy(() => import('./components/WeeklyReview'));
 import SettingsModal from './components/SettingsModal';
-import PricingModal from './components/PricingModal';
-import OnboardingChecklist from './components/OnboardingChecklist';
 import TourOverlay from './components/TourOverlay';
-import Dashboard from './components/Dashboard';
-import ProfileSwitcher from './components/ProfileSwitcher';
 import CommandPalette from './components/CommandPalette';
 import ReminderBanner from './components/ReminderBanner';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
 import { SETTINGS_EVENT } from './lib/settings';
-import { useIsPro } from './lib/usePlan';
-import { applyAccountPlan, planSource } from './lib/plan';
-import { fetchPlan } from './lib/account';
-import { useAccount } from './lib/useAccount';
-import { getAutoSync, AUTOSYNC_EVENT, pushBackup } from './lib/cloudSync';
-import { buildBackup } from './lib/backup';
-import { OPEN_PRICING_EVENT } from './lib/pricingBus';
 import { t, getLang } from './lib/i18n';
 import { useLang } from './lib/useLang';
 import './App.css';
@@ -42,13 +29,13 @@ const STORAGE_KEY = 'pnlcalendar.gsheet';
 const THEME_KEY = 'pnlcalendar.theme';
 const SYNC_KEY = 'pnlcalendar.lastSync';
 
-type View = 'home' | 'calendar' | 'atlas' | 'review';
+type View = 'calendar' | 'atlas';
 type Theme = 'light' | 'dark';
 
 export default function App() {
   const [trades, setTrades] = useState<TradeRecord[]>(() => loadPersistedTrades() ?? []);
   const [holidays, setHolidays] = useState<HolidayMap>({});
-  const [view, setView] = useState<View>('home');
+  const [view, setView] = useState<View>('calendar');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(THEME_KEY) as Theme) || 'light'
@@ -63,16 +50,9 @@ export default function App() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [syncing, setSyncing] = useState(false);
-  const [sampleMode, setSampleMode] = useState(false);
-  const pro = useIsPro();
-  const cloudAccount = useAccount();
-  const [autoSyncOn, setAutoSyncOn] = useState(() => getAutoSync());
-  const [cloudStatus, setCloudStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
-  const cloudTimer = useRef<number | null>(null);
   useLang(); // re-render on language change
   const [importSheets, setImportSheets] = useState<SheetData[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showPricing, setShowPricing] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -85,64 +65,26 @@ export default function App() {
     return () => window.removeEventListener(SETTINGS_EVENT, bump);
   }, []);
 
-  useEffect(() => {
-    const open = () => setShowPricing(true);
-    window.addEventListener(OPEN_PRICING_EVENT, open);
-    return () => window.removeEventListener(OPEN_PRICING_EVENT, open);
-  }, []);
-
-  // Track the auto-sync preference toggle.
-  useEffect(() => {
-    const refresh = () => setAutoSyncOn(getAutoSync());
-    window.addEventListener(AUTOSYNC_EVENT, refresh);
-    return () => window.removeEventListener(AUTOSYNC_EVENT, refresh);
-  }, []);
-
   // First-run guided tour (once real data exists), plus a manual replay trigger.
   useEffect(() => {
     const TOUR_KEY = 'pnlcalendar.tour.v1';
     const start = () => setShowTour(true);
     window.addEventListener('pnlcalendar:tour', start);
-    if (trades.length > 0 && !sampleMode && localStorage.getItem(TOUR_KEY) !== '1') {
+    if (trades.length > 0 && localStorage.getItem(TOUR_KEY) !== '1') {
       const id = window.setTimeout(() => setShowTour(true), 800);
       return () => { clearTimeout(id); window.removeEventListener('pnlcalendar:tour', start); };
     }
     return () => window.removeEventListener('pnlcalendar:tour', start);
-  }, [trades.length, sampleMode]);
+  }, [trades.length]);
 
   function closeTour() {
     setShowTour(false);
     try { localStorage.setItem('pnlcalendar.tour.v1', '1'); } catch { /* ignore */ }
   }
 
-  // Debounced background cloud push when signed in with auto-sync on.
-  useEffect(() => {
-    if (!cloudAccount || !autoSyncOn || sampleMode || trades.length === 0) return;
-    if (cloudTimer.current) clearTimeout(cloudTimer.current);
-    cloudTimer.current = window.setTimeout(async () => {
-      try {
-        setCloudStatus('syncing');
-        await pushBackup(await buildBackup(trades));
-        setCloudStatus('synced');
-      } catch {
-        setCloudStatus('error');
-      }
-    }, 3000);
-    return () => { if (cloudTimer.current) clearTimeout(cloudTimer.current); };
-  }, [trades, cloudAccount, autoSyncOn, sampleMode]);
-
   useEffect(() => {
     loadHolidays().then(setHolidays);
   }, []);
-
-  // Reconcile the local plan with the server-side entitlement when signed in, so
-  // a paid account unlocks Pro on any device without re-entering a license key.
-  useEffect(() => {
-    if (!cloudAccount) return;
-    let cancelled = false;
-    fetchPlan().then((p) => { if (!cancelled && p) applyAccountPlan(p); });
-    return () => { cancelled = true; };
-  }, [cloudAccount]);
 
   // Reflect the persisted language on <html lang> at startup.
   useEffect(() => {
@@ -163,10 +105,8 @@ export default function App() {
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       const hasData = trades.length > 0;
       switch (e.key) {
-        case '1': if (hasData) setView('home'); break;
         case '2': if (hasData) setView('calendar'); break;
         case '3': if (hasData) setView('atlas'); break;
-        case '4': if (hasData) setView('review'); break;
         case 't': case 'T': setTheme((t) => (t === 'dark' ? 'light' : 'dark')); break;
         case ',': setShowSettings(true); break;
         case '?': setShowShortcuts((v) => !v); break;
@@ -202,7 +142,6 @@ export default function App() {
         const buf = await resp.arrayBuffer();
         const loaded = parseWorkbook(buf);
         if (cancelled || loaded.length === 0) return;
-        setSampleMode(false);
         setTrades(loaded);
         savePersistedTrades(loaded);
         const last = loaded[loaded.length - 1].date;
@@ -237,11 +176,6 @@ export default function App() {
   }, []);
 
   const accounts = useMemo(() => distinctAccounts(trades), [trades]);
-  const setupNames = useMemo(() => {
-    const set = new Set<string>();
-    for (const t of trades) { const s = (t.setup ?? '').trim(); if (s) set.add(s); }
-    return [...set];
-  }, [trades]);
   const [account, setAccount] = useState<string>('All');
   const filteredTrades = useMemo(
     () => (account === 'All' ? trades : trades.filter((t) => (t.account ?? '') === account)),
@@ -251,7 +185,6 @@ export default function App() {
   const summary = useMemo(() => computeSummary(filteredTrades), [filteredTrades]);
 
   function applyTrades(loaded: TradeRecord[]) {
-    setSampleMode(false);
     setTrades(loaded);
     if (loaded.length > 0) {
       const last = loaded[loaded.length - 1].date;
@@ -262,32 +195,11 @@ export default function App() {
   }
 
   function handleLoaded(loaded: TradeRecord[], mode: 'replace' | 'append' = 'replace') {
-    if (mode === 'append' && !sampleMode && trades.length > 0) {
+    if (mode === 'append' && trades.length > 0) {
       applyTrades(dedupeTrades([...trades, ...loaded]));
     } else {
       applyTrades(loaded);
     }
-  }
-
-  function reloadProfile() {
-    setSampleMode(false);
-    setAccount('All');
-    const p = loadPersistedTrades();
-    if (p && p.length > 0) {
-      setTrades(p);
-      const [y, m] = p[p.length - 1].date.split('-').map(Number);
-      setViewMonth({ year: y, month: m - 1 });
-    } else {
-      setTrades([]);
-    }
-  }
-
-  function loadSample() {
-    setTrades(sampleTrades);
-    const last = sampleTrades[sampleTrades.length - 1].date;
-    const [y, m] = last.split('-').map(Number);
-    setViewMonth({ year: y, month: m - 1 });
-    setSampleMode(true);
   }
 
   const selectedDaily = selectedDay ? dailyMap.get(selectedDay) ?? null : null;
@@ -297,11 +209,11 @@ export default function App() {
       {syncing && (
         <div className="sync-toast" role="status" aria-live="polite">
           <span className="sync-spinner" />
-          Syncing latest from Google Sheet…
+          {t('topbar.syncing')}
         </div>
       )}
       {trades.length > 0 && (
-        <ReminderBanner trades={trades} sampleMode={sampleMode} onReview={() => setView('review')} />
+        <ReminderBanner trades={trades} />
       )}
       <header className="topbar">
         <div className="topbar-inner">
@@ -313,35 +225,15 @@ export default function App() {
             </div>
           </div>
 
-          <ProfileSwitcher onChange={reloadProfile} />
-
-          {cloudAccount && autoSyncOn && (
-            <span className={`cloud-pill ${cloudStatus}`} title="Auto cloud sync">
-              {cloudStatus === 'syncing' ? 'Syncing…' : cloudStatus === 'error' ? 'Sync error' : cloudStatus === 'synced' ? 'Synced' : 'Auto-sync'}
-            </span>
-          )}
-
-          {sampleMode && (
-            <span className="sample-badge">
-              <Sparkles size={13} /> Sample data
-              <button
-                className="sample-clear"
-                onClick={() => { setTrades([]); setSampleMode(false); }}
-              >
-                Clear
-              </button>
-            </span>
-          )}
-
           {trades.length > 0 && (
-            <nav className="view-tabs" aria-label="Views">
-              {(['home', 'calendar', 'atlas', 'review'] as const).map((v, i) => (
+            <nav className="view-tabs" aria-label={t('topbar.views')}>
+              {(['calendar', 'atlas'] as const).map((v, i) => (
                 <button
                   key={v}
                   className={`tab-btn ${view === v ? 'active' : ''}`}
                   onClick={() => setView(v)}
-                  title={`${t(`tab.${v}`)} (${i + 1})`}
-                  aria-keyshortcuts={String(i + 1)}
+                  title={`${t(`tab.${v}`)} (${i + 2})`}
+                  aria-keyshortcuts={String(i + 2)}
                   aria-current={view === v ? 'page' : undefined}
                 >
                   {view === v && (
@@ -358,31 +250,21 @@ export default function App() {
           )}
 
           {trades.length > 0 && accounts.length > 1 && (
-            <label className="acct-filter" title="Filter by account">
-              <select value={account} onChange={(e) => setAccount(e.target.value)} aria-label="Account filter">
-                <option value="All">All accounts</option>
+            <label className="acct-filter" title={t('topbar.filterByAccount')}>
+              <select value={account} onChange={(e) => setAccount(e.target.value)} aria-label={t('topbar.accountFilter')}>
+                <option value="All">{t('topbar.allAccounts')}</option>
                 {accounts.map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </label>
           )}
 
-          <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} onSample={loadSample} />
-
-          <button
-            className={`pro-pill ${pro ? 'is-pro' : 'is-free'}`}
-            onClick={() => setShowPricing(true)}
-            title={pro
-              ? (planSource() === 'account' ? t('plan.proAccount') : t('plan.proKey'))
-              : t('plan.upgradeTitle')}
-          >
-            {pro ? <Check size={13} /> : <Sparkles size={13} />} {pro ? t('plan.pro') : t('plan.upgrade')}
-          </button>
+          <DataSourceBar onSheets={setImportSheets} storageKey={STORAGE_KEY} />
 
           <button
             className="icon-btn"
             onClick={() => setShowSettings(true)}
-            title="Settings"
-            aria-label="Settings"
+            title={t('action.settings')}
+            aria-label={t('action.settings')}
           >
             <SlidersHorizontal size={16} />
           </button>
@@ -390,8 +272,8 @@ export default function App() {
           <button
             className="theme-toggle"
             onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label="Toggle theme"
+            title={theme === 'dark' ? t('topbar.lightMode') : t('topbar.darkMode')}
+            aria-label={t('topbar.toggleTheme')}
           >
             <span className="tt-track">
               <span className="tt-thumb">
@@ -403,8 +285,7 @@ export default function App() {
       </header>
 
       <AnimatePresence>
-        {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} trades={trades} onReplaceTrades={applyTrades} />}
-        {showPricing && <PricingModal key="pricing" onClose={() => setShowPricing(false)} />}
+        {showSettings && <SettingsModal key="settings" onClose={() => setShowSettings(false)} />}
       </AnimatePresence>
 
       {showPalette && (
@@ -414,7 +295,6 @@ export default function App() {
           onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }}
           onSetView={setView}
           onOpenSettings={() => setShowSettings(true)}
-          onOpenPricing={() => setShowPricing(true)}
           onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
           onShowShortcuts={() => { setShowPalette(false); setShowShortcuts(true); }}
         />
@@ -431,25 +311,18 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="landing-eyebrow"><Lock size={12} /> Local-first · privacy-first</span>
+            <span className="landing-eyebrow"><Lock size={12} /> {t('landing.eyebrow')}</span>
             <h2 className="landing-title">
-              Turn your trading spreadsheet into a<br />
-              <span className="grad">visual discipline journal</span>.
+              {t('landing.titlePrefix')}<br />
+              <span className="grad">{t('landing.titleHighlight')}</span>.
             </h2>
             <p className="landing-tagline">
               {t('landing.tagline')}
             </p>
             <div className="landing-cta">
-              <button className="btn btn-sample" onClick={loadSample}>
-                <Sparkles size={16} /> {t('landing.cta')}
-              </button>
               <span className="landing-cta-hint">
-                <UploadCloud size={14} /> or upload your <code>.xlsx</code> / CSV, or paste a Google Sheet link above
+                <UploadCloud size={14} /> {t('landing.uploadHint')}
               </span>
-              <button className="landing-plans" onClick={() => setShowPricing(true)}>
-                <Sparkles size={14} /> {t('landing.plans')}
-              </button>
-              <span className="landing-price-teaser">{t('landing.priceTeaser')}</span>
             </div>
 
             <div className="landing-trust">
@@ -462,41 +335,41 @@ export default function App() {
             <div className="landing-features">
               <div className="lf">
                 <span className="lf-icon"><CalendarRange size={18} /></span>
-                <h3>See your edge at a glance</h3>
-                <p>P&amp;L calendar, year heatmap, equity curve, win rate, profit factor, R-multiple distribution, rolling expectancy and risk-of-ruin.</p>
+                <h3>{t('landing.feature1.title')}</h3>
+                <p>{t('landing.feature1.body')}</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><Brain size={18} /></span>
-                <h3>Behavioral review, not just charts</h3>
-                <p>A Leak Finder that ranks where money drains, mistake/emotion edge, a discipline-trend curve and rule-break tracking.</p>
+                <h3>{t('landing.feature2.title')}</h3>
+                <p>{t('landing.feature2.body')}</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><Target size={18} /></span>
-                <h3>Change one thing each week</h3>
-                <p>Weekly and monthly reviews surface your single biggest leak and export a clean, branded PDF report.</p>
+                <h3>{t('landing.feature3.title')}</h3>
+                <p>{t('landing.feature3.body')}</p>
               </div>
               <div className="lf">
                 <span className="lf-icon"><ShieldCheck size={18} /></span>
-                <h3>Your data stays with you</h3>
-                <p>Read in your browser. No broker credentials, no required cloud, no account — optional sync when you want it.</p>
+                <h3>{t('landing.feature4.title')}</h3>
+                <p>{t('landing.feature4.body')}</p>
               </div>
             </div>
 
             <div className="landing-fit">
               <div className="fit-col good">
-                <h4>Built for</h4>
+                <h4>{t('landing.builtFor')}</h4>
                 <ul>
-                  <li>Traders already journaling in Excel / Google Sheets</li>
-                  <li>Futures &amp; day-trading scalpers</li>
-                  <li>Prop-firm challenge takers who need discipline</li>
+                  <li>{t('landing.built1')}</li>
+                  <li>{t('landing.built2')}</li>
+                  <li>{t('landing.built3')}</li>
                 </ul>
               </div>
               <div className="fit-col bad">
-                <h4>Not for</h4>
+                <h4>{t('landing.notFor')}</h4>
                 <ul>
-                  <li>Fully automated broker sync</li>
-                  <li>Institutional-grade backtesting</li>
-                  <li>Complex multi-leg options analytics</li>
+                  <li>{t('landing.not1')}</li>
+                  <li>{t('landing.not2')}</li>
+                  <li>{t('landing.not3')}</li>
                 </ul>
               </div>
             </div>
@@ -512,32 +385,13 @@ export default function App() {
             </div>
 
             <p className="landing-foot">
-              A trading journal &amp; review tool — not investment advice. The import wizard
-              auto-detects your layout, or lets you pick a sheet &amp; map columns yourself.
+              {t('landing.foot')}
             </p>
           </motion.section>
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          {view === 'home' ? (
-            <motion.div
-              key="home"
-              className="home-page"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Dashboard
-                trades={filteredTrades}
-                summary={summary}
-                onSetView={setView}
-                onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }}
-                onOpenSettings={() => setShowSettings(true)}
-                onOpenPricing={() => setShowPricing(true)}
-              />
-            </motion.div>
-          ) : view === 'calendar' ? (
+          {view === 'calendar' ? (
             <motion.main
               key="calendar"
               className="layout"
@@ -551,14 +405,8 @@ export default function App() {
                 summary={summary}
                 viewMonth={viewMonth}
                 onJumpMonth={(year, month) => setViewMonth({ year, month })}
-                onOpenSettings={() => setShowSettings(true)}
               />
               <section className="main-col">
-                <OnboardingChecklist
-                  hasTrades={trades.length > 0}
-                  setups={setupNames}
-                  onOpenSettings={() => setShowSettings(true)}
-                />
                 <CalendarView
                   dailyMap={dailyMap}
                   holidays={holidays}
@@ -577,7 +425,7 @@ export default function App() {
                 />
               </section>
             </motion.main>
-          ) : view === 'atlas' ? (
+          ) : (
             <motion.div
               key="atlas"
               initial={{ opacity: 0, y: 12 }}
@@ -585,21 +433,8 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Suspense fallback={<div className="lazy-fallback">Loading…</div>}>
-                <TradeAtlas trades={filteredTrades} summary={summary} onOpenSettings={() => setShowSettings(true)} onSelectDay={(d) => { setView('calendar'); setSelectedDay(d); }} />
-              </Suspense>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="review"
-              className="review-page"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Suspense fallback={<div className="lazy-fallback">Loading…</div>}>
-                <WeeklyReview trades={filteredTrades} />
+              <Suspense fallback={<div className="lazy-fallback">{t('common.loading')}</div>}>
+                <TradeAtlas trades={filteredTrades} summary={summary} />
               </Suspense>
             </motion.div>
           )}
@@ -620,7 +455,7 @@ export default function App() {
         {importSheets && (
           <ImportWizard
             sheets={importSheets}
-            existingCount={sampleMode ? 0 : trades.length}
+            existingCount={trades.length}
             onClose={() => setImportSheets(null)}
             onImport={(t, mode) => { handleLoaded(t, mode); setImportSheets(null); }}
           />

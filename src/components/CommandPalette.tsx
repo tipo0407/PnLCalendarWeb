@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Calendar, BarChart3, ClipboardList, SlidersHorizontal, Sparkles, SunMoon, CornerDownLeft, LayoutDashboard, Keyboard } from 'lucide-react';
+import { Search, Calendar, BarChart3, SlidersHorizontal, SunMoon, CornerDownLeft, Keyboard } from 'lucide-react';
 import type { TradeRecord } from '../types';
 import { formatMoneySigned, shortDate } from '../lib/metrics';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
-type ViewId = 'home' | 'calendar' | 'atlas' | 'review';
+type ViewId = 'calendar' | 'atlas';
 
 interface Props {
   trades: TradeRecord[];
@@ -11,7 +13,6 @@ interface Props {
   onSelectDay: (date: string) => void;
   onSetView: (v: ViewId) => void;
   onOpenSettings: () => void;
-  onOpenPricing: () => void;
   onToggleTheme: () => void;
   onShowShortcuts: () => void;
 }
@@ -26,8 +27,9 @@ interface Item {
 }
 
 export default function CommandPalette({
-  trades, onClose, onSelectDay, onSetView, onOpenSettings, onOpenPricing, onToggleTheme, onShowShortcuts,
+  trades, onClose, onSelectDay, onSetView, onOpenSettings, onToggleTheme, onShowShortcuts,
 }: Props) {
+  const lang = useLang();
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,17 +37,16 @@ export default function CommandPalette({
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const actions: Item[] = useMemo(() => [
-    { id: 'go-home', icon: <LayoutDashboard size={15} />, label: 'Go to Home', group: 'Navigate', run: () => onSetView('home') },
-    { id: 'go-cal', icon: <Calendar size={15} />, label: 'Go to Calendar', group: 'Navigate', run: () => onSetView('calendar') },
-    { id: 'go-atlas', icon: <BarChart3 size={15} />, label: 'Go to Trade Atlas', group: 'Navigate', run: () => onSetView('atlas') },
-    { id: 'go-review', icon: <ClipboardList size={15} />, label: 'Go to Weekly Review', group: 'Navigate', run: () => onSetView('review') },
-    { id: 'settings', icon: <SlidersHorizontal size={15} />, label: 'Open Settings', group: 'Actions', run: onOpenSettings },
-    { id: 'pricing', icon: <Sparkles size={15} />, label: 'Plans & pricing', group: 'Actions', run: onOpenPricing },
-    { id: 'theme', icon: <SunMoon size={15} />, label: 'Toggle light / dark theme', group: 'Actions', run: onToggleTheme },
-    { id: 'shortcuts', icon: <Keyboard size={15} />, label: 'Keyboard shortcuts', hint: '?', group: 'Actions', run: onShowShortcuts },
-  ], [onSetView, onOpenSettings, onOpenPricing, onToggleTheme, onShowShortcuts]);
+    void lang,
+    { id: 'go-cal', icon: <Calendar size={15} />, label: t('cmd.goCalendar'), group: t('cmd.navigate'), run: () => onSetView('calendar') },
+    { id: 'go-atlas', icon: <BarChart3 size={15} />, label: t('cmd.goAtlas'), group: t('cmd.navigate'), run: () => onSetView('atlas') },
+    { id: 'settings', icon: <SlidersHorizontal size={15} />, label: t('cmd.openSettings'), group: t('cmd.actions'), run: onOpenSettings },
+    { id: 'theme', icon: <SunMoon size={15} />, label: t('cmd.toggleTheme'), group: t('cmd.actions'), run: onToggleTheme },
+    { id: 'shortcuts', icon: <Keyboard size={15} />, label: t('cmd.shortcuts'), hint: '?', group: t('cmd.actions'), run: onShowShortcuts },
+  ].filter(Boolean) as Item[], [lang, onSetView, onOpenSettings, onToggleTheme, onShowShortcuts]);
 
   const items: Item[] = useMemo(() => {
+    void lang;
     const query = q.trim().toLowerCase();
     const acts = query
       ? actions.filter((a) => a.label.toLowerCase().includes(query))
@@ -60,20 +61,20 @@ export default function CommandPalette({
             .includes(query),
         )
         .slice(0, 8)
-        .map((t) => {
-          const snippet = (t.reasonEmotion || t.note || t.setup || '').slice(0, 60);
+        .map((trade) => {
+          const snippet = (trade.reasonEmotion || trade.note || trade.setup || '').slice(0, 60);
           return {
-            id: `trade-${t.rowNumber}-${t.date}`,
-            icon: <span className={t.profitLoss >= 0 ? 'cp-pnl pos' : 'cp-pnl neg'}>{formatMoneySigned(t.profitLoss)}</span>,
-            label: `${shortDate(t.date)} · ${t.symbol || '—'}${t.setup ? ` · ${t.setup}` : ''}`,
+            id: `trade-${trade.rowNumber}-${trade.date}`,
+            icon: <span className={trade.profitLoss >= 0 ? 'cp-pnl pos' : 'cp-pnl neg'}>{formatMoneySigned(trade.profitLoss)}</span>,
+            label: `${shortDate(trade.date)} · ${trade.symbol || '—'}${trade.setup ? ` · ${trade.setup}` : ''}`,
             hint: snippet,
-            group: 'Trades',
-            run: () => onSelectDay(t.date),
+            group: t('cmd.trades'),
+            run: () => onSelectDay(trade.date),
           } as Item;
         });
     }
     return [...acts, ...tradeItems];
-  }, [q, actions, trades, onSelectDay]);
+  }, [q, actions, trades, onSelectDay, lang]);
 
   function choose(item: Item | undefined) {
     if (!item) return;
@@ -92,7 +93,7 @@ export default function CommandPalette({
 
   return (
     <div className="cp-overlay" onClick={onClose}>
-      <div className="cp-panel" role="dialog" aria-modal="true" aria-label="Command palette" onClick={(e) => e.stopPropagation()}>
+      <div className="cp-panel" role="dialog" aria-modal="true" aria-label={t('cmd.title')} onClick={(e) => e.stopPropagation()}>
         <div className="cp-search">
           <Search size={16} />
           <input
@@ -100,13 +101,13 @@ export default function CommandPalette({
             value={q}
             onChange={(e) => { setQ(e.target.value); setActive(0); }}
             onKeyDown={onKey}
-            placeholder="Search trades, notes, setups, or jump to…"
-            aria-label="Command palette search"
+            placeholder={t('cmd.searchPlaceholder')}
+            aria-label={t('cmd.searchAria')}
           />
           <kbd className="cp-esc">esc</kbd>
         </div>
         <div className="cp-list">
-          {items.length === 0 && <div className="cp-empty">No matches.</div>}
+          {items.length === 0 && <div className="cp-empty">{t('cmd.noMatches')}</div>}
           {items.map((item, i) => {
             const showGroup = item.group !== lastGroup;
             lastGroup = item.group;

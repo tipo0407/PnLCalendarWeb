@@ -15,6 +15,8 @@ import {
   type IntradayResult,
 } from '../lib/marketData';
 import { formatMoneySigned } from '../lib/metrics';
+import { t } from '../lib/i18n';
+import { useLang } from '../lib/useLang';
 
 interface Props {
   date: string; // YYYY-MM-DD
@@ -36,6 +38,7 @@ type Status =
   | { phase: 'done'; result: IntradayResult };
 
 export default function DayChart({ date, trades }: Props) {
+  useLang();
   const symbol = useMemo(() => dominantSymbol(trades.map((t) => t.symbol)), [trades]);
   const [interval, setInterval] = useState<Interval>('5m');
   const [status, setStatus] = useState<Status>({ phase: 'loading' });
@@ -112,7 +115,7 @@ export default function DayChart({ date, trades }: Props) {
     const vwapSeries = chart.addLineSeries({ color: '#8b5cf6', lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
     vwapSeries.setData(vwap(result.candles).map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
 
-    // Trades: directional entry signal arrows (up = long, down = short) colored by win/loss.
+    // Trades: each leg drawn as a buy (green ↑) or sell (red ↓) arrow.
     const [y, m, d] = date.split('-').map(Number);
     const dayStart = Date.UTC(y, m - 1, d) / 1000;
     const candleTimes = result.candles.map((c) => c.time);
@@ -126,29 +129,24 @@ export default function DayChart({ date, trades }: Props) {
       }
       return best as UTCTimestamp;
     };
-    const candleMap = new Map(result.candles.map((c) => [c.time, c]));
-
-    // Connector entry → exit (green = profit, red = loss) with a white/black halo
-    // Connectors and arrows are drawn in the SVG overlay so that same-candle
-    // trades (entry & exit on one bar) still show as a vertical line.
     const halo = dark ? '#000000' : '#ffffff';
 
     const pillLayer = pillLayerRef.current;
     const arrowLayer = arrowLayerRef.current;
     const tip = tipRef.current;
-    const showTip = (t: TradeRecord, x: number, y: number) => {
+    const showTip = (trade: TradeRecord, x: number, y: number) => {
       if (!tip) return;
-      const dir = /long/i.test(t.direction) ? 'Long' : /short/i.test(t.direction) ? 'Short' : t.direction;
-      const win = t.profitLoss >= 0;
-      const head = [`#${t.tradeNumber}`, dir, t.symbol].filter(Boolean).join(' · ');
-      const noteText = t.reasonEmotion || t.note;
+      const dir = /short|sell|空/i.test(trade.direction) ? t('tt.short') : /long|buy|多/i.test(trade.direction) ? t('tt.long') : trade.direction;
+      const win = trade.profitLoss >= 0;
+      const head = [`#${trade.tradeNumber}`, dir, trade.symbol].filter(Boolean).join(' · ');
+      const noteText = trade.reasonEmotion || trade.note;
       tip.innerHTML =
         `<div class="tt-head">${escapeHtml(head)}</div>` +
-        `<div class="tt-pnl ${win ? 'pos' : 'neg'}">${formatMoneySigned(t.profitLoss)}</div>` +
-        (t.entryPrice && t.exitPrice
-          ? `<div class="tt-sub">Entry ${t.entryPrice} → Exit ${t.exitPrice}</div>`
+        `<div class="tt-pnl ${win ? 'pos' : 'neg'}">${formatMoneySigned(trade.profitLoss)}</div>` +
+        (trade.entryPrice && trade.exitPrice
+          ? `<div class="tt-sub">${escapeHtml(t('tt.entry'))} ${trade.entryPrice} → ${escapeHtml(t('tt.exit'))} ${trade.exitPrice}</div>`
           : '') +
-        (t.setup ? `<div class="tt-setup">${escapeHtml(t.setup)}</div>` : '') +
+        (trade.setup ? `<div class="tt-setup">${escapeHtml(t('tt.setupLine'))}: ${escapeHtml(trade.setup)}</div>` : '') +
         (noteText ? `<div class="tt-note">${escapeHtml(noteText)}</div>` : '');
       tip.style.left = `${x}px`;
       tip.style.top = `${y}px`;
@@ -156,8 +154,8 @@ export default function DayChart({ date, trades }: Props) {
     };
     const hideTip = () => tip?.classList.remove('show');
 
-    // Small direction arrow whose tip points exactly at the given price coordinate.
-    // Long → green up arrow, short → red down arrow (same scheme at entry and exit).
+    // Small arrow whose tip points exactly at the given price coordinate.
+    // Buy → green up arrow, sell → red down arrow.
     const arrowSvg = (x: number, y: number, up: boolean, color: string): string => {
       const s = 6;
       const hgt = 13;
@@ -177,7 +175,7 @@ export default function DayChart({ date, trades }: Props) {
         let cores = '';
         let arrows = '';
         for (const t of trades) {
-          const isLong = !/short/i.test(t.direction);
+          const isLong = !/short|sell|空/i.test(t.direction);
           const win = t.profitLoss >= 0;
           const xEntry = t.entryTime != null ? tscale.timeToCoordinate(snap(dayStart + t.entryTime)) : null;
           const yEntry = t.entryPrice ? candleSeries.priceToCoordinate(t.entryPrice) : null;
@@ -189,16 +187,20 @@ export default function DayChart({ date, trades }: Props) {
             halos += `<line ${line} stroke="${halo}" stroke-width="4.5" stroke-linecap="round" />`;
             cores += `<line ${line} stroke="${win ? pos : neg}" stroke-width="2" stroke-linecap="round" />`;
           }
-          // Entry arrow = open (long ↑, short ↓); exit arrow = close (the opposite).
-          if (xEntry != null && yEntry != null) arrows += arrowSvg(xEntry, yEntry, isLong, isLong ? pos : neg);
-          if (xExit != null && yExit != null) arrows += arrowSvg(xExit, yExit, !isLong, !isLong ? pos : neg);
+          // Each leg is a buy or a sell — buy = green up arrow, sell = red down arrow.
+          // Long opens with a buy and closes with a sell; short is the reverse.
+          const entryIsBuy = isLong;
+          const exitIsBuy = !isLong;
+          if (xEntry != null && yEntry != null) arrows += arrowSvg(xEntry, yEntry, entryIsBuy, entryIsBuy ? pos : neg);
+          if (xExit != null && yExit != null) arrows += arrowSvg(xExit, yExit, exitIsBuy, exitIsBuy ? pos : neg);
         }
         arrowLayer.setAttribute('width', `${w}`);
         arrowLayer.setAttribute('height', `${h}`);
         arrowLayer.setAttribute('viewBox', `0 0 ${w} ${h}`);
         arrowLayer.innerHTML = halos + cores + arrows;
       }
-      // P&L pills, anchored just outside each exit candle.
+      // P&L pills, anchored right at each trade's exit price so they sit next to
+      // that trade's exit arrow/connector (above for wins, below for losses).
       if (pillLayer) {
         pillLayer.innerHTML = '';
         for (const t of trades) {
@@ -206,9 +208,7 @@ export default function DayChart({ date, trades }: Props) {
           const win = t.profitLoss >= 0;
           const exitTime = snap(dayStart + t.exitTime);
           const x = tscale.timeToCoordinate(exitTime);
-          const bar = candleMap.get(exitTime);
-          const anchorPrice = win ? (bar ? bar.high : t.exitPrice) : (bar ? bar.low : t.exitPrice);
-          const yCoord = candleSeries.priceToCoordinate(anchorPrice);
+          const yCoord = candleSeries.priceToCoordinate(t.exitPrice);
           if (x == null || yCoord == null) continue;
           const pill = document.createElement('div');
           pill.className = `dc-pnl-pill ${win ? 'pos above' : 'neg below'}`;
@@ -283,13 +283,13 @@ export default function DayChart({ date, trades }: Props) {
         <div ref={pillLayerRef} className="dc-pill-layer" />
         <div ref={tipRef} className="dc-trade-tip" />
         <div ref={legendRef} className="dc-legend-float" />
-        {status.phase === 'loading' && <div className="dc-overlay">Loading market data…</div>}
+        {status.phase === 'loading' && <div className="dc-overlay">{t('tt.loadingMarket')}</div>}
         {status.phase === 'error' && <div className="dc-overlay">⚠ {status.message}</div>}
         {status.phase === 'done' && status.result.candles.length === 0 && (
           <div className="dc-overlay">
-            No intraday data for {symbol} on this date.
+            {t('tt.noIntraday', { symbol })}
             <span className="dc-overlay-sub">
-              Yahoo intraday history is limited (≈60 days for 5m, ≈8 days for 1m).
+              {t('tt.yahooLimit')}
             </span>
           </div>
         )}
