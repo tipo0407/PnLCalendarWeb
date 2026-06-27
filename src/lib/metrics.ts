@@ -240,7 +240,8 @@ export function dayOfWeekEdge(trades: TradeRecord[]): GroupEdge[] {
     g.count += 1;
     if (t.profitLoss > 0) g.wins += 1;
   }
-  const order = [1, 2, 3, 4, 5, 6, 0];
+  // Weekdays only (Mon–Fri); markets are closed on weekends.
+  const order = [1, 2, 3, 4, 5];
   return order
     .map((wd) => buckets.get(wd))
     .filter((g): g is GroupEdge => !!g)
@@ -249,9 +250,12 @@ export function dayOfWeekEdge(trades: TradeRecord[]): GroupEdge[] {
 
 const HOLD_BUCKETS: { label: string; max: number }[] = [
   { label: '<1m', max: 60 },
-  { label: '1–5m', max: 300 },
-  { label: '5–15m', max: 900 },
-  { label: '15–60m', max: 3600 },
+  { label: '1–3m', max: 180 },
+  { label: '3–5m', max: 300 },
+  { label: '5–10m', max: 600 },
+  { label: '10–15m', max: 900 },
+  { label: '15–30m', max: 1800 },
+  { label: '30–60m', max: 3600 },
   { label: '>1h', max: Infinity },
 ];
 

@@ -88,7 +88,7 @@ export default function TradeAtlas({ trades, summary }: Props) {
     return symbols.includes(hourSymbol) ? hourSymbol : (symbols.includes('MES') ? 'MES' : 'All');
   }, [hourSymbol, symbols]);
   const hourEdge = useMemo(
-    () => hourEdgeBySymbol(trades, effectiveHourSymbol).map((h) => ({ ...h, key: `${String(h.hour).padStart(2, '0')}:00` })),
+    () => hourEdgeBySymbol(trades, effectiveHourSymbol).map((h) => ({ ...h, key: `${h.hour % 12 === 0 ? 12 : h.hour % 12}${h.hour < 12 ? 'am' : 'pm'}` })),
     [trades, effectiveHourSymbol],
   );
   const dowEdge = useMemo(() => {

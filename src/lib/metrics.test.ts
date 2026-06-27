@@ -35,13 +35,13 @@ describe('holdTimeEdge', () => {
   it('buckets by duration and skips trades without one', () => {
     const data = [
       trade({ profitLoss: 50, duration: 30 }),     // <1m
-      trade({ profitLoss: -20, duration: 200 }),    // 1-5m
-      trade({ profitLoss: 80, duration: 200 }),     // 1-5m
+      trade({ profitLoss: -20, duration: 200 }),    // 3-5m
+      trade({ profitLoss: 80, duration: 200 }),     // 3-5m
       trade({ profitLoss: 999, duration: null }),   // skipped
     ];
     const edge = holdTimeEdge(data);
     expect(edge.find((e) => e.key === '<1m')!.pnl).toBe(50);
-    const mid = edge.find((e) => e.key === '1–5m')!;
+    const mid = edge.find((e) => e.key === '3–5m')!;
     expect(mid.pnl).toBe(60);
     expect(mid.count).toBe(2);
     expect(edge.reduce((n, e) => n + e.count, 0)).toBe(3); // null excluded
