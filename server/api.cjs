@@ -20,7 +20,31 @@ const auth = require('./auth.cjs');
 const sync = require('./sync.cjs');
 
 const SECRET = process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
+const DEFAULT_SECRET = 'pnlcal-dev-secret-change-me';
+if (process.env.NODE_ENV === 'production' && SECRET === DEFAULT_SECRET) {
+  throw new Error('Refusing to start in production: set LICENSE_SECRET to a strong, non-default value.');
+}
 const PORT = Number(process.env.API_PORT || 8788);
+// CORS allow-list. Empty (default) => no Access-Control-Allow-Origin header is
+// emitted, so only same-origin requests (the bundled app) are honored. Set
+// CORS_ALLOWED_ORIGINS to a comma-separated list (or '*') to allow cross-origin.
+const CORS_ALLOWED = String(process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+
+// Baseline security headers applied to every API/proxy response.
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+};
+
+/** Resolve the allowed CORS origin for a request, or null to omit the header. */
+function resolveCors(req) {
+  if (CORS_ALLOWED.length === 0) return null;
+  if (CORS_ALLOWED.includes('*')) return '*';
+  const origin = req && req.headers && req.headers.origin;
+  return origin && CORS_ALLOWED.includes(origin) ? origin : null;
+}
 // Demo key is always accepted so reviewers can try Pro without a real key.
 const DEMO_KEY = 'PNLCAL-PRO-DEMO';
 const START = Date.now();
@@ -50,15 +74,20 @@ function verifyKey(key) {
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig));
 }
 
-function send(res, status, body) {
+function sendRaw(res, status, body, corsOrigin) {
   const json = JSON.stringify(body);
-  res.writeHead(status, {
+  const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Cache-Control': 'no-store',
-  });
+    ...SECURITY_HEADERS,
+  };
+  if (corsOrigin) {
+    headers['Access-Control-Allow-Origin'] = corsOrigin;
+    headers['Vary'] = 'Origin';
+  }
+  res.writeHead(status, headers);
   res.end(json);
 }
 
@@ -93,14 +122,27 @@ function readRaw(req) {
  */
 function verifyStripeSignature(rawBody, header, secret, toleranceSec = 300) {
   if (!header || !secret) return false;
-  const parts = Object.fromEntries(String(header).split(',').map((kv) => kv.split('=')));
-  const ts = Number(parts.t);
-  const v1 = parts.v1;
-  if (!ts || !v1) return false;
+  // Parse the header manually: it is a comma-separated list of `key=value`
+  // pairs where `v1` may appear multiple times and a value can itself contain
+  // '='. Collect ALL v1 signatures and accept if any one matches.
+  let ts = null;
+  const v1s = [];
+  for (const part of String(header).split(',')) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    const value = part.slice(eq + 1).trim();
+    if (key === 't') ts = Number(value);
+    else if (key === 'v1') v1s.push(value);
+  }
+  if (!ts || v1s.length === 0) return false;
   if (Math.abs(Date.now() / 1000 - ts) > toleranceSec) return false;
   const expected = crypto.createHmac('sha256', secret).update(`${ts}.${rawBody}`).digest('hex');
-  if (expected.length !== v1.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+  const expectedBuf = Buffer.from(expected);
+  return v1s.some((v1) => {
+    if (v1.length !== expected.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, Buffer.from(v1));
+  });
 }
 
 /**
@@ -162,6 +204,10 @@ function billingFromObject(obj) {
 
 /** Route a request; exported so it can be embedded in another server too. */
 async function handle(req, res) {
+  // Resolve the CORS origin once and bind it into a request-scoped sender.
+  const cors = resolveCors(req);
+  const send = (r, status, body) => sendRaw(r, status, body, cors);
+
   if (req.method === 'OPTIONS') return send(res, 204, {});
 
   const url = (req.url || '').split('?')[0];

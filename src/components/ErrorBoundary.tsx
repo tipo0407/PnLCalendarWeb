@@ -19,20 +19,24 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Keep a breadcrumb in the console; record locally when opt-in logging is on.
+    // Log the full error (with stack) and the React component stack to the
+    // console, and record them locally when opt-in logging is enabled.
     console.error('PnL Calendar crashed:', error, info.componentStack);
-    recordError(error.message, 'render');
+    const detail = [error.stack, info.componentStack].filter(Boolean).join('\n\n');
+    recordError(error.message, 'render', detail);
   }
+
+  reset = () => this.setState({ error: null });
 
   render() {
     if (this.state.error) {
-      return <CrashScreen message={this.state.error.message} />;
+      return <CrashScreen message={this.state.error.message} onRetry={this.reset} />;
     }
     return this.props.children;
   }
 }
 
-function CrashScreen({ message }: { message: string }) {
+function CrashScreen({ message, onRetry }: { message: string; onRetry: () => void }) {
   useLang();
   return (
     <div className="crash">
@@ -41,7 +45,8 @@ function CrashScreen({ message }: { message: string }) {
         <p>{t('crash.body')}</p>
         <pre className="crash-msg">{message}</pre>
         <div className="crash-actions">
-          <button className="btn btn-upload" onClick={() => window.location.reload()}>{t('crash.reload')}</button>
+          <button className="btn btn-upload" onClick={onRetry}>{t('crash.retry')}</button>
+          <button className="btn" onClick={() => window.location.reload()}>{t('crash.reload')}</button>
           <button
             className="btn"
             onClick={() => {

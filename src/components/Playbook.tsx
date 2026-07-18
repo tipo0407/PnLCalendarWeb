@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, ListChecks, Download } from 'lucide-react';
 import type { TradeRecord } from '../types';
-import { formatMoney, formatMoneySigned } from '../lib/metrics';
+import { formatMoney, formatMoneySigned, formatProfitFactor } from '../lib/metrics';
 import { setupStats, getPlaybookEntry, setPlaybookEntry } from '../lib/playbook';
 import { playbookMarkdown } from '../lib/playbookExport';
 import { downloadText } from '../lib/exportCsv';
@@ -53,7 +53,7 @@ export default function Playbook({ trades }: { trades: TradeRecord[] }) {
                 {formatMoneySigned(s.expectancy)}
                 {risk > 0 && <small className="pb-r"> ({(s.expectancy / risk).toFixed(2)}R)</small>}
               </span>
-              <span>{s.profitFactor === Infinity ? '∞' : s.profitFactor.toFixed(2)}</span>
+              <span>{formatProfitFactor(s.profitFactor)}</span>
               <span className="pb-caret">{isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span>
             </button>
             {isOpen && <PlaybookEditor setup={s.setup} avgWin={s.avgWin} avgLoss={s.avgLoss} />}

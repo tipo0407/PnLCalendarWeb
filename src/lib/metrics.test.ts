@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TradeRecord } from '../types';
-import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol, dayOfWeekEdge, holdTimeEdge } from './metrics';
+import { computeSummary, dailyEquityCurve, movingWinRate, hourEdgeBySymbol, dayOfWeekEdge, holdTimeEdge, formatProfitFactor, pnlHistogram, minMax } from './metrics';
 
 function trade(p: Partial<TradeRecord>): TradeRecord {
   return {
@@ -98,6 +98,37 @@ describe('hourEdgeBySymbol', () => {
     const mes = hourEdgeBySymbol(SET, 'MES');
     const totalMes = mes.reduce((s, h) => s + h.pnl, 0);
     expect(totalMes).toBe(60); // 100 - 40
+  });
+});
+
+describe('profitFactor edge cases', () => {
+  it('is Infinity with wins but no losses', () => {
+    const s = computeSummary([trade({ profitLoss: 50 }), trade({ profitLoss: 20 })]);
+    expect(s.profitFactor).toBe(Infinity);
+  });
+});
+
+describe('formatProfitFactor', () => {
+  it('renders finite, infinite and non-finite gracefully', () => {
+    expect(formatProfitFactor(2)).toBe('2.00');
+    expect(formatProfitFactor(Infinity)).toBe('∞');
+    expect(formatProfitFactor(NaN)).toBe('—');
+  });
+});
+
+describe('minMax / pnlHistogram', () => {
+  it('computes min/max without spreading (stack-safe on large arrays)', () => {
+    const big = Array.from({ length: 200000 }, (_, i) => i - 100000);
+    const { min, max } = minMax(big);
+    expect(min).toBe(-100000);
+    expect(max).toBe(99999);
+  });
+  it('builds histogram buckets and collapses a single-value set', () => {
+    expect(pnlHistogram([])).toEqual([]);
+    const one = pnlHistogram([trade({ profitLoss: 5 })]);
+    expect(one).toHaveLength(1);
+    const many = pnlHistogram([trade({ profitLoss: -100 }), trade({ profitLoss: 0 }), trade({ profitLoss: 100 })], 4);
+    expect(many.reduce((s, b) => s + b.count, 0)).toBe(3);
   });
 });
 

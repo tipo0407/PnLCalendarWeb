@@ -1,6 +1,6 @@
 import type { TradeRecord, DailyPnl } from '../types';
 import { currencySymbol } from './settings';
-import { getLang } from './i18n';
+import { getLang, t as translate } from './i18n';
 
 /** Locale used for number grouping, derived from the app language. */
 function numberLocale(): string {
@@ -204,7 +204,7 @@ export function edgeByField(
 ): GroupEdge[] {
   const map = new Map<string, GroupEdge>();
   for (const t of trades) {
-    const key = field(t) || '(未填写)';
+    const key = field(t) || translate('metrics.unfilled');
     let g = map.get(key);
     if (!g) {
       g = { key, pnl: 0, count: 0, wins: 0, winRate: 0 };
@@ -222,7 +222,7 @@ export function edgeByField(
 /** Edge bucketed by hour of entry. */
 export function edgeByHour(trades: TradeRecord[]): GroupEdge[] {
   return edgeByField(trades, (t) =>
-    t.entryTime === null ? '未知' : `${String(Math.floor(t.entryTime / 3600)).padStart(2, '0')}:00`
+    t.entryTime === null ? translate('metrics.unknownHour') : `${String(Math.floor(t.entryTime / 3600)).padStart(2, '0')}:00`
   ).sort((a, b) => a.key.localeCompare(b.key));
 }
 
@@ -351,12 +351,22 @@ export function movingWinRate(trades: TradeRecord[], window = 20): { i: number; 
   return out;
 }
 
+/** Stack-safe min/max over a numeric array (avoids spreading into Math.min/max). */
+export function minMax(vals: number[]): { min: number; max: number } {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of vals) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  return { min, max };
+}
+
 /** P&L distribution histogram buckets. */
 export function pnlHistogram(trades: TradeRecord[], bucketCount = 11): { label: string; count: number }[] {
   if (trades.length === 0) return [];
   const vals = trades.map((t) => t.profitLoss);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
+  const { min, max } = minMax(vals);
   if (min === max) return [{ label: min.toFixed(0), count: vals.length }];
   const span = max - min;
   const size = span / bucketCount;
@@ -406,6 +416,16 @@ export function shortDate(iso: string): string {
 export function longDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   return `${MONTH_ABBR[m - 1]} ${d}, ${y}`;
+}
+
+/**
+ * Render a profit factor (grossWin / grossLoss) gracefully. Infinity (wins but
+ * no losses) shows as "∞" and non-finite/NaN as "—" so consumers never surface
+ * the literal "Infinity".
+ */
+export function formatProfitFactor(pf: number): string {
+  if (!Number.isFinite(pf)) return pf === Infinity ? '∞' : '—';
+  return pf.toFixed(2);
 }
 
 export function formatSeconds(sec: number | null): string {

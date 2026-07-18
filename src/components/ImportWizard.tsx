@@ -46,6 +46,7 @@ export default function ImportWizard({ sheets, onImport, onClose, existingCount 
         ref={trapRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="iw-title-heading"
         onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.96, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -55,7 +56,7 @@ export default function ImportWizard({ sheets, onImport, onClose, existingCount 
         <div className="iw-head">
           <div className="iw-title">
             <FileSpreadsheet size={18} />
-            <h2>{t('iw.title')}</h2>
+            <h2 id="iw-title-heading">{t('iw.title')}</h2>
           </div>
           <button className="modal-close" onClick={onClose} aria-label={t('common.close')}><X size={18} /></button>
         </div>

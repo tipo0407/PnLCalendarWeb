@@ -57,14 +57,16 @@ export default function SettingsModal({ onClose }: Props) {
 
           <div className="set-row">
             <span className="set-label">{t('settings.accent')}<small>{t('settings.accentSub')}</small></span>
-            <div className="accent-swatches">
+            <div className="accent-swatches" role="group" aria-label={t('settings.accent')}>
               {ACCENTS.map((a) => (
                 <button
                   key={a.id}
+                  type="button"
                   className={`accent-swatch ${accent === a.id ? 'on' : ''}`}
                   style={{ background: a.id === 'default' ? 'linear-gradient(120deg,#3f6fd8,#5b8def)' : `linear-gradient(120deg,${a.accent},${a.accent2})` }}
                   title={a.name}
                   aria-label={a.name}
+                  aria-pressed={accent === a.id}
                   onClick={() => { setAccent(a.id); setAccentId(a.id); }}
                 />
               ))}

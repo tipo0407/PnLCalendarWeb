@@ -40,3 +40,16 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Surface known-vulnerable dependencies. Fails only on high/critical so
+      # transient low/moderate advisories don't block unrelated work.
+      - run: npm audit --audit-level=high

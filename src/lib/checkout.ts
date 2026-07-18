@@ -26,11 +26,30 @@ export async function startCheckout(priceId: string): Promise<CheckoutResult> {
       body: JSON.stringify({ priceId }),
     });
     if (!res.ok) throw new Error(`status ${res.status}`);
-    return (await res.json()) as CheckoutResult;
+    const data: unknown = await res.json();
+    return normalizeCheckoutResult(data);
   } catch {
     return {
       ok: false,
       message: 'Online checkout isn’t available right now. Enter a license key below — or use the demo key — to activate Pro.',
     };
   }
+}
+
+/** Validate/normalize an untrusted checkout response; fails closed on bad JSON. */
+export function normalizeCheckoutResult(data: unknown): CheckoutResult {
+  if (!data || typeof data !== 'object') {
+    return { ok: false, message: 'Unexpected response from the checkout server.' };
+  }
+  const r = data as Record<string, unknown>;
+  const ok = r.ok === true;
+  const url = typeof r.url === 'string' ? r.url : undefined;
+  const message = typeof r.message === 'string'
+    ? r.message
+    : ok ? '' : 'Unexpected response from the checkout server.';
+  // A successful checkout must carry a usable https URL to redirect to.
+  if (ok && !(url && /^https:\/\//i.test(url))) {
+    return { ok: false, message: message || 'Checkout did not return a valid URL.' };
+  }
+  return { ok, url, message };
 }

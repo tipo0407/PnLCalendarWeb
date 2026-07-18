@@ -1,22 +1,28 @@
 import type { TradeRecord } from '../types';
-import { equityCurve } from './metrics';
+import { equityCurve, minMax } from './metrics';
 
 export interface DrawdownPoint {
   index: number;
   date: string;
   equity: number;
   drawdown: number;     // <= 0, distance below running peak (account currency)
-  drawdownPct: number;  // <= 0, percent of (accountSize + peak)
+  drawdownPct: number;  // <= 0, percent of a fixed baseline (see drawdownSeries)
 }
 
-/** Underwater curve: distance below the running equity peak per trade. */
+/**
+ * Underwater curve: distance below the running equity peak per trade.
+ *
+ * drawdownPct uses a clear, fixed baseline so it stays interpretable and does
+ * not understate risk after gains: the initial account size when one is set,
+ * otherwise the running peak of cumulative P&L ("percent off peak profit").
+ */
 export function drawdownSeries(trades: TradeRecord[], accountSize = 0): DrawdownPoint[] {
   const eq = equityCurve(trades);
   let peak = 0;
   return eq.map((p) => {
     if (p.cumulative > peak) peak = p.cumulative;
     const drawdown = p.cumulative - peak;
-    const base = accountSize + peak;
+    const base = accountSize > 0 ? accountSize : peak;
     const drawdownPct = base > 0 ? (drawdown / base) * 100 : 0;
     return { index: p.index, date: p.date, equity: p.cumulative, drawdown, drawdownPct };
   });
@@ -66,8 +72,8 @@ export function riskStats(trades: TradeRecord[], accountSize = 0, riskPerTrade =
     rMultiples,
     avgR,
     totalR,
-    bestR: rMultiples.length ? Math.max(...rMultiples) : 0,
-    worstR: rMultiples.length ? Math.min(...rMultiples) : 0,
+    bestR: rMultiples.length ? minMax(rMultiples).max : 0,
+    worstR: rMultiples.length ? minMax(rMultiples).min : 0,
     winRate: rMultiples.length ? wins / rMultiples.length : 0,
   };
 }

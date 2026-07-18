@@ -1,5 +1,6 @@
 import type { TradeRecord } from '../types';
 import { getActiveProfileId, profileTradesKey } from './profiles';
+import * as storage from './safeStorage';
 
 function key(): string {
   return profileTradesKey(getActiveProfileId());
@@ -7,28 +8,14 @@ function key(): string {
 
 /** Persist the loaded trades locally so they survive a reload (local-first). */
 export function savePersistedTrades(trades: TradeRecord[]): void {
-  try {
-    localStorage.setItem(key(), JSON.stringify(trades));
-  } catch {
-    // Quota exceeded or storage unavailable — non-fatal.
-  }
+  storage.setJSON(key(), trades);
 }
 
 export function loadPersistedTrades(): TradeRecord[] | null {
-  try {
-    const s = localStorage.getItem(key());
-    if (!s) return null;
-    const arr = JSON.parse(s);
-    return Array.isArray(arr) ? (arr as TradeRecord[]) : null;
-  } catch {
-    return null;
-  }
+  const arr = storage.getJSON<TradeRecord[] | null>(key(), null);
+  return Array.isArray(arr) ? arr : null;
 }
 
 export function clearPersistedTrades(): void {
-  try {
-    localStorage.removeItem(key());
-  } catch {
-    // ignore
-  }
+  storage.removeItem(key());
 }

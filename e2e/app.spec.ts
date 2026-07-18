@@ -73,33 +73,30 @@ test('import a CSV via the wizard and dedupe duplicate rows', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Trade Atlas', exact: true })).toBeVisible();
 });
 
-test('add a custom mistake tag to a trade', async ({ page }) => {
+test('switches the UI language from Settings', async ({ page }) => {
+  await page.goto('/');
+  await loadTrades(page);
+
+  await page.getByTitle('Settings').click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog).toBeVisible();
+
+  const select = dialog.locator('select').first();
+  await select.selectOption('zh');
+  // The UI re-renders in Chinese: the dialog now exposes its Chinese name.
+  await expect(page.getByRole('dialog', { name: '设置' })).toBeVisible();
+});
+
+test('calendar day cells are keyboard-operable (Enter opens the day)', async ({ page }) => {
   await page.goto('/');
   await loadTrades(page);
   await page.getByRole('button', { name: /^Calendar$/i }).click();
 
-  await page.locator('.cal-cell.clickable').first().click();
+  const day = page.locator('.cal-cell.clickable').first();
+  await expect(day).toBeVisible();
+  await day.focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog')).toBeVisible();
-
-  // Open the first trade's tag picker and add a custom mistake.
-  await page.getByRole('button', { name: /Add tag/i }).first().click();
-  const input = page.getByPlaceholder('+ custom mistake');
-  await input.fill('OverLeverage');
-  await input.press('Enter');
-
-  // The new custom tag appears as a selected pill.
-  await expect(page.locator('.utag.mistake', { hasText: 'OverLeverage' })).toBeVisible();
-});
-
-test('filter the All Trades table', async ({ page }) => {
-  await page.goto('/');
-  await loadTrades(page);
-  await page.getByRole('button', { name: 'Trade Atlas', exact: true }).click();
-
-  const filter = page.getByPlaceholder(/Filter by symbol/i);
-  await filter.scrollIntoViewIfNeeded();
-  await filter.fill('zzzzzznomatch');
-  await expect(page.getByText('No matching trades.')).toBeVisible();
 });
 
 test('keyboard shortcuts overlay opens with ? and closes with Escape', async ({ page }) => {
@@ -132,4 +129,45 @@ test('Settings modal traps focus and closes on Escape', async ({ page }) => {
   // Escape closes it (focus-trap hook behavior).
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
+});
+
+test('empty state shows the landing page and no view tabs', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /visual discipline journal/i })).toBeVisible();
+  // No data means the Trade Atlas tab is not rendered yet.
+  await expect(page.getByRole('button', { name: 'Trade Atlas', exact: true })).toHaveCount(0);
+});
+
+test('toggles between light and dark themes', async ({ page }) => {
+  await page.goto('/');
+  await loadTrades(page);
+  const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
+  const before = await theme();
+  await page.locator('.theme-toggle').click();
+  await expect.poll(theme).not.toBe(before);
+});
+
+test('exports the trade log as a CSV download', async ({ page }) => {
+  await page.goto('/');
+  await loadTrades(page);
+  await page.getByRole('button', { name: 'Trade Atlas', exact: true }).click();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /download all trades as csv/i }).first().click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.csv$/);
+});
+
+test('recovers gracefully when localStorage is corrupt', async ({ page }) => {
+  // Seed corrupt persisted data before the app boots; it must not white-screen.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('pnlcalendar.trades.v1', '{ this is : not json');
+      localStorage.setItem('pnlcalendar.settings.v1', '<<<broken>>>');
+    } catch { /* ignore */ }
+  });
+  await page.goto('/');
+  // App still boots to the landing page rather than crashing.
+  await expect(page.getByRole('heading', { name: /visual discipline journal/i })).toBeVisible();
 });

@@ -17,7 +17,7 @@ describe('taxByYear', () => {
       trade('2025-01-01', 200),
     ]);
     expect(rows.map((r) => r.year)).toEqual(['2024', '2025']);
-    expect(rows[0]).toMatchObject({ trades: 2, wins: 1, losses: 1, grossProfit: 100, grossLoss: -40, netPnl: 60 });
+    expect(rows[0]).toMatchObject({ trades: 2, wins: 1, losses: 1, grossProfit: 100, grossLoss: 40, netPnl: 60 });
     expect(rows[1].netPnl).toBe(200);
   });
 });
@@ -34,6 +34,11 @@ describe('taxBySymbol', () => {
 });
 
 describe('taxSummaryCsv', () => {
+  it('handles an empty trade set (headers only)', () => {
+    const csv = taxSummaryCsv([]);
+    expect(csv).toContain('Year,Trades,Wins,Losses,Gross Profit,Gross Loss,Net P&L');
+    expect(csv).toContain('Year,Symbol,Trades,Net P&L');
+  });
   it('contains both sections with headers', () => {
     const csv = taxSummaryCsv([trade('2025-01-01', 100, 'MES')]);
     expect(csv).toContain('Year,Trades,Wins,Losses,Gross Profit,Gross Loss,Net P&L');

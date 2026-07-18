@@ -16,10 +16,15 @@ describe('drawdownSeries', () => {
     const dd = drawdownSeries([trade(100, 0), trade(-40, 1), trade(-30, 2), trade(80, 3)]);
     expect(dd.map((p) => p.drawdown)).toEqual([0, -40, -70, 0]);
   });
-  it('computes drawdown percent against account size + peak', () => {
-    const dd = drawdownSeries([trade(100, 0), trade(-50, 1)], 900);
-    // peak equity 100 -> base 1000, drawdown -50 -> -5%
+  it('computes drawdown percent against a fixed baseline (initial account size)', () => {
+    const dd = drawdownSeries([trade(100, 0), trade(-50, 1)], 1000);
+    // baseline = initial account size 1000, drawdown -50 -> -5%
     expect(dd[1].drawdownPct).toBeCloseTo(-5, 5);
+  });
+  it('falls back to peak-profit baseline when no account size is set', () => {
+    const dd = drawdownSeries([trade(100, 0), trade(-50, 1)]);
+    // no account size -> baseline = peak profit 100, drawdown -50 -> -50%
+    expect(dd[1].drawdownPct).toBeCloseTo(-50, 5);
   });
 });
 

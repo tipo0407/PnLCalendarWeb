@@ -10,9 +10,18 @@ function hms(secs: number | null): string {
   return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
 }
 
+// Characters that make a spreadsheet treat a cell as a formula. Prefixing such
+// a cell with a single quote neutralizes CSV injection when opened in Excel/Sheets.
+const FORMULA_TRIGGERS = ['=', '+', '-', '@', '\t', '\r'];
+
 function csvCell(v: string | number): string {
   const s = String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // Only neutralize string cells; genuine numbers (e.g. a negative P&L) are safe.
+  if (typeof v === 'string' && s.length > 0 && FORMULA_TRIGGERS.includes(s[0])) {
+    const escaped = `'${s}`;
+    return `"${escaped.replace(/"/g, '""')}"`;
+  }
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 const COLUMNS: { header: string; get: (t: TradeRecord) => string | number }[] = [

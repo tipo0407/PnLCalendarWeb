@@ -40,7 +40,7 @@ const DIM_LABEL: Record<LeakDimension, string> = {
   symbol: 'Symbol',
 };
 
-const EMPTY = new Set(['', '(no setup)', '(未填写)', '未知', '未填写']);
+const EMPTY = new Set(['', '(no setup)', '(unfilled)', 'Unknown', '(未填写)', '未知', '未填写']);
 
 function hourLabel(t: TradeRecord): string {
   if (t.entryTime === null) return '';

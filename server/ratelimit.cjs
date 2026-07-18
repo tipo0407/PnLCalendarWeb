@@ -20,9 +20,15 @@ function allow(key, max, windowMs) {
   return b.count <= max;
 }
 
+// Only trust X-Forwarded-For when explicitly running behind a trusted proxy.
+// Otherwise a client could spoof the header to evade the per-IP limiter/lockout.
+const TRUST_PROXY = /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || '');
+
 function clientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  if (xff) return String(xff).split(',')[0].trim();
+  if (TRUST_PROXY) {
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) return String(xff).split(',')[0].trim();
+  }
   return (req.socket && req.socket.remoteAddress) || 'unknown';
 }
 

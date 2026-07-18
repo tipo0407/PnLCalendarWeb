@@ -1,4 +1,5 @@
 import { profileKey } from './profiles';
+import * as storage from './safeStorage';
 
 export type TableSortKey = 'date' | 'symbol' | 'direction' | 'size' | 'profitLoss' | 'setup';
 export type SortDir = 'asc' | 'desc';
@@ -23,18 +24,10 @@ export function sanitizePrefs(raw: unknown): TablePrefs {
 
 /** Read the active profile's persisted table sort preference. */
 export function getTablePrefs(): TablePrefs {
-  try {
-    return sanitizePrefs(JSON.parse(localStorage.getItem(profileKey(BASE_KEY)) || '{}'));
-  } catch {
-    return { ...DEFAULT };
-  }
+  return sanitizePrefs(storage.getJSON<unknown>(profileKey(BASE_KEY), {}));
 }
 
 /** Persist the active profile's table sort preference. */
 export function saveTablePrefs(prefs: TablePrefs): void {
-  try {
-    localStorage.setItem(profileKey(BASE_KEY), JSON.stringify(sanitizePrefs(prefs)));
-  } catch {
-    /* ignore */
-  }
+  storage.setJSON(profileKey(BASE_KEY), sanitizePrefs(prefs));
 }

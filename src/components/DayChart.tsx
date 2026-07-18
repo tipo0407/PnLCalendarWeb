@@ -5,6 +5,8 @@ import {
   CrosshairMode,
   type IChartApi,
   type UTCTimestamp,
+  type AutoscaleInfo,
+  type MouseEventParams,
 } from 'lightweight-charts';
 import type { TradeRecord } from '../types';
 import {
@@ -50,18 +52,23 @@ export default function DayChart({ date, trades }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    const ctrl = new AbortController();
     const run = async () => {
       setStatus({ phase: 'loading' });
       try {
-        const r = await fetchIntraday(date, symbol, interval);
+        const r = await fetchIntraday(date, symbol, interval, { signal: ctrl.signal });
         if (!cancelled) setStatus({ phase: 'done', result: r });
       } catch (e) {
-        if (!cancelled) setStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
+        // Ignore aborts triggered by unmount / dependency change.
+        if (!cancelled && !ctrl.signal.aborted) {
+          setStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
+        }
       }
     };
     run();
     return () => {
       cancelled = true;
+      ctrl.abort();
     };
   }, [date, symbol, interval]);
 
@@ -108,6 +115,29 @@ export default function DayChart({ date, trades }: Props) {
         close: c.close,
       }))
     );
+
+    // Always keep the price axis wide enough to include the trade fills, so the
+    // entry/exit markers can't render off-screen when the data feed's contract
+    // diverges from the user's fills (e.g. a different/expired futures month or
+    // a futures roll), as happens on some days where Yahoo's continuous quote
+    // sits well above/below the recorded fills.
+    const tradePrices = trades
+      .flatMap((tr) => [tr.entryPrice, tr.exitPrice])
+      .filter((p): p is number => typeof p === 'number' && p > 0);
+    if (tradePrices.length > 0) {
+      const tMin = Math.min(...tradePrices);
+      const tMax = Math.max(...tradePrices);
+      candleSeries.applyOptions({
+        autoscaleInfoProvider: (original: () => AutoscaleInfo | null) => {
+          const res = original();
+          if (res?.priceRange) {
+            res.priceRange.minValue = Math.min(res.priceRange.minValue, tMin);
+            res.priceRange.maxValue = Math.max(res.priceRange.maxValue, tMax);
+          }
+          return res;
+        },
+      });
+    }
 
     const emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
     emaSeries.setData(ema(result.candles, 20).map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
@@ -227,7 +257,7 @@ export default function DayChart({ date, trades }: Props) {
 
     // Floating OHLC legend driven by the crosshair.
     const legend = legendRef.current;
-    chart.subscribeCrosshairMove((param) => {
+    const onCrosshairMove = (param: MouseEventParams) => {
       if (!legend) return;
       const c = param.seriesData.get(candleSeries) as
         | { open: number; high: number; low: number; close: number }
@@ -243,12 +273,18 @@ export default function DayChart({ date, trades }: Props) {
         `<span>H <b>${c.high.toFixed(2)}</b></span>` +
         `<span>L <b>${c.low.toFixed(2)}</b></span>` +
         `<span class="${up ? 'pos' : 'neg'}">C <b>${c.close.toFixed(2)}</b></span>`;
-    });
+    };
+    chart.subscribeCrosshairMove(onCrosshairMove);
 
     chart.timeScale().fitContent();
-    requestAnimationFrame(renderOverlay);
+    const rafId = requestAnimationFrame(renderOverlay);
 
     return () => {
+      cancelAnimationFrame(rafId);
+      // Explicitly detach the listeners we attached so no stale callback fires
+      // against a removed chart across re-renders.
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(renderOverlay);
+      chart.unsubscribeCrosshairMove(onCrosshairMove);
       overlayRo.disconnect();
       chart.remove();
     };

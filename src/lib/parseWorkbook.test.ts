@@ -20,6 +20,10 @@ describe('parseDateCell', () => {
   it('reads D-Mon-YYYY', () => {
     expect(parseDateCell('23-Jun-2026')).toBe('2026-06-23');
   });
+  it('parses the loose fallback timezone-stably (UTC)', () => {
+    // "June 23, 2026" hits the Date.parse fallback; must not shift a day.
+    expect(parseDateCell('June 23, 2026')).toBe('2026-06-23');
+  });
   it('returns null for junk/empty', () => {
     expect(parseDateCell('')).toBeNull();
     expect(parseDateCell('not a date')).toBeNull();
@@ -31,6 +35,18 @@ describe('parseTimeCell', () => {
   it('reads day fractions', () => {
     expect(parseTimeCell(0.5)).toBe(43200);
     expect(parseTimeCell(0)).toBe(0);
+  });
+  it('reads plain integer encodings (HHMM, HHMMSS, hour, seconds)', () => {
+    expect(parseTimeCell(930)).toBe(9 * 3600 + 30 * 60);        // HHMM
+    expect(parseTimeCell(1345)).toBe(13 * 3600 + 45 * 60);      // HHMM
+    expect(parseTimeCell(93045)).toBe(9 * 3600 + 30 * 60 + 45); // HHMMSS
+    expect(parseTimeCell(9)).toBe(9 * 3600);                    // bare hour
+    // Integers that can't be a valid clock encoding fall back to seconds-of-day.
+    expect(parseTimeCell(6000)).toBe(6000);                     // 01:40:00
+    expect(parseTimeCell('6000')).toBe(6000);                   // numeric string
+  });
+  it('reads datetime serials (uses the time fraction)', () => {
+    expect(parseTimeCell(46036.5)).toBe(43200);
   });
   it('reads HH:MM and AM/PM', () => {
     expect(parseTimeCell('09:35')).toBe(9 * 3600 + 35 * 60);
@@ -144,4 +160,19 @@ describe('readSheets with delimiter auto-detect', () => {
     const sheets = readSheets(buf('Date\tSymbol\tP/L\n2025-01-02\tMES\t-40'));
     expect(sheets[0].rows[0]).toEqual(['Date', 'Symbol', 'P/L']);
   });
+  it('handles a BOM prefix and quoted cells with embedded commas', () => {
+    const sheets = readSheets(buf('\uFEFFDate,Symbol,Note\n2025-01-02,MES,"buy, then hold"'));
+    expect(sheets[0].rows[0][0]).toBe('Date'); // BOM stripped from header
+    expect(String(sheets[0].rows[1][2])).toBe('buy, then hold');
+  });
 });
+
+describe('parseSheet edge cases', () => {
+  it('returns no trades for a header-only sheet', () => {
+    const sheet: SheetData = { name: 'T', rows: [['Date', 'P&L', 'Symbol']] };
+    const res = parseSheet(sheet, autoMap(sheet.rows[0]));
+    expect(res.trades).toEqual([]);
+    expect(res.total).toBe(0);
+  });
+});
+

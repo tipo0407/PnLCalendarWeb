@@ -1,5 +1,6 @@
 import type { TradeRecord } from '../types';
 import { profileKey, PROFILE_EVENT } from './profiles';
+import * as storage from './safeStorage';
 
 export interface SetupStat {
   setup: string;
@@ -68,11 +69,7 @@ if (typeof window !== 'undefined') {
 
 function load(): Record<string, PlaybookEntry> {
   if (cache) return cache;
-  try {
-    cache = JSON.parse(localStorage.getItem(keyName()) || '{}') as Record<string, PlaybookEntry>;
-  } catch {
-    cache = {};
-  }
+  cache = storage.getJSON<Record<string, PlaybookEntry>>(keyName(), {});
   return cache;
 }
 
@@ -85,11 +82,7 @@ export function setPlaybookEntry(setup: string, entry: PlaybookEntry) {
   const c = load();
   if (entry.checklist.length === 0 && !entry.note.trim()) delete c[setup];
   else c[setup] = entry;
-  try {
-    localStorage.setItem(keyName(), JSON.stringify(c));
-  } catch {
-    /* ignore */
-  }
+  storage.setJSON(keyName(), c);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(PLAYBOOK_EVENT));
 }
 
@@ -101,6 +94,6 @@ export function exportPlaybook(): Record<string, PlaybookEntry> {
 /** Replace the playbook store for the active profile (restore). */
 export function importPlaybook(data: Record<string, PlaybookEntry>) {
   cache = { ...data };
-  try { localStorage.setItem(keyName(), JSON.stringify(cache)); } catch { /* ignore */ }
+  storage.setJSON(keyName(), cache);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(PLAYBOOK_EVENT));
 }

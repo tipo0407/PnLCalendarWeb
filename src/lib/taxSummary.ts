@@ -10,6 +10,8 @@ export interface TaxYearRow {
   netPnl: number;
 }
 
+// grossLoss is a positive magnitude (sum of the absolute value of losing trades).
+
 export interface TaxSymbolRow {
   year: string;
   symbol: string;
@@ -27,7 +29,7 @@ export function taxByYear(trades: TradeRecord[]): TaxYearRow[] {
     row.trades += 1;
     row.netPnl += t.profitLoss;
     if (t.profitLoss > 0) { row.wins += 1; row.grossProfit += t.profitLoss; }
-    else if (t.profitLoss < 0) { row.losses += 1; row.grossLoss += t.profitLoss; }
+    else if (t.profitLoss < 0) { row.losses += 1; row.grossLoss += -t.profitLoss; }
   }
   return [...map.values()].sort((a, b) => (a.year < b.year ? -1 : 1));
 }

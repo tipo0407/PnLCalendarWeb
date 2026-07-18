@@ -20,9 +20,15 @@ import TourOverlay from './components/TourOverlay';
 import CommandPalette from './components/CommandPalette';
 import ReminderBanner from './components/ReminderBanner';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
+import Toaster from './components/Toaster';
+import AtlasSkeleton from './components/Skeleton';
 import { SETTINGS_EVENT } from './lib/settings';
 import { t, getLang } from './lib/i18n';
 import { useLang } from './lib/useLang';
+import { showToast } from './lib/toast';
+import calendarShot from '../docs/calendar-light.png';
+import atlasShot from '../docs/atlas-dark.png';
+import sampleWorkbookUrl from '../samples/Trading.sample.xlsx?url';
 import './App.css';
 
 const STORAGE_KEY = 'pnlcalendar.gsheet';
@@ -93,9 +99,14 @@ export default function App() {
 
   // Global keyboard shortcuts: 1/2/3 switch views, t toggles theme, , opens settings.
   useEffect(() => {
+    // Any modal/overlay other than the palette itself blocks global shortcuts so
+    // they can't stack a conflicting overlay on top of an open one.
+    const otherOverlayOpen = showSettings || showTour || showShortcuts || !!importSheets || !!selectedDay;
     const onKey = (e: KeyboardEvent) => {
-      // Cmd/Ctrl+K opens the command palette (works even while typing).
+      // Cmd/Ctrl+K opens the command palette (works even while typing) — but not
+      // while another modal is open.
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        if (otherOverlayOpen) return;
         e.preventDefault();
         setShowPalette((v) => !v);
         return;
@@ -103,6 +114,8 @@ export default function App() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      // Skip single-key shortcuts while any overlay (including the palette) is open.
+      if (otherOverlayOpen || showPalette) return;
       const hasData = trades.length > 0;
       switch (e.key) {
         case '2': if (hasData) setView('calendar'); break;
@@ -115,7 +128,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [trades.length]);
+  }, [trades.length, showSettings, showTour, showShortcuts, importSheets, selectedDay, showPalette]);
 
   // Auto-load the live trades workbook served at /data/trades.xlsx (no manual upload needed).
   // On the first page load each day, first trigger a Google Sheet sync so the data is current.
@@ -125,17 +138,24 @@ export default function App() {
       const today = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
       const lastSync = localStorage.getItem(SYNC_KEY);
       if (lastSync !== today) {
-        localStorage.setItem(SYNC_KEY, today); // optimistic: avoid duplicate syncs on quick reloads
         setSyncing(true);
         try {
           const r = await fetch('/api/sync', { method: 'POST' });
           if (!r.ok) throw new Error('sync failed');
+          // Only mark the day as synced after a confirmed success, so a tab
+          // closed mid-sync retries on the next load instead of being skipped.
+          localStorage.setItem(SYNC_KEY, today);
         } catch {
-          localStorage.removeItem(SYNC_KEY); // let it retry on the next load
+          // leave SYNC_KEY unset so it retries on the next load
         } finally {
           if (!cancelled) setSyncing(false);
         }
       }
+      // Don't auto-load over data the user already has locally (a manual import
+      // or a previous session): that could clobber a more complete dataset.
+      // Only auto-load the live workbook when we're starting from an empty state.
+      const hasLocalData = (loadPersistedTrades() ?? []).length > 0;
+      if (hasLocalData) return;
       try {
         const resp = await fetch('/data/trades.xlsx', { cache: 'no-store' });
         if (!resp.ok) return;
@@ -161,8 +181,13 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
-  // Cursor-follow spotlight on interactive cards (premium hover glow).
+  // Cursor-follow spotlight on interactive cards (premium hover glow). Skipped
+  // when the user prefers reduced motion, to avoid needless per-move JS work.
   useEffect(() => {
+    if (typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
     const sel = '.kpi-card, .atlas-panel, .insight, .stat-card, .bw-card, .cal-cell.clickable, .total-card, .hstat, .day-chart';
     const onMove = (e: PointerEvent) => {
       const el = (e.target as HTMLElement | null)?.closest<HTMLElement>(sel);
@@ -196,9 +221,27 @@ export default function App() {
 
   function handleLoaded(loaded: TradeRecord[], mode: 'replace' | 'append' = 'replace') {
     if (mode === 'append' && trades.length > 0) {
-      applyTrades(dedupeTrades([...trades, ...loaded]));
+      const merged = dedupeTrades([...trades, ...loaded]);
+      applyTrades(merged);
     } else {
       applyTrades(loaded);
+    }
+    showToast(t('toast.imported', { n: loaded.length }), 'success');
+  }
+
+  // Load the bundled sample workbook so new users can explore with real-looking
+  // data in one click (no upload required).
+  async function loadSampleData() {
+    try {
+      const resp = await fetch(sampleWorkbookUrl);
+      if (!resp.ok) throw new Error('sample unavailable');
+      const loaded = parseWorkbook(await resp.arrayBuffer());
+      if (loaded.length > 0) {
+        applyTrades(loaded);
+        showToast(t('toast.sampleLoaded'), 'success');
+      }
+    } catch {
+      showToast(t('toast.sampleFailed'), 'error');
     }
   }
 
@@ -206,6 +249,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Toaster />
       {syncing && (
         <div className="sync-toast" role="status" aria-live="polite">
           <span className="sync-spinner" />
@@ -313,16 +357,24 @@ export default function App() {
           >
             <span className="landing-eyebrow"><Lock size={12} /> {t('landing.eyebrow')}</span>
             <h2 className="landing-title">
-              {t('landing.titlePrefix')}<br />
+              {t('landing.titlePrefix')}{' '}
               <span className="grad">{t('landing.titleHighlight')}</span>.
             </h2>
             <p className="landing-tagline">
               {t('landing.tagline')}
             </p>
             <div className="landing-cta">
+              <button className="hero-btn landing-sample-btn" onClick={loadSampleData}>
+                <Zap size={14} /> {t('landing.trySample')}
+              </button>
               <span className="landing-cta-hint">
                 <UploadCloud size={14} /> {t('landing.uploadHint')}
               </span>
+            </div>
+
+            <div className="landing-preview" aria-hidden="true">
+              <img className="lp-shot lp-light" src={calendarShot} alt="" loading="lazy" />
+              <img className="lp-shot lp-dark" src={atlasShot} alt="" loading="lazy" />
             </div>
 
             <div className="landing-trust">
@@ -433,7 +485,7 @@ export default function App() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Suspense fallback={<div className="lazy-fallback">{t('common.loading')}</div>}>
+              <Suspense fallback={<AtlasSkeleton />}>
                 <TradeAtlas trades={filteredTrades} summary={summary} />
               </Suspense>
             </motion.div>

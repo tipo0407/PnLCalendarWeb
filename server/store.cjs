@@ -29,7 +29,11 @@ function createFileStore(usersFile, blobDir) {
     saveUsers(users) {
       try {
         fs.mkdirSync(path.dirname(usersFile), { recursive: true });
-        fs.writeFileSync(usersFile, JSON.stringify(users));
+        // Atomic write: serialize to a unique temp file, then rename over the
+        // target so a crash / concurrent write can never leave a truncated file.
+        const tmp = `${usersFile}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+        fs.writeFileSync(tmp, JSON.stringify(users));
+        fs.renameSync(tmp, usersFile);
       } catch { /* ignore */ }
     },
     getBlob(email) {
@@ -37,7 +41,10 @@ function createFileStore(usersFile, blobDir) {
     },
     setBlob(email, data) {
       fs.mkdirSync(blobDir, { recursive: true });
-      fs.writeFileSync(blobPath(email), JSON.stringify(data));
+      const target = blobPath(email);
+      const tmp = `${target}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(data));
+      fs.renameSync(tmp, target);
     },
     deleteUser(email) {
       const users = this.getUsers();

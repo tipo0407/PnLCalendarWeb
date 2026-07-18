@@ -252,7 +252,12 @@ export default function CalendarView({
                           'aria-label': t('cal.ariaDay', { month: t(`month.long.${month}`), day: d, pnl: formatMoneySigned(day.pnl), trades: day.tradeCount }),
                           onKeyDown: (e: ReactKeyboardEvent) => onGridKey(e, date),
                         }
-                      : {})}
+                      : {
+                          'aria-disabled': true,
+                          'aria-label': holiday
+                            ? t('cal.ariaHoliday', { month: t(`month.long.${month}`), day: d, holiday })
+                            : t('cal.ariaNoTrades', { month: t(`month.long.${month}`), day: d }),
+                        })}
                   >
                     <div className="cell-top">
                       <span className="cell-day-wrap">

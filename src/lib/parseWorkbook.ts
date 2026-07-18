@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { TradeRecord } from '../types';
+import { fetchWithTimeout } from './fetchWithTimeout';
 
 /** One worksheet as an array-of-arrays (raw cell values). */
 export interface SheetData {
@@ -92,15 +93,57 @@ export function parseDateCell(v: unknown): string | null {
     const mo = MONTHS[m[2].slice(0, 3).toLowerCase()];
     if (mo) { let y = +m[3]; if (y < 100) y += 2000; return isoDate(y, mo, +m[1]); }
   }
+  m = s.match(/^([A-Za-z]{3,})[- ]+(\d{1,2}),?[- ]+(\d{2,4})/); // Jun 23, 2026 / June 23 2026
+  if (m) {
+    const mo = MONTHS[m[1].slice(0, 3).toLowerCase()];
+    if (mo) { let y = +m[3]; if (y < 100) y += 2000; return isoDate(y, mo, +m[2]); }
+  }
   const t = Date.parse(s);
-  if (!Number.isNaN(t)) { const d = new Date(t); return isoDate(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
+  if (!Number.isNaN(t)) {
+    // Use UTC getters so date-only strings (parsed as UTC midnight) don't shift
+    // a day depending on the runtime's local timezone.
+    const d = new Date(t);
+    return isoDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  }
   return null;
+}
+
+/**
+ * Convert a numeric time value to seconds-of-day. Handles Excel day-fractions
+ * (0..1) and datetime serials (fractional part = time), plus plain integer
+ * encodings common in exported logs: HHMMSS, HHMM, hour-of-day and seconds.
+ */
+function numericTimeToSeconds(v: number): number | null {
+  if (!Number.isFinite(v) || v < 0) return null;
+  const clamp = (s: number) => ((s % 86400) + 86400) % 86400;
+  // Fraction of a day (Excel time) — 0.5 => noon.
+  if (v > 0 && v < 1) return Math.round(v * 86400);
+  const n = Math.trunc(v);
+  const frac = v - n;
+  // Datetime serial (whole date + fractional time): use the time part.
+  if (frac > 1e-9 && v >= 1) return clamp(Math.round(frac * 86400));
+  // HHMMSS, e.g. 93045 -> 09:30:45
+  if (n >= 10000 && n <= 235959) {
+    const h = Math.floor(n / 10000); const mi = Math.floor((n % 10000) / 100); const se = n % 100;
+    if (h < 24 && mi < 60 && se < 60) return h * 3600 + mi * 60 + se;
+  }
+  // HHMM, e.g. 930 -> 09:30, 1345 -> 13:45
+  if (n >= 100 && n <= 2359) {
+    const h = Math.floor(n / 100); const mi = n % 100;
+    if (h < 24 && mi < 60) return h * 3600 + mi * 60;
+  }
+  // Bare hour-of-day, e.g. 9 -> 09:00
+  if (n >= 0 && n <= 23) return n * 3600;
+  // Seconds-of-day, e.g. 34200 -> 09:30:00
+  if (n <= 86399) return n;
+  // Larger integers: treat as an Excel datetime serial (time part).
+  return clamp(Math.round(frac * 86400));
 }
 
 /** Parse a time cell (fraction of day, seconds, or HH:MM / h:mm AM/PM) -> seconds of day. */
 export function parseTimeCell(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null;
-  if (typeof v === 'number') return Number.isFinite(v) ? Math.round((v % 1) * 86400) : null;
+  if (typeof v === 'number') return numericTimeToSeconds(v);
   const s = String(v).trim();
   const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?$/i);
   if (m) {
@@ -111,7 +154,7 @@ export function parseTimeCell(v: unknown): number | null {
     return h * 3600 + mi * 60 + se;
   }
   const n = Number(s);
-  return Number.isFinite(n) ? Math.round((n % 1) * 86400) : null;
+  return Number.isFinite(n) ? numericTimeToSeconds(n) : null;
 }
 
 function toNumber(v: unknown): number | null {
@@ -326,11 +369,14 @@ export function extractSheetId(input: string): string | null {
 }
 
 /** Fetch a Google Sheet as an xlsx buffer (via the dev/prod proxy). */
-export async function fetchGoogleSheetBuffer(input: string): Promise<ArrayBuffer> {
+export async function fetchGoogleSheetBuffer(
+  input: string,
+  opts: { signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<ArrayBuffer> {
   const id = extractSheetId(input);
   if (!id) throw new Error('Could not recognize that Google Sheet link or ID.');
   const url = `/gsheet/spreadsheets/d/${id}/export?format=xlsx`;
-  const resp = await fetch(url);
+  const resp = await fetchWithTimeout(url, { signal: opts.signal, timeoutMs: opts.timeoutMs ?? 20000 });
   if (!resp.ok) {
     throw new Error(`Failed to download the Google Sheet (${resp.status}). Make sure it is shared as "Anyone with the link can view".`);
   }

@@ -6,7 +6,6 @@ import { formatMoneySigned, longDate } from '../lib/metrics';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import DayChart from './DayChart';
-import TradeShots from './TradeShots';
 
 interface Props {
   daily: DailyPnl;
@@ -96,8 +95,6 @@ export default function DayDetailModal({ daily, holidayName, onClose }: Props) {
         <div className="day-detail-body">
           <DayChart date={daily.date} trades={daily.trades} />
         </div>
-
-        {daily.trades.length > 0 && <TradeShots daily={daily} />}
       </motion.div>
     </motion.div>
   );

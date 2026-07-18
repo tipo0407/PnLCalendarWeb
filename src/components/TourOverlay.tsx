@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
+import { useFocusTrap } from '../lib/useFocusTrap';
 
 const STEP_DEFS = [
   { selector: '.view-tabs', titleKey: 'tour.views.title', bodyKey: 'tour.views.body' },
@@ -26,6 +27,8 @@ export default function TourOverlay({ onClose }: Props) {
   );
   const [i, setI] = useState(0);
   const [, force] = useState(0);
+  // Trap focus within the tour and restore it to the trigger on close.
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
 
   useEffect(() => {
     const onResize = () => force((n) => n + 1);
@@ -36,13 +39,13 @@ export default function TourOverlay({ onClose }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowRight') setI((x) => Math.min(steps.length - 1, x + 1));
+      // Escape is handled by the focus trap; here we only wire arrow navigation.
+      if (e.key === 'ArrowRight') setI((x) => Math.min(steps.length - 1, x + 1));
       else if (e.key === 'ArrowLeft') setI((x) => Math.max(0, x - 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [steps.length, onClose]);
+  }, [steps.length]);
 
   if (steps.length === 0) return null;
   const step = steps[Math.min(i, steps.length - 1)];
@@ -60,7 +63,7 @@ export default function TourOverlay({ onClose }: Props) {
   const last = i >= steps.length - 1;
 
   return (
-    <div className="tour" role="dialog" aria-modal="true" aria-label={t('tour.title')}>
+    <div className="tour" role="dialog" aria-modal="true" aria-label={t('tour.title')} ref={trapRef}>
       <div className="tour-spot" style={spot} />
       <div className="tour-tip" style={{ top: tipTop, left: tipLeft }}>
         <button className="tour-close" onClick={onClose} aria-label={t('tour.close')}><X size={15} /></button>

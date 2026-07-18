@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Keep npm dependencies patched; groups minor/patch bumps to reduce PR noise.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Keep GitHub Actions pinned versions current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Keep the Docker base image current.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

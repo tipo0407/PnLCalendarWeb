@@ -14,16 +14,48 @@ const rl = require('./ratelimit.cjs');
 const store = require('./store.cjs');
 
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.LICENSE_SECRET || 'pnlcal-dev-secret-change-me';
+const DEFAULT_SECRET = 'pnlcal-dev-secret-change-me';
+const IS_PROD = process.env.NODE_ENV === 'production';
+// In production a forgeable default/absent secret means all tokens are forgeable.
+if (IS_PROD && AUTH_SECRET === DEFAULT_SECRET) {
+  throw new Error('Refusing to start in production: set AUTH_SECRET or LICENSE_SECRET to a strong, non-default value.');
+}
 const TOKEN_TTL = 30 * 24 * 3600; // 30 days
 const MAX_PER_MIN = Number(process.env.AUTH_RATE_MAX || 20); // auth requests per IP per minute
 const MAX_FAILS = 5;              // failed logins before lockout
 const LOCK_MS = 15 * 60 * 1000;   // lockout window
+// Explicit scrypt cost (Node defaults, made explicit). 128 * N * r ≈ 16 MB.
+const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
 function loadUsers() { return store.getUsers(); }
 function saveUsers(users) { store.saveUsers(users); }
 
+/** Async scrypt hashing so login/signup don't block the event loop. */
 function hashPassword(password, salt) {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, SCRYPT_PARAMS, (err, dk) => {
+      if (err) reject(err);
+      else resolve(dk.toString('hex'));
+    });
+  });
+}
+
+/** Length-guarded constant-time compare (timingSafeEqual throws on length mismatch). */
+function safeEqual(a, b) {
+  const ba = Buffer.from(String(a == null ? '' : a));
+  const bb = Buffer.from(String(b == null ? '' : b));
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+/**
+ * Delivery seam for password-reset tokens. In a real deployment this emails the
+ * token to the account owner. Here it just logs that a reset was requested (never
+ * the token itself in the clear beyond this server-side log), so the token is not
+ * exposed in the HTTP response in production.
+ */
+function deliverResetToken(email /*, token */) {
+  console.log(`[auth] password reset requested for ${email} (${new Date().toISOString()})`);
 }
 
 function signToken(email, ttl = TOKEN_TTL, purpose = 'auth', tv = 1) {
@@ -118,7 +150,7 @@ async function route(req, res, { send, readBody }) {
     const key = String(email).toLowerCase();
     if (users[key]) return send(res, 409, { error: 'account already exists' }), true;
     const salt = crypto.randomBytes(16).toString('hex');
-    users[key] = { salt, hash: hashPassword(password, salt), created: Date.now(), tokenVersion: 1 };
+    users[key] = { salt, hash: await hashPassword(password, salt), created: Date.now(), tokenVersion: 1 };
     saveUsers(users);
     return send(res, 200, { token: signToken(key, TOKEN_TTL, 'auth', 1), email: key }), true;
   }
@@ -131,10 +163,7 @@ async function route(req, res, { send, readBody }) {
       return send(res, 429, { error: 'too many failed attempts, try again later' }), true;
     }
     const user = loadUsers()[key];
-    const ok = user && crypto.timingSafeEqual(
-      Buffer.from(user.hash),
-      Buffer.from(hashPassword(password || '', user.salt)),
-    );
+    const ok = user && safeEqual(user.hash, await hashPassword(password || '', user.salt));
     if (!ok) {
       rl.recordFailure(lockKey, LOCK_MS);
       return send(res, 401, { error: 'invalid credentials' }), true;
@@ -176,10 +205,7 @@ async function route(req, res, { send, readBody }) {
     if (!session) return send(res, 401, { error: 'unauthorized' }), true;
     const { password } = await readBody(req);
     const user = loadUsers()[session.email];
-    const ok = user && crypto.timingSafeEqual(
-      Buffer.from(user.hash),
-      Buffer.from(hashPassword(password || '', user.salt)),
-    );
+    const ok = user && safeEqual(user.hash, await hashPassword(password || '', user.salt));
     if (!ok) return send(res, 401, { error: 'password is incorrect' }), true;
     store.deleteUser(session.email);
     return send(res, 200, { ok: true }), true;
@@ -203,13 +229,10 @@ async function route(req, res, { send, readBody }) {
     if (!newPassword || String(newPassword).length < 8) return send(res, 400, { error: 'new password too short (min 8)' }), true;
     const users = loadUsers();
     const user = users[session.email];
-    const ok = user && crypto.timingSafeEqual(
-      Buffer.from(user.hash),
-      Buffer.from(hashPassword(currentPassword || '', user.salt)),
-    );
+    const ok = user && safeEqual(user.hash, await hashPassword(currentPassword || '', user.salt));
     if (!ok) return send(res, 401, { error: 'current password is incorrect' }), true;
     const salt = crypto.randomBytes(16).toString('hex');
-    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt) };
+    users[session.email] = { ...user, salt, hash: await hashPassword(newPassword, salt) };
     saveUsers(users);
     return send(res, 200, { ok: true }), true;
   }
@@ -218,9 +241,16 @@ async function route(req, res, { send, readBody }) {
     const { email } = await readBody(req);
     const key = String(email || '').toLowerCase();
     const user = loadUsers()[key];
-    // Always 200 to avoid user enumeration; a real deployment emails the token.
+    // Always 200 to avoid user enumeration.
     const body = { ok: true };
-    if (user) body.resetToken = signToken(key, 3600, 'reset', user.tokenVersion || 1);
+    if (user) {
+      const resetToken = signToken(key, 3600, 'reset', user.tokenVersion || 1);
+      // A real deployment emails this token to the account owner. We never want
+      // to hand a valid reset token to an arbitrary caller in production, so the
+      // token is only echoed back outside production (local dev/testing).
+      if (typeof deliverResetToken === 'function') deliverResetToken(key, resetToken);
+      if (!IS_PROD) body.resetToken = resetToken;
+    }
     return send(res, 200, body), true;
   }
 
@@ -234,7 +264,7 @@ async function route(req, res, { send, readBody }) {
     if (!user) return send(res, 404, { error: 'account not found' }), true;
     const salt = crypto.randomBytes(16).toString('hex');
     // Bump token version so a reset invalidates every existing session.
-    users[session.email] = { ...user, salt, hash: hashPassword(newPassword, salt), tokenVersion: (user.tokenVersion || 1) + 1 };
+    users[session.email] = { ...user, salt, hash: await hashPassword(newPassword, salt), tokenVersion: (user.tokenVersion || 1) + 1 };
     saveUsers(users);
     return send(res, 200, { ok: true }), true;
   }

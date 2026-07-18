@@ -15,18 +15,16 @@ export const PROFILE_EVENT = 'pnlcalendar:profile';
 
 export const DEFAULT_PROFILE: Profile = { id: 'default', name: 'Default' };
 
+import * as storage from './safeStorage';
+
 function readList(): Profile[] {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LIST_KEY) || '[]') as Profile[];
-    if (Array.isArray(arr) && arr.length > 0) return arr;
-  } catch {
-    /* ignore */
-  }
+  const arr = storage.getJSON<Profile[]>(LIST_KEY, []);
+  if (Array.isArray(arr) && arr.length > 0) return arr;
   return [DEFAULT_PROFILE];
 }
 
 function writeList(list: Profile[]) {
-  try { localStorage.setItem(LIST_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+  storage.setJSON(LIST_KEY, list);
 }
 
 function emit() {
@@ -38,12 +36,8 @@ export function listProfiles(): Profile[] {
 }
 
 export function getActiveProfileId(): string {
-  try {
-    const id = localStorage.getItem(ACTIVE_KEY);
-    if (id && readList().some((p) => p.id === id)) return id;
-  } catch {
-    /* ignore */
-  }
+  const id = storage.getItem(ACTIVE_KEY);
+  if (id && readList().some((p) => p.id === id)) return id;
   return DEFAULT_PROFILE.id;
 }
 
@@ -54,7 +48,7 @@ export function getActiveProfile(): Profile {
 
 export function setActiveProfile(id: string) {
   if (!readList().some((p) => p.id === id)) return;
-  try { localStorage.setItem(ACTIVE_KEY, id); } catch { /* ignore */ }
+  storage.setItem(ACTIVE_KEY, id);
   emit();
 }
 
@@ -91,7 +85,7 @@ export function deleteProfile(id: string): string {
     setActiveProfile(active);
   }
   // Drop the deleted profile's trades.
-  try { localStorage.removeItem(profileTradesKey(id)); } catch { /* ignore */ }
+  storage.removeItem(profileTradesKey(id));
   emit();
   return active;
 }

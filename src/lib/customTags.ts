@@ -17,21 +17,19 @@ export interface CustomTags {
 const KEY = 'pnlcalendar.customtags.v1';
 export const CUSTOM_TAGS_EVENT = 'pnlcalendar:customtags';
 
+import * as storage from './safeStorage';
+
 let cache: CustomTags | null = null;
 
 function load(): CustomTags {
   if (cache) return cache;
-  try {
-    const data = JSON.parse(localStorage.getItem(KEY) || '{}') as Partial<CustomTags>;
-    cache = { mistakes: data.mistakes ?? [], emotions: data.emotions ?? [] };
-  } catch {
-    cache = { mistakes: [], emotions: [] };
-  }
+  const data = storage.getJSON<Partial<CustomTags>>(KEY, {});
+  cache = { mistakes: data.mistakes ?? [], emotions: data.emotions ?? [] };
   return cache;
 }
 
 function persist() {
-  try { localStorage.setItem(KEY, JSON.stringify(cache ?? { mistakes: [], emotions: [] })); } catch { /* ignore */ }
+  storage.setJSON(KEY, cache ?? { mistakes: [], emotions: [] });
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(CUSTOM_TAGS_EVENT));
 }
 

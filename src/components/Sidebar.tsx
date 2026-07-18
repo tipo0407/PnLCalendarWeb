@@ -7,6 +7,7 @@ import {
   groupByDay,
   formatMoney,
   formatMoneySigned,
+  formatProfitFactor,
   shortDate,
 } from '../lib/metrics';
 import { dayStreaks } from '../lib/goals';
@@ -198,7 +199,7 @@ export default function Sidebar({ trades, summary, viewMonth, onJumpMonth }: Pro
           />
           <Insight
             label={t('atlas.profitFactor')}
-            value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)}
+            value={formatProfitFactor(summary.profitFactor)}
             cls={summary.profitFactor >= 1 ? 'pos' : 'neg'}
           />
           <Insight label={t('side.expectancy')} value={formatMoneySigned(summary.expectancy)} cls={summary.expectancy >= 0 ? 'pos' : 'neg'} />

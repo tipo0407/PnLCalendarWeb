@@ -11,6 +11,7 @@ export interface TradeTags {
 }
 
 import { profileKey, PROFILE_EVENT } from './profiles';
+import * as storage from './safeStorage';
 
 export interface TradeTags {
   mistakes: string[];
@@ -37,20 +38,12 @@ if (typeof window !== 'undefined') {
 
 function load(): Record<string, TradeTags> {
   if (cache) return cache;
-  try {
-    cache = JSON.parse(localStorage.getItem(keyName()) || '{}') as Record<string, TradeTags>;
-  } catch {
-    cache = {};
-  }
+  cache = storage.getJSON<Record<string, TradeTags>>(keyName(), {});
   return cache;
 }
 
 function persist() {
-  try {
-    localStorage.setItem(keyName(), JSON.stringify(cache ?? {}));
-  } catch {
-    /* ignore quota / privacy-mode errors */
-  }
+  storage.setJSON(keyName(), cache ?? {});
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(USER_TAGS_EVENT));
 }
 

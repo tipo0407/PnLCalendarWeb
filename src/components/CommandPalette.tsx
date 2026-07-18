@@ -103,18 +103,25 @@ export default function CommandPalette({
             onKeyDown={onKey}
             placeholder={t('cmd.searchPlaceholder')}
             aria-label={t('cmd.searchAria')}
+            role="combobox"
+            aria-expanded={items.length > 0}
+            aria-controls="cp-listbox"
+            aria-activedescendant={items[active] ? `cp-opt-${active}` : undefined}
           />
           <kbd className="cp-esc">esc</kbd>
         </div>
-        <div className="cp-list">
+        <div className="cp-list" id="cp-listbox" role="listbox" aria-label={t('cmd.title')}>
           {items.length === 0 && <div className="cp-empty">{t('cmd.noMatches')}</div>}
           {items.map((item, i) => {
             const showGroup = item.group !== lastGroup;
             lastGroup = item.group;
             return (
               <div key={item.id}>
-                {showGroup && <div className="cp-group">{item.group}</div>}
+                {showGroup && <div className="cp-group" role="presentation">{item.group}</div>}
                 <button
+                  id={`cp-opt-${i}`}
+                  role="option"
+                  aria-selected={i === active}
                   className={`cp-item ${i === active ? 'active' : ''}`}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => choose(item)}

@@ -1,6 +1,7 @@
 /** User preferences, persisted per profile. Read synchronously across the app. */
 
 import { profileKey, PROFILE_EVENT } from './profiles';
+import * as storage from './safeStorage';
 
 export interface Settings {
   /** Currency symbol shown before money values. */
@@ -39,21 +40,13 @@ if (typeof window !== 'undefined') {
 
 export function getSettings(): Settings {
   if (current) return current;
-  try {
-    current = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(keyName()) || '{}') as Partial<Settings>) };
-  } catch {
-    current = { ...DEFAULT_SETTINGS };
-  }
+  current = { ...DEFAULT_SETTINGS, ...storage.getJSON<Partial<Settings>>(keyName(), {}) };
   return current;
 }
 
 export function saveSettings(patch: Partial<Settings>) {
   current = { ...getSettings(), ...patch };
-  try {
-    localStorage.setItem(keyName(), JSON.stringify(current));
-  } catch {
-    /* ignore */
-  }
+  storage.setJSON(keyName(), current);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 
@@ -64,10 +57,6 @@ export function currencySymbol(): string {
 /** Replace all settings (used by backup restore / reset). */
 export function replaceSettings(s: Partial<Settings>) {
   current = { ...DEFAULT_SETTINGS, ...s };
-  try {
-    localStorage.setItem(keyName(), JSON.stringify(current));
-  } catch {
-    /* ignore */
-  }
+  storage.setJSON(keyName(), current);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SETTINGS_EVENT));
 }

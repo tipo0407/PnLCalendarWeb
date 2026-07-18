@@ -23,6 +23,8 @@ const MAX_ROWS = 1000;
 
 export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecord[]; onSelectDay: (date: string) => void }) {
   useLang();
+  // Alias for the i18n function, usable inside row maps where `t` is a trade.
+  const t2 = t;
   const [sortKey, setSortKey] = useState<SortKey>(() => getTablePrefs().sortKey);
   const [dir, setDir] = useState<'asc' | 'desc'>(() => getTablePrefs().dir);
   const [q, setQ] = useState('');
@@ -60,7 +62,6 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
   }
 
   const shown = rows.slice(0, MAX_ROWS);
-  const Caret = dir === 'asc' ? ArrowUp : ArrowDown;
 
   return (
     <div className="ttable">
@@ -83,21 +84,31 @@ export default function TradeTable({ trades, onSelectDay }: { trades: TradeRecor
         <table className="ttable-grid">
           <thead>
             <tr>
-              <Th label={t('tt.date')} k="date" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <th>{t('tt.time')}</th>
-              <Th label={t('tt.symbol')} k="symbol" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <Th label={t('tt.side')} k="direction" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <Th label={t('tt.size')} k="size" cur={sortKey} Caret={Caret} onClick={sortBy} num />
-              <Th label={t('tt.pnl')} k="profitLoss" cur={sortKey} Caret={Caret} onClick={sortBy} num />
-              {risk > 0 && <th className="tt-num">{t('tt.r')}</th>}
-              <Th label={t('tt.setup')} k="setup" cur={sortKey} Caret={Caret} onClick={sortBy} />
-              <th>{t('tt.tags')}</th>
+              <Th label={t('tt.date')} k="date" cur={sortKey} dir={dir} onClick={sortBy} />
+              <th scope="col">{t('tt.time')}</th>
+              <Th label={t('tt.symbol')} k="symbol" cur={sortKey} dir={dir} onClick={sortBy} />
+              <Th label={t('tt.side')} k="direction" cur={sortKey} dir={dir} onClick={sortBy} />
+              <Th label={t('tt.size')} k="size" cur={sortKey} dir={dir} onClick={sortBy} num />
+              <Th label={t('tt.pnl')} k="profitLoss" cur={sortKey} dir={dir} onClick={sortBy} num />
+              {risk > 0 && <th className="tt-num" scope="col">{t('tt.r')}</th>}
+              <Th label={t('tt.setup')} k="setup" cur={sortKey} dir={dir} onClick={sortBy} />
+              <th scope="col">{t('tt.tags')}</th>
             </tr>
           </thead>
           <tbody>
             {shown.length === 0 && <tr><td colSpan={risk > 0 ? 9 : 8} className="ttable-empty">{t('tt.noMatches')}</td></tr>}
             {shown.map((t, i) => (
-              <tr key={`${t.date}-${t.rowNumber}-${i}`} onClick={() => onSelectDay(t.date)} className="ttable-row">
+              <tr
+                key={`${t.date}-${t.rowNumber}-${i}`}
+                onClick={() => onSelectDay(t.date)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDay(t.date); }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`${t2('tt.openDay')} — ${shortDate(t.date)} ${t.symbol}`.trim()}
+                className="ttable-row"
+              >
                 <td>{shortDate(t.date)}</td>
                 <td className="tt-dim">{hhmm(t.entryTime)}</td>
                 <td className="tt-strong">{t.symbol || '—'}</td>
@@ -136,12 +147,17 @@ function formatSide(side: string): string {
   return side;
 }
 
-function Th({ label, k, cur, Caret, onClick, num }: {
-  label: string; k: SortKey; cur: SortKey; Caret: typeof ArrowUp; onClick: (k: SortKey) => void; num?: boolean;
+function Th({ label, k, cur, dir, onClick, num }: {
+  label: string; k: SortKey; cur: SortKey; dir: 'asc' | 'desc'; onClick: (k: SortKey) => void; num?: boolean;
 }) {
+  const active = cur === k;
+  const Caret = dir === 'asc' ? ArrowUp : ArrowDown;
+  const ariaSort = active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none';
   return (
-    <th className={`${num ? 'tt-num' : ''} ttable-th`} onClick={() => onClick(k)}>
-      <span className="ttable-th-inner">{label}{cur === k && <Caret size={12} />}</span>
+    <th className={`${num ? 'tt-num' : ''} ttable-th`} scope="col" aria-sort={ariaSort}>
+      <button type="button" className="ttable-th-btn" onClick={() => onClick(k)}>
+        <span className="ttable-th-inner">{label}{active && <Caret size={12} />}</span>
+      </button>
     </th>
   );
 }

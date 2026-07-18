@@ -41,8 +41,12 @@
   --shadow-md: 0 6px 24px -6px rgba(27, 36, 54, 0.12), 0 2px 8px -2px rgba(27, 36, 54, 0.06);
   --shadow-lg: 0 24px 64px -12px rgba(27, 36, 54, 0.22), 0 8px 24px -8px rgba(27, 36, 54, 0.1);
   --ring: 0 0 0 3px var(--accent-soft);
-  --radius: 18px;
+  /* Radius scale — prefer these tokens over one-off pixel values. */
+  --radius-xs: 9px;
   --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius: 18px;
+  --radius-pill: 999px;
   --maxw: 1560px;
 }
 
@@ -58,7 +62,8 @@
 
   --text: #e7ecf5;
   --text-2: #9caac1;
-  --muted: #6b788f;
+  /* Lightened from #6b788f to reach WCAG AA (~4.5:1) on the dark card/bg. */
+  --muted: #8591a8;
 
   --pos: #34d399;
   --pos-rgb: 52, 211, 153;
@@ -178,6 +183,10 @@ code {
 ::-webkit-scrollbar-thumb:hover { background: #b9c2d4; background-clip: content-box; }
 :root[data-theme='dark'] ::-webkit-scrollbar-thumb { background: #313c54; background-clip: content-box; }
 :root[data-theme='dark'] ::-webkit-scrollbar-thumb:hover { background: #3d4a66; background-clip: content-box; }
+
+/* Standard scrollbar styling (Firefox and other non-WebKit engines). */
+html { scrollbar-width: thin; scrollbar-color: #cfd6e2 transparent; }
+:root[data-theme='dark'] { scrollbar-color: #313c54 transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

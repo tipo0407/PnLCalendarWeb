@@ -10,6 +10,7 @@ export interface LoggedError {
   time: string;
   message: string;
   source?: string;
+  detail?: string; // stack + component stack, when available
 }
 
 const KEY = 'pnlcalendar.errors.v1';
@@ -36,9 +37,14 @@ function write(next: LoggedError[]) {
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* ignore */ }
 }
 
-export function recordError(message: string, source?: string) {
+export function recordError(message: string, source?: string, detail?: string) {
   if (!getSettings().errorLogging) return;
-  const entry: LoggedError = { time: new Date().toISOString(), message: message.slice(0, 500), source };
+  const entry: LoggedError = {
+    time: new Date().toISOString(),
+    message: message.slice(0, 500),
+    source,
+    detail: detail ? detail.slice(0, 4000) : undefined,
+  };
   write([entry, ...read()].slice(0, MAX));
 }
 

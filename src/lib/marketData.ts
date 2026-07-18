@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './fetchWithTimeout';
+
 export interface Candle {
   time: number; // unix seconds, shifted to Pacific (Seattle) time for display
   open: number;
@@ -108,7 +110,8 @@ interface YahooChartResponse {
 export async function fetchIntraday(
   isoDate: string,
   symbol: string,
-  interval: '1m' | '5m' | '15m' = '5m'
+  interval: '1m' | '5m' | '15m' = '5m',
+  opts: { signal?: AbortSignal; timeoutMs?: number } = {}
 ): Promise<IntradayResult> {
   const [y, m, d] = isoDate.split('-').map(Number);
   const dayStart = Date.UTC(y, m - 1, d) / 1000;
@@ -121,7 +124,7 @@ export async function fetchIntraday(
     `/yahoo/v8/finance/chart/${encodeURIComponent(ysym)}` +
     `?period1=${p1}&period2=${p2}&interval=${interval}&includePrePost=false`;
 
-  const resp = await fetch(url);
+  const resp = await fetchWithTimeout(url, { signal: opts.signal, timeoutMs: opts.timeoutMs });
   if (!resp.ok) {
     throw new Error(`Market data request failed (${resp.status}).`);
   }
@@ -182,15 +185,19 @@ export function ema(candles: Candle[], period: number): { time: number; value: n
   return out;
 }
 
-/** Session VWAP (cumulative over the provided candles). */
+/** Session VWAP (cumulative over the provided candles). Zero-volume bars are
+ *  skipped from the weighting (they'd otherwise distort VWAP); before any volume
+ *  is seen the typical price is used as a fallback. */
 export function vwap(candles: Candle[]): { time: number; value: number }[] {
   let cumPV = 0;
   let cumV = 0;
   return candles.map((c) => {
     const typical = (c.high + c.low + c.close) / 3;
-    const v = c.volume || 1;
-    cumPV += typical * v;
-    cumV += v;
-    return { time: c.time, value: cumPV / cumV };
+    const v = c.volume > 0 ? c.volume : 0;
+    if (v > 0) {
+      cumPV += typical * v;
+      cumV += v;
+    }
+    return { time: c.time, value: cumV > 0 ? cumPV / cumV : typical };
   });
 }

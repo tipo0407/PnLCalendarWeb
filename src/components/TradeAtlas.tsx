@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Printer, FileSpreadsheet } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -15,6 +15,8 @@ import { useUserTags } from '../lib/useUserTags';
 import { findLeaks } from '../lib/leaks';
 import { exportTradesCsv, downloadText } from '../lib/exportCsv';
 import { taxSummaryCsv } from '../lib/taxSummary';
+import { showToast } from '../lib/toast';
+import UiTooltip from './Tooltip';
 import { t } from '../lib/i18n';
 import { useLang } from '../lib/useLang';
 import {
@@ -27,9 +29,11 @@ import {
   dayOfWeekEdge,
   holdTimeEdge,
   groupByDay,
+  minMax,
   formatMoney,
   compactMoney,
   formatMoneySigned,
+  formatProfitFactor,
   shortDate,
   longDate,
 } from '../lib/metrics';
@@ -48,20 +52,45 @@ const TOOLTIP = {
   cursor: { fill: 'rgba(120,140,170,0.10)' },
 };
 
-/** Print just the Trade Atlas as a PDF via a scoped print stylesheet. */
-function printAtlas() {
-  document.body.classList.add('printing-atlas');
-  const cleanup = () => {
+/**
+ * Print just the Trade Atlas as a PDF via a scoped print stylesheet. Returns a
+ * click handler; the fallback timer and the `afterprint` listener are tracked
+ * and cleared on unmount so a delayed cleanup can't mutate document state (or
+ * leak a listener) after the component is gone.
+ */
+function usePrintAtlas(): () => void {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listenerRef = useRef<(() => void) | null>(null);
+
+  const finish = () => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (listenerRef.current) {
+      window.removeEventListener('afterprint', listenerRef.current);
+      listenerRef.current = null;
+    }
     document.body.classList.remove('printing-atlas');
-    window.removeEventListener('afterprint', cleanup);
   };
-  window.addEventListener('afterprint', cleanup);
-  window.print();
-  setTimeout(cleanup, 1000);
+
+  useEffect(() => finish, []); // clear any pending timer/listener on unmount
+
+  return () => {
+    document.body.classList.add('printing-atlas');
+    finish(); // reset any previous in-flight print
+    const cleanup = () => finish();
+    listenerRef.current = cleanup;
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    // Fallback for browsers that don't fire `afterprint`.
+    timerRef.current = setTimeout(cleanup, 1000);
+  };
 }
 
 export default function TradeAtlas({ trades, summary }: Props) {
   const lang = useLang(); // re-render on language change
+  const printAtlas = usePrintAtlas();
   const theme = useThemeColors();
   const POS = theme.pos;
   const NEG = theme.neg;
@@ -111,8 +140,9 @@ export default function TradeAtlas({ trades, summary }: Props) {
   }, [trades, lang]);
 
   // Offset (0–1 top→bottom) of the zero line within the equity range, for split green/red coloring.
-  const eqMin = equity.length ? Math.min(...equity.map((e) => e.cumulative)) : 0;
-  const eqMax = equity.length ? Math.max(...equity.map((e) => e.cumulative)) : 0;
+  const eqRange = equity.length ? minMax(equity.map((e) => e.cumulative)) : { min: 0, max: 0 };
+  const eqMin = eqRange.min;
+  const eqMax = eqRange.max;
   const eqZero = eqMax <= 0 ? 0 : eqMin >= 0 ? 1 : eqMax / (eqMax - eqMin);
 
   const donut = [
@@ -134,22 +164,28 @@ export default function TradeAtlas({ trades, summary }: Props) {
           <p className="atlas-sub">{t('atlas.sub')}</p>
         </div>
         <div className="atlas-actions">
-          <button className="atlas-export" onClick={() => exportTradesCsv(trades)} title={t('atlas.exportCsvTitle')}>
-            <Download size={14} /> {t('common.csv')}
-          </button>
-          <button className="atlas-export" onClick={() => downloadText(`pnl-tax-summary-${new Date().toISOString().slice(0, 10)}.csv`, taxSummaryCsv(trades), 'text/csv')} title={t('atlas.taxTitle')}>
-            <FileSpreadsheet size={14} /> {t('atlas.tax')}
-          </button>
-          <button className="atlas-export" onClick={printAtlas} title={t('atlas.exportPdfTitle')}>
-            <Printer size={14} /> {t('common.pdf')}
-          </button>
+          <UiTooltip tip={t('atlas.exportCsvTitle')}>
+            <button className="atlas-export" onClick={() => { exportTradesCsv(trades); showToast(t('toast.exportedCsv'), 'success'); }} aria-label={t('atlas.exportCsvTitle')}>
+              <Download size={14} /> {t('common.csv')}
+            </button>
+          </UiTooltip>
+          <UiTooltip tip={t('atlas.taxTitle')}>
+            <button className="atlas-export" onClick={() => { downloadText(`pnl-tax-summary-${new Date().toISOString().slice(0, 10)}.csv`, taxSummaryCsv(trades), 'text/csv'); showToast(t('toast.exportedTax'), 'success'); }} aria-label={t('atlas.taxTitle')}>
+              <FileSpreadsheet size={14} /> {t('atlas.tax')}
+            </button>
+          </UiTooltip>
+          <UiTooltip tip={t('atlas.exportPdfTitle')}>
+            <button className="atlas-export" onClick={printAtlas} aria-label={t('atlas.exportPdfTitle')}>
+              <Printer size={14} /> {t('common.pdf')}
+            </button>
+          </UiTooltip>
         </div>
         <div className="kpi-row">
           <Kpi dot={NEG} label={t('atlas.netPnl')} value={formatMoneySigned(summary.totalPnl)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
           <Kpi dot={ACC} label={t('atlas.trades')} value={String(summary.tradeCount)} />
           <Kpi dot={POS} label={t('atlas.winRate')} value={`${(summary.winRateTrades * 100).toFixed(1)}%`} />
           <Kpi dot={summary.expectancy >= 0 ? POS : NEG} label={t('atlas.avgTrade')} value={formatMoneySigned(summary.tradeCount ? summary.totalPnl / summary.tradeCount : 0)} cls={summary.totalPnl >= 0 ? 'pos' : 'neg'} />
-          <Kpi dot={ACC} label={t('atlas.profitFactor')} value={summary.profitFactor === Infinity ? '∞' : summary.profitFactor.toFixed(2)} />
+          <Kpi dot={ACC} label={t('atlas.profitFactor')} value={formatProfitFactor(summary.profitFactor)} />
           <Kpi dot={NEG} label={t('atlas.maxDD')} value={formatMoney(summary.maxDrawdown)} cls="neg" />
         </div>
       </div>
