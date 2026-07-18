@@ -23,7 +23,7 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
     "framer-motion": "^12.40.0",
-    "lightweight-charts": "^4.2.3",
+    "lightweight-charts": "^5.2.0",
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
